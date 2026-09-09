@@ -24,7 +24,10 @@ export const DailyCheckInModal: React.FC = () => {
     hasBaseline,
     isRetestRequested,
     setIsRetestRequested,
-    checkIns
+    checkIns,
+    checkInSource,
+    activeTab,
+    setActiveTab
   } = useApp();
 
   // Show snapshot view if already checked in or just finished
@@ -579,31 +582,43 @@ export const DailyCheckInModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Back to Home Button (Soft Lime/Green Gradient from screenshot) */}
-            <button
-              type="button"
-              onClick={() => setIsCheckInOpen(false)}
-              style={{
-                width: '100%',
-                height: '50px',
-                borderRadius: '25px',
-                border: '1.2px solid #BBF7D0',
-                background: 'linear-gradient(135deg, #ECFCCB 0%, #DCFCE7 100%)',
-                color: '#166534',
-                fontWeight: 800,
-                fontSize: '14.5px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(134, 239, 172, 0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                marginTop: '4px',
-                transition: 'transform 0.12s ease'
-              }}
-            >
-              <span>Back to Home</span>
-            </button>
+            {/* Back to Home / Back to Chat Button */}
+            {(() => {
+              const isFromChat = checkInSource === 'chat' || activeTab === 'chat';
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCheckInOpen(false);
+                    if (isFromChat) {
+                      setActiveTab('chat');
+                    } else {
+                      setActiveTab('home');
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '50px',
+                    borderRadius: '25px',
+                    border: '1.2px solid #BBF7D0',
+                    background: 'linear-gradient(135deg, #ECFCCB 0%, #DCFCE7 100%)',
+                    color: '#166534',
+                    fontWeight: 800,
+                    fontSize: '14.5px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(134, 239, 172, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
+                    transition: 'transform 0.12s ease'
+                  }}
+                >
+                  <span>{isFromChat ? 'Back to Chat' : 'Back to Home'}</span>
+                </button>
+              );
+            })()}
 
             {/* Retest Link/Button (Specification: If user clicks back in, directly show current snapshot and give button "Retest" or "Back to home") */}
             <button

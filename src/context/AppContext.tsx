@@ -83,6 +83,8 @@ interface AppContextType {
   checkIns: DailyCheckIn[];
   isCheckInOpen: boolean;
   setIsCheckInOpen: (open: boolean) => void;
+  checkInSource: 'home' | 'chat';
+  setCheckInSource: (source: 'home' | 'chat') => void;
   saveCheckIn: (checkIn: Omit<DailyCheckIn, 'id'>) => void;
   todayCheckIn: DailyCheckIn | null;
   isRetestRequested: boolean;
@@ -657,6 +659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(initialCheckIns);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [checkInSource, setCheckInSource] = useState<'home' | 'chat'>('home');
   const [isRetestRequested, setIsRetestRequested] = useState(false);
   const [isTreeHoleOpen, setIsTreeHoleOpen] = useState(false);
   const [isColourReflectionOpen, setIsColourReflectionOpen] = useState(false);
@@ -997,7 +1000,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const aiReply: AiDumpChatMessage = {
             id: `msg-${Date.now() + 1}`,
             sender: 'ai',
-            text: "I heard you Nicole. Seems like you're carrying a heavy load right after an exhausting week. I suggest you to fill in this daily check in to help me analyze your stress level and current status.",
+            text: "I heard you Nicole. Seems like you're carrying a heavy load right after an exhausting week. I suggest you to fill in this daily check in to help me analyze your stress level and current status!",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             isNicoleCheckInPrompt: true
           };
@@ -1329,6 +1332,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       checkIns,
       isCheckInOpen,
       setIsCheckInOpen,
+      checkInSource,
+      setCheckInSource,
       saveCheckIn,
       todayCheckIn,
       isRetestRequested,

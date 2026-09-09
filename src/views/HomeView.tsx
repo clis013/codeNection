@@ -11,6 +11,7 @@ export const HomeView: React.FC = () => {
   const {
     todayCheckIn,
     setIsCheckInOpen,
+    setCheckInSource,
     capacityProfile,
     setIsTreeHoleOpen,
     setIsColourReflectionOpen,
@@ -110,6 +111,7 @@ export const HomeView: React.FC = () => {
                   key={idx}
                   onClick={() => {
                     if (item.isToday) {
+                      setCheckInSource('home');
                       setIsCheckInOpen(true);
                     }
                   }}

@@ -756,6 +756,7 @@ export const AiDumpChatView: React.FC = () => {
     todayCheckIn,
     isCheckInOpen,
     setIsCheckInOpen,
+    setCheckInSource,
     setIsAddWorkloadOpen,
     setAddWorkloadInitialData,
     markChatWorkloadAdded,
@@ -1299,13 +1300,16 @@ export const AiDumpChatView: React.FC = () => {
                         <button
                           type="button"
                           id="chat-nicole-checkin-btn"
-                          onClick={() => setIsCheckInOpen(true)}
+                          onClick={() => {
+                            setCheckInSource('chat');
+                            setIsCheckInOpen(true);
+                          }}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                            background: 'linear-gradient(135deg, #6761d3ff 0%, #7C3AED 100%)',
                             color: '#FFFFFF',
                             border: 'none',
                             borderRadius: '16px',
@@ -1352,22 +1356,6 @@ export const AiDumpChatView: React.FC = () => {
                             <CheckCircle2 size={18} color="#166534" />
                             <span>Daily Check-in Completed</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setIsCheckInOpen(true)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: '#2563EB',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              textDecoration: 'underline',
-                              padding: '2px 4px'
-                            }}
-                          >
-                            View Check-in
-                          </button>
                         </div>
                       )}
                     </div>

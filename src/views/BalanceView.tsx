@@ -45,8 +45,7 @@ interface SnapshotData {
   busyEvents: FixedBusyEvent[];
   protectedTimes: ProtectedTime[];
   focusBlocks: FocusBlock[];
-  webReductionAccepted: boolean;
-  sponsorshipShared: boolean;
+  selectedPlanIds: string[];
 }
 
 export const BalanceView: React.FC = () => {
@@ -73,9 +72,27 @@ export const BalanceView: React.FC = () => {
   const isStressDumpConfirmed = workloads.some(w => w.id === 'tech-carnival-sponsorship') ||
     (chatMessages && chatMessages.some(m => m.nicoleConfirmed));
 
-  // Interactive decision states for action-specific cards
-  const [webReductionAccepted, setWebReductionAccepted] = useState<boolean>(true);
-  const [sponsorshipShared, setSponsorshipShared] = useState<boolean>(true);
+  // Selected workload plans that the user wants to apply
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>(() =>
+    workloads.filter(w => w.status === 'Active').map(w => w.id)
+  );
+
+  const allPlanIds = activeWorkloads.map(w => w.id);
+  const isAllSelected = allPlanIds.length > 0 && allPlanIds.every(id => selectedPlanIds.includes(id));
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedPlanIds([]);
+    } else {
+      setSelectedPlanIds([...allPlanIds]);
+    }
+  };
+
+  const togglePlanSelected = (id: string) => {
+    setSelectedPlanIds(prev =>
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    );
+  };
 
   // Custom schedule overrides saved via the edit modal
   const [customSchedules, setCustomSchedules] = useState<Record<string, { date: string; startTime: string; endTime: string }>>({});
@@ -235,7 +252,7 @@ export const BalanceView: React.FC = () => {
           blocks
         };
       } else {
-        const remaining = webReductionAccepted ? 13 : 18;
+        const remaining = selectedPlanIds.includes(item.id) ? 13 : 18;
         const b = override1 || { date: '2026-09-10', startTime: '14:00', endTime: '17:00' };
         const blocks: ProposedBlockPlan[] = [{
           id: `${item.id}-1`,
@@ -382,15 +399,19 @@ export const BalanceView: React.FC = () => {
       busyEvents: [...busyEvents],
       protectedTimes: [...protectedTimes],
       focusBlocks: [...focusBlocks],
-      webReductionAccepted,
-      sponsorshipShared
+      selectedPlanIds: [...selectedPlanIds]
     };
     setPreviousSnapshot(snapshot);
 
-    // 2. Generate canonical FocusBlocks for all planned work
+    // 2. Generate canonical FocusBlocks only for SELECTED planned work
     const newFocusBlocks: FocusBlock[] = [];
 
     activeWorkloads.forEach(item => {
+      // If workload plan is NOT selected, do not apply it
+      if (!selectedPlanIds.includes(item.id)) {
+        return;
+      }
+
       const plan = getEffortPlan(item, isStressDumpConfirmed);
       const decision = getNicoleDecision(item, isStressDumpConfirmed);
 
@@ -413,14 +434,12 @@ export const BalanceView: React.FC = () => {
         const primaryBlock = plan.blocks[0];
         updateWorkload({
           ...item,
-          remainingTimeHours: webReductionAccepted ? 13 : 18,
+          remainingTimeHours: 13,
           scheduledDate: primaryBlock?.date,
           scheduledStartTime: primaryBlock?.startTime,
           scheduledEndTime: primaryBlock?.endTime,
           balanceDecision: 'Reduce',
-          balanceRationale: webReductionAccepted
-            ? 'Delegated 5h of responsive styling, testing, and documentation to group members. Early core implementation planned.'
-            : 'Retained full 18h group responsibility without delegation.'
+          balanceRationale: 'Delegated 5h of responsive styling, testing, and documentation to group members. Early core implementation planned.'
         });
         return;
       }
@@ -434,9 +453,7 @@ export const BalanceView: React.FC = () => {
           scheduledStartTime: primaryBlock?.startTime,
           scheduledEndTime: primaryBlock?.endTime,
           balanceDecision: 'Reconsider',
-          balanceRationale: sponsorshipShared
-            ? 'Retained sponsorship materials preparation (2h planned Sep 9); proposed sharing follow-up responsibility.'
-            : 'Retained full ownership of sponsorship materials and follow-up coordination.'
+          balanceRationale: 'Retained sponsorship materials preparation (2h planned Sep 9); proposed sharing follow-up responsibility.'
         });
         return;
       }
@@ -457,7 +474,7 @@ export const BalanceView: React.FC = () => {
     // Write generated FocusBlocks to AppContext
     setFocusBlocks(newFocusBlocks);
 
-    setToastMessage('✓ Balance plan applied! Tap "Undo" if you wish to revert.');
+    setToastMessage(`✓ Applied balance plan for ${selectedPlanIds.length} selected task${selectedPlanIds.length > 1 ? 's' : ''}! Tap "Undo" if you wish to revert.`);
 
     setTimeout(() => {
       const topEl = document.getElementById('balance-page-top');
@@ -490,8 +507,9 @@ export const BalanceView: React.FC = () => {
     setBusyEvents(previousSnapshot.busyEvents);
     setProtectedTimes(previousSnapshot.protectedTimes);
     setFocusBlocks(previousSnapshot.focusBlocks);
-    setWebReductionAccepted(previousSnapshot.webReductionAccepted);
-    setSponsorshipShared(previousSnapshot.sponsorshipShared);
+    if (previousSnapshot.selectedPlanIds) {
+      setSelectedPlanIds([...previousSnapshot.selectedPlanIds]);
+    }
 
     setPreviousSnapshot(null);
     setToastMessage('✓ Balance plan reverted to previous state.');
@@ -507,8 +525,8 @@ export const BalanceView: React.FC = () => {
       fontFamily: "'Outfit', -apple-system, sans-serif"
     }}>
 
-      {/* HEADER */}
-      <div>
+      {/* HEADER WITH TITLE & SELECT ALL BUTTON */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <h1 className="serif-title" style={{
           fontSize: '24px',
           fontWeight: 600,
@@ -518,6 +536,41 @@ export const BalanceView: React.FC = () => {
         }}>
           Workload Balance Plan
         </h1>
+
+        <button
+          type="button"
+          onClick={handleToggleSelectAll}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '7px',
+            padding: '7px 14px',
+            borderRadius: '14px',
+            border: isAllSelected ? '1.5px solid #10B981' : '1.5px solid #CBD5E1',
+            backgroundColor: isAllSelected ? '#F0FDF4' : '#FFFFFF',
+            color: isAllSelected ? '#166534' : '#475569',
+            fontSize: '12.5px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <div style={{
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            border: isAllSelected ? '2px solid #10B981' : '1.8px solid #94A3B8',
+            backgroundColor: isAllSelected ? '#10B981' : '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease'
+          }}>
+            {isAllSelected && <Check size={11} color="#FFFFFF" strokeWidth={3.5} />}
+          </div>
+          <span>{isAllSelected ? 'Deselect All' : 'Select All'}</span>
+        </button>
       </div>
 
       {/* TOAST MESSAGE WITH UNDO SHORTCUT */}
@@ -711,19 +764,21 @@ export const BalanceView: React.FC = () => {
         {groupedTasks['Keep'].length > 0 ? (
           groupedTasks['Keep'].map(({ item, decision }) => {
             const plan = getEffortPlan(item, isStressDumpConfirmed);
+            const isSelected = selectedPlanIds.includes(item.id);
             const isOS = item.id === 'os-quiz-1';
-            const isWeb = item.id === 'web-programming-group';
 
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
                 padding: '14px',
-                boxShadow: '0 2px 8px rgba(22, 101, 52, 0.06)',
-                border: '1px solid #DCFCE7',
+                boxShadow: isSelected ? '0 2px 8px rgba(22, 101, 52, 0.06)' : 'none',
+                border: isSelected ? '1.5px solid #86EFAC' : '1px dashed #CBD5E1',
+                opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px'
+                gap: '8px',
+                transition: 'all 0.2s ease'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -734,9 +789,37 @@ export const BalanceView: React.FC = () => {
                       {decision.subtitle}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '8px' }}>
-                    {plan.remainingTimeHours}h target
-                  </span>
+
+                  {/* Circular Select Box */}
+                  <button
+                    type="button"
+                    onClick={() => togglePlanSelected(item.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                    }}>
+                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                    </div>
+                  </button>
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
@@ -889,16 +972,20 @@ export const BalanceView: React.FC = () => {
         {groupedTasks['Reduce'].length > 0 ? (
           groupedTasks['Reduce'].map(({ item, decision }) => {
             const plan = getEffortPlan(item, isStressDumpConfirmed);
+            const isSelected = selectedPlanIds.includes(item.id);
+
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
                 padding: '14px',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-                border: '1px solid #DBEAFE',
+                boxShadow: isSelected ? '0 2px 8px rgba(37, 99, 235, 0.06)' : 'none',
+                border: isSelected ? '1.5px solid #93C5FD' : '1px dashed #CBD5E1',
+                opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px'
+                gap: '10px',
+                transition: 'all 0.2s ease'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -909,9 +996,37 @@ export const BalanceView: React.FC = () => {
                       {decision.subtitle}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '8px' }}>
-                    18h recorded
-                  </span>
+
+                  {/* Circular Select Box */}
+                  <button
+                    type="button"
+                    onClick={() => togglePlanSelected(item.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                    }}>
+                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                    </div>
+                  </button>
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
@@ -1038,56 +1153,6 @@ export const BalanceView: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Primary Action: Scope Decision Buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setWebReductionAccepted(true)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      border: webReductionAccepted ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
-                      backgroundColor: webReductionAccepted ? '#2563EB' : '#FFFFFF',
-                      color: webReductionAccepted ? '#FFFFFF' : '#334155',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                      boxShadow: webReductionAccepted ? '0 2px 6px rgba(37,99,235,0.2)' : 'none'
-                    }}
-                  >
-                    {webReductionAccepted && <Check size={13} />}
-                    <span>{webReductionAccepted ? 'Accept (13h)' : 'Accept Reduction'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setWebReductionAccepted(false)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      border: !webReductionAccepted ? '1.5px solid #64748B' : '1px solid #E2E8F0',
-                      backgroundColor: !webReductionAccepted ? '#475569' : '#FFFFFF',
-                      color: !webReductionAccepted ? '#FFFFFF' : '#64748B',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    {!webReductionAccepted && <Check size={13} />}
-                    <span>Keep (18h)</span>
-                  </button>
-                </div>
               </div>
             );
           })
@@ -1131,16 +1196,20 @@ export const BalanceView: React.FC = () => {
         {groupedTasks['Reconsider'].length > 0 ? (
           groupedTasks['Reconsider'].map(({ item, decision }) => {
             const plan = getEffortPlan(item, isStressDumpConfirmed);
+            const isSelected = selectedPlanIds.includes(item.id);
+
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
                 padding: '14px',
-                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.06)',
-                border: '1px solid #EDE9FE',
+                boxShadow: isSelected ? '0 2px 8px rgba(124, 58, 237, 0.06)' : 'none',
+                border: isSelected ? '1.5px solid #C4B5FD' : '1px dashed #CBD5E1',
+                opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px'
+                gap: '10px',
+                transition: 'all 0.2s ease'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -1151,9 +1220,37 @@ export const BalanceView: React.FC = () => {
                       {decision.subtitle}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#6B21A8', backgroundColor: '#EDE9FE', padding: '2px 8px', borderRadius: '8px' }}>
-                    {item.remainingTimeHours}h recorded
-                  </span>
+
+                  {/* Circular Select Box */}
+                  <button
+                    type="button"
+                    onClick={() => togglePlanSelected(item.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                    }}>
+                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                    </div>
+                  </button>
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
@@ -1266,60 +1363,6 @@ export const BalanceView: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Primary Action: Share vs Keep Ownership Buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setSponsorshipShared(true)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      border: sponsorshipShared ? '1.5px solid #7C3AED' : '1px solid #CBD5E1',
-                      backgroundColor: sponsorshipShared ? '#7C3AED' : '#FFFFFF',
-                      color: sponsorshipShared ? '#FFFFFF' : '#334155',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                      boxShadow: sponsorshipShared ? '0 2px 6px rgba(124,58,237,0.2)' : 'none'
-                    }}
-                  >
-                    {sponsorshipShared && <Check size={13} />}
-                    <span>{sponsorshipShared ? "Accept" : "I'll Share This"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSponsorshipShared(false)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      border: !sponsorshipShared ? '1.5px solid #64748B' : '1px solid #E2E8F0',
-                      backgroundColor: !sponsorshipShared ? '#475569' : '#FFFFFF',
-                      color: !sponsorshipShared ? '#FFFFFF' : '#64748B',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    {!sponsorshipShared && <Check size={13} />}
-                    <span>Keep</span>
-                  </button>
-                </div>
-
-                <div style={{ fontSize: '10.5px', color: '#8B5CF6', textAlign: 'center' }}>
-                  Records ownership decision in plan. Remaining effort stays 6h (no arbitrary numerical reduction).
-                </div>
               </div>
             );
           })
@@ -1365,17 +1408,20 @@ export const BalanceView: React.FC = () => {
             const plan = getEffortPlan(item, isStressDumpConfirmed);
             const isFCG = item.id === 'fcg-test-1';
             const isPhilosophy = item.id === 'philosophy-reflection';
+            const isSelected = selectedPlanIds.includes(item.id);
 
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
                 padding: '14px',
-                boxShadow: '0 2px 8px rgba(217, 119, 6, 0.06)',
-                border: '1px solid #FEF3C7',
+                boxShadow: isSelected ? '0 2px 8px rgba(217, 119, 6, 0.06)' : 'none',
+                border: isSelected ? '1.5px solid #FCD34D' : '1px dashed #CBD5E1',
+                opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px'
+                gap: '8px',
+                transition: 'all 0.2s ease'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -1386,9 +1432,37 @@ export const BalanceView: React.FC = () => {
                       {decision.subtitle}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '8px' }}>
-                    {plan.remainingTimeHours}h target
-                  </span>
+
+                  {/* Circular Select Box */}
+                  <button
+                    type="button"
+                    onClick={() => togglePlanSelected(item.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                    }}>
+                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                    </div>
+                  </button>
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
@@ -1515,27 +1589,32 @@ export const BalanceView: React.FC = () => {
         <button
           type="button"
           onClick={handleApplyPlan}
+          disabled={selectedPlanIds.length === 0}
           style={{
             width: '100%',
             height: '52px',
             borderRadius: '20px',
-            border: '1.5px solid #FDBA74',
-            background: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
-            color: '#9A3412',
+            border: selectedPlanIds.length > 0 ? '1.5px solid #FDBA74' : '1.5px solid #E2E8F0',
+            background: selectedPlanIds.length > 0 ? 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)' : '#F1F5F9',
+            color: selectedPlanIds.length > 0 ? '#9A3412' : '#94A3B8',
             fontWeight: 800,
             fontSize: '15px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 6px 20px rgba(234, 88, 12, 0.18)',
+            cursor: selectedPlanIds.length > 0 ? 'pointer' : 'not-allowed',
+            boxShadow: selectedPlanIds.length > 0 ? '0 6px 20px rgba(234, 88, 12, 0.18)' : 'none',
             transition: 'all 0.15s ease',
             letterSpacing: '-0.2px'
           }}
         >
           <CheckCircle2 size={18} />
-          <span>Apply Balance Plan</span>
+          <span>
+            {selectedPlanIds.length > 0
+              ? `Apply Balance Plan (${selectedPlanIds.length} task${selectedPlanIds.length > 1 ? 's' : ''} selected)`
+              : 'Select at least 1 task to apply'}
+          </span>
         </button>
       </div>
 
