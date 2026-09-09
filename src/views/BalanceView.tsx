@@ -564,105 +564,107 @@ export const BalanceView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. RECOVERY SECTION                                                       */}
+      {/* 1. RECOVERY SECTION (ONLY SHOWN IF USER IS IN OVERLOADED STATUS)           */}
       {/* ========================================================================= */}
-      <div style={{
-        backgroundColor: '#FEF2F2',
-        borderRadius: '24px',
-        padding: '16px 18px',
-        border: '1.5px solid #FCA5A5',
-        boxShadow: '0 6px 20px rgba(220, 38, 38, 0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AlertTriangle size={18} color="#DC2626" />
+      {capacityProfile.dailyStatus === 'Overloaded' && (
+        <div style={{
+          backgroundColor: '#FEF2F2',
+          borderRadius: '24px',
+          padding: '16px 18px',
+          border: '1.5px solid #FCA5A5',
+          boxShadow: '0 6px 20px rgba(220, 38, 38, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={20} color="#DC2626" />
+              <span style={{
+                fontSize: '13px',
+                fontWeight: 900,
+                color: '#991B1B',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px'
+              }}>
+                Recovery Action Needed
+              </span>
+            </div>
+
             <span style={{
-              fontSize: '13px',
-              fontWeight: 900,
+              padding: '3px 8px',
+              borderRadius: '10px',
+              backgroundColor: '#FEE2E2',
+              border: '1px solid #FCA5A5',
               color: '#991B1B',
-              textTransform: 'uppercase',
-              letterSpacing: '0.4px'
+              fontSize: '11px',
+              fontWeight: 800
             }}>
-              RECOVERY RECOMMENDED
+              Priority Rest
             </span>
           </div>
 
-          <span style={{
-            padding: '3px 8px',
-            borderRadius: '10px',
-            backgroundColor: '#FEE2E2',
-            border: '1px solid #FCA5A5',
+          <p style={{
+            fontSize: '13px',
             color: '#991B1B',
-            fontSize: '11px',
-            fontWeight: 800
+            lineHeight: '1.45',
+            margin: 0
           }}>
-            Wellbeing Guidance
-          </span>
+            Your cognitive demand is outstripping energy reserves today. Taking an intentional 20-minute recovery break before tackling analytical work will restore focus.
+          </p>
+
+          {/* Quicklinks to Recovery Features */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setIsTreeHoleOpen(true)}
+              style={{
+                flex: 1,
+                height: '38px',
+                borderRadius: '12px',
+                border: '1px solid #FCA5A5',
+                backgroundColor: '#FFFFFF',
+                color: '#991B1B',
+                fontWeight: 800,
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+              }}
+            >
+              <Feather size={14} color="#DC2626" />
+              <span>Tree Hole Release</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsColourReflectionOpen(true)}
+              style={{
+                flex: 1,
+                height: '38px',
+                borderRadius: '12px',
+                border: '1px solid #FCA5A5',
+                backgroundColor: '#FFFFFF',
+                color: '#991B1B',
+                fontWeight: 800,
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+              }}
+            >
+              <Palette size={14} color="#DC2626" />
+              <span>Colour Reflection</span>
+            </button>
+          </div>
         </div>
-
-        <p style={{
-          fontSize: '13px',
-          color: '#991B1B',
-          lineHeight: '1.45',
-          margin: 0
-        }}>
-          Your energy is very low today while several demanding commitments are approaching. We recommend taking time to rest and recharge at your own pace before diving into intensive work. Restore does not schedule rest into your calendar—use these recovery tools whenever you need a mental break:
-        </p>
-
-        {/* Quicklinks to Recovery Features */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={() => setIsTreeHoleOpen(true)}
-            style={{
-              flex: 1,
-              height: '38px',
-              borderRadius: '12px',
-              border: '1px solid #FCA5A5',
-              backgroundColor: '#FFFFFF',
-              color: '#991B1B',
-              fontWeight: 800,
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
-            }}
-          >
-            <Feather size={14} color="#DC2626" />
-            <span>Tree Hole Release</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsColourReflectionOpen(true)}
-            style={{
-              flex: 1,
-              height: '38px',
-              borderRadius: '12px',
-              border: '1px solid #FCA5A5',
-              backgroundColor: '#FFFFFF',
-              color: '#991B1B',
-              fontWeight: 800,
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
-            }}
-          >
-            <Palette size={14} color="#DC2626" />
-            <span>Colour Reflection</span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2. FOUR DECISION SECTIONS (Keep, Reduce, Reconsider, Move/Delay)           */}

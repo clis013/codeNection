@@ -206,6 +206,9 @@ export interface CapacityProfile {
 
   // FROM ANALYSIS PROVIDER — replaces mock analysis
   analysisResult: AnalysisResult;
+
+  // Direct alias for daily demand-resource status (e.g. 'Overloaded')
+  dailyStatus?: DemandResourceStatus;
 }
 
 // ─── AI Dump chat types ───────────────────────────────────────────────────────

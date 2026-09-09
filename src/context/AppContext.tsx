@@ -1223,7 +1223,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dominantArea: derivedWorkloadFacts.dominantAreas[0] ?? 'Unknown',
     mostDrainingDemand: (derivedWorkloadFacts.mostDrainingDemands[0] ?? 'Unknown') as 'Cognitive' | 'Emotional' | 'Physical' | 'Unknown',
 
-    analysisResult
+    analysisResult,
+    dailyStatus: analysisResult.demandResourceStatus
   };
 
   // ─── Provider ────────────────────────────────────────────────────────────────
