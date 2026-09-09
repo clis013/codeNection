@@ -258,6 +258,7 @@ export interface AiDumpChatMessage {
   };
   isNicoleDemoExtraction?: boolean;
   isNicoleAnalysisPlan?: boolean;
+  isNicoleCheckInPrompt?: boolean;
   nicoleClarified?: boolean;
   nicoleConfirmed?: boolean;
   nicoleContext?: {

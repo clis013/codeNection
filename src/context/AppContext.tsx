@@ -878,6 +878,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Check-In handler ───────────────────────────────────────────────────────
 
+  const createNicoleExtractionMessage = (customText?: string): AiDumpChatMessage => ({
+    id: `msg-${Date.now() + 1}`,
+    sender: 'ai',
+    text: customText || "I've analyzed your thoughts, Nicole. You're carrying a heavy load right after an exhausting week. Here is the structured extraction of your workload demands and stress context:",
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    isNicoleDemoExtraction: true,
+    nicoleClarified: false,
+    nicoleConfirmed: false,
+    nicoleContext: {
+      primaryConcern: "Competing academic deadlines",
+      secondaryConcern: "Nicole is taking on additional responsibility in a group assignment",
+      additionalDemand: "Tech Carnival sponsorship responsibility",
+      currentFeeling: "Unsure what to prioritize first",
+      recentContext: "Nicole has just finished a difficult previous week and still feels depleted"
+    },
+    extractedWorkloadDrafts: [
+      {
+        title: "Operating System Quiz 1",
+        area: "Academic",
+        activityType: "Deep focus",
+        urgency: "High",
+        estimatedHours: 5,
+        cognitive: 5,
+        emotional: 3,
+        physical: 1
+      },
+      {
+        title: "Web Programming Group Assignment",
+        area: "Academic",
+        activityType: "Deep focus",
+        urgency: "High",
+        estimatedHours: 12,
+        cognitive: 5,
+        emotional: 3,
+        physical: 1
+      },
+      {
+        title: "Tech Carnival Sponsorship",
+        area: "Social",
+        activityType: "Communication",
+        urgency: "High",
+        estimatedHours: 6,
+        cognitive: 3,
+        emotional: 5,
+        physical: 1
+      },
+      {
+        title: "FCG Test",
+        area: "Academic",
+        activityType: "Deep focus",
+        urgency: "Medium",
+        estimatedHours: 8,
+        cognitive: 5,
+        emotional: 3,
+        physical: 1
+      }
+    ],
+    stressDrivers: [
+      "Competing academic deadlines (OS Quiz vs Web Programming)",
+      "Unfinished group partner work shifting to Nicole",
+      "Tech Carnival extracurricular commitments",
+      "Cumulative fatigue from previous week"
+    ]
+  });
+
   const saveCheckIn = (newCheckIn: Omit<DailyCheckIn, 'id'>) => {
     const checkIn: DailyCheckIn = {
       ...newCheckIn,
@@ -885,6 +950,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     // Replace any existing check-in for the same date (one per day)
     setCheckIns(prev => [...prev.filter(c => c.date !== checkIn.date), checkIn]);
+
+    // If user previously dumped stress and received Nicole's check-in prompt without the extraction,
+    // automatically append the structured extraction now that daily check-in is complete
+    setChatMessages(prev => {
+      const hasPrompt = prev.some(m => m.isNicoleCheckInPrompt);
+      const hasExtraction = prev.some(m => m.isNicoleDemoExtraction);
+      if (hasPrompt && !hasExtraction) {
+        const extractionReply = createNicoleExtractionMessage(
+          "Thank you for completing your daily check-in, Nicole! Now I can analyze your stress level alongside your commitments. Here is the structured extraction of your workload demands and stress context:"
+        );
+        return [...prev, extractionReply];
+      }
+      return prev;
+    });
   };
 
   // ─── AI Dump chat handlers ──────────────────────────────────────────────────
@@ -913,71 +992,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       text.trim() === NICOLE_NARRATIVE.trim();
 
     if (isNicoleDemo) {
+      if (!todayCheckIn) {
+        setTimeout(() => {
+          const aiReply: AiDumpChatMessage = {
+            id: `msg-${Date.now() + 1}`,
+            sender: 'ai',
+            text: "I heard you Nicole. Seems like you're carrying a heavy load right after an exhausting week. I suggest you to fill in this daily check in to help me analyze your stress level and current status.",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isNicoleCheckInPrompt: true
+          };
+          setChatMessages(prev => [...prev, aiReply]);
+        }, 500);
+        setChatMessages(prev => [...prev, userMsg]);
+        return;
+      }
+
       setTimeout(() => {
-        const aiReply: AiDumpChatMessage = {
-          id: `msg-${Date.now() + 1}`,
-          sender: 'ai',
-          text: "I've analyzed your thoughts, Nicole. You're carrying a heavy load right after an exhausting week. Here is the structured extraction of your workload demands and stress context:",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isNicoleDemoExtraction: true,
-          nicoleClarified: false,
-          nicoleConfirmed: false,
-          nicoleContext: {
-            primaryConcern: "Competing academic deadlines",
-            secondaryConcern: "Nicole is taking on additional responsibility in a group assignment",
-            additionalDemand: "Tech Carnival sponsorship responsibility",
-            currentFeeling: "Unsure what to prioritize first",
-            recentContext: "Nicole has just finished a difficult previous week and still feels depleted"
-          },
-          extractedWorkloadDrafts: [
-            {
-              title: "Operating System Quiz 1",
-              area: "Academic",
-              activityType: "Deep focus",
-              urgency: "High",
-              estimatedHours: 5,
-              cognitive: 5,
-              emotional: 3,
-              physical: 1
-            },
-            {
-              title: "Web Programming Group Assignment",
-              area: "Academic",
-              activityType: "Deep focus",
-              urgency: "High",
-              estimatedHours: 12,
-              cognitive: 5,
-              emotional: 3,
-              physical: 1
-            },
-            {
-              title: "Tech Carnival Sponsorship",
-              area: "Social",
-              activityType: "Communication",
-              urgency: "High",
-              estimatedHours: 6,
-              cognitive: 3,
-              emotional: 5,
-              physical: 1
-            },
-            {
-              title: "FCG Test",
-              area: "Academic",
-              activityType: "Deep focus",
-              urgency: "Medium",
-              estimatedHours: 8,
-              cognitive: 5,
-              emotional: 3,
-              physical: 1
-            }
-          ],
-          stressDrivers: [
-            "Competing academic deadlines (OS Quiz vs Web Programming)",
-            "Unfinished group partner work shifting to Nicole",
-            "Tech Carnival extracurricular commitments",
-            "Cumulative fatigue from previous week"
-          ]
-        };
+        const aiReply = createNicoleExtractionMessage();
         setChatMessages(prev => [...prev, aiReply]);
       }, 500);
       setChatMessages(prev => [...prev, userMsg]);

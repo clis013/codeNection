@@ -4,7 +4,8 @@ import { Colors } from '../theme/colors';
 import {
   Send, Mic, Sparkles, Check, ArrowRight, Zap, Coffee, Clock,
   Play, Pause, Volume2, X, RotateCcw, Feather, TreePine, AlertCircle,
-  Square, CheckCircle2, Edit3, Heart, Palette, Scale, BarChart2, Plus, AlertTriangle
+  Square, CheckCircle2, Edit3, Heart, Palette, Scale, BarChart2, Plus, AlertTriangle,
+  ClipboardList
 } from 'lucide-react';
 import { TreeHoleAnimationView } from '../components/Recovery/TreeHoleAnimationView';
 import { NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
@@ -753,6 +754,8 @@ export const AiDumpChatView: React.FC = () => {
     setActiveTab,
     capacityProfile,
     todayCheckIn,
+    isCheckInOpen,
+    setIsCheckInOpen,
     setIsAddWorkloadOpen,
     setAddWorkloadInitialData,
     markChatWorkloadAdded,
@@ -1283,6 +1286,92 @@ export const AiDumpChatView: React.FC = () => {
                   gap: '12px'
                 }}>
                   <div>{msg.text}</div>
+
+                  {/* NICOLE PRE-DUMP DAILY CHECK-IN PROMPT */}
+                  {!isUser && msg.isNicoleCheckInPrompt && (
+                    <div style={{
+                      marginTop: '4px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {!todayCheckIn ? (
+                        <button
+                          type="button"
+                          id="chat-nicole-checkin-btn"
+                          onClick={() => setIsCheckInOpen(true)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '16px',
+                            padding: '12px 20px',
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 16px rgba(124, 58, 237, 0.28)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            letterSpacing: '0.2px',
+                            alignSelf: 'flex-start',
+                            width: '100%',
+                            maxWidth: '320px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(124, 58, 237, 0.38)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0px)';
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(124, 58, 237, 0.28)';
+                          }}
+                        >
+                          <ClipboardList size={17} color="#FFFFFF" strokeWidth={2.4} />
+                          <span>Fill in Daily Check-in</span>
+                          <ArrowRight size={15} color="#FFFFFF" strokeWidth={2.4} />
+                        </button>
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          backgroundColor: '#F0FDF4',
+                          border: '1.5px solid #86EFAC',
+                          borderRadius: '16px',
+                          padding: '10px 14px',
+                          color: '#166534',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          boxShadow: '0 2px 8px rgba(34, 197, 94, 0.08)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CheckCircle2 size={18} color="#166534" />
+                            <span>Daily Check-in Completed</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsCheckInOpen(true)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#2563EB',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              padding: '2px 4px'
+                            }}
+                          >
+                            View Check-in
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* AI EXTRACTED UNRECORDED WORKLOAD CARD */}
                   {!isUser && msg.unrecordedWorkload && (
