@@ -930,7 +930,7 @@ export const StressWorkloadMapView: React.FC = () => {
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#7C3AED"
+                stroke="#a16ff7ff"
                 strokeWidth={activeDemandSlice === 'cognitive' ? 22 : 18}
                 strokeDasharray={`${cogDash} 238.76`}
                 strokeDashoffset={`${cogOffset}`}
@@ -943,7 +943,7 @@ export const StressWorkloadMapView: React.FC = () => {
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#E11D48"
+                stroke="#e05573ff"
                 strokeWidth={activeDemandSlice === 'emotional' ? 22 : 18}
                 strokeDasharray={`${emoDash} 238.76`}
                 strokeDashoffset={`${emoOffset}`}
@@ -956,7 +956,7 @@ export const StressWorkloadMapView: React.FC = () => {
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#16A34A"
+                stroke="#48ae6dff"
                 strokeWidth={activeDemandSlice === 'physical' ? 22 : 18}
                 strokeDasharray={`${phyDash} 238.76`}
                 strokeDashoffset={`${phyOffset}`}

@@ -570,17 +570,26 @@ export const BalanceView: React.FC = () => {
       fontFamily: "'Outfit', -apple-system, sans-serif"
     }}>
 
-      {/* HEADER WITH TITLE & SELECT ALL BUTTON */}
+      {/* HEADER WITH TITLE, SUBTITLE & REFINED SELECT ALL PILL */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <h1 className="serif-title" style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: Colors.textDark,
-          margin: 0,
-          letterSpacing: '-0.3px'
-        }}>
-          Workload Balance Plan
-        </h1>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <h1 className="serif-title" style={{
+            fontSize: '22px',
+            fontWeight: 600,
+            color: Colors.textDark,
+            margin: 0,
+            letterSpacing: '-0.3px'
+          }}>
+            Workload Balance Plan
+          </h1>
+          <span className="aesthetic-caption" style={{
+            fontSize: '11.5px',
+            color: '#94A3B8',
+            fontWeight: 450
+          }}>
+            Protect priority focus, delegate & adjust schedule
+          </span>
+        </div>
 
         <button
           type="button"
@@ -588,50 +597,51 @@ export const BalanceView: React.FC = () => {
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '7px',
-            padding: '7px 14px',
-            borderRadius: '14px',
-            border: isAllSelected ? '1.5px solid #10B981' : '1.5px solid #CBD5E1',
-            backgroundColor: isAllSelected ? '#F0FDF4' : '#FFFFFF',
-            color: isAllSelected ? '#166534' : '#475569',
-            fontSize: '12.5px',
-            fontWeight: 800,
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '999px',
+            border: isAllSelected ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(203, 213, 225, 0.8)',
+            backgroundColor: isAllSelected ? '#ECFDF5' : '#FFFFFF',
+            color: isAllSelected ? '#059669' : '#64748B',
+            fontSize: '12px',
+            fontWeight: 500,
             cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-            transition: 'all 0.15s ease'
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            transition: 'all 0.15s ease',
+            flexShrink: 0
           }}
         >
           <div style={{
-            width: '18px',
-            height: '18px',
+            width: '16px',
+            height: '16px',
             borderRadius: '50%',
-            border: isAllSelected ? '2px solid #10B981' : '1.8px solid #94A3B8',
-            backgroundColor: isAllSelected ? '#10B981' : '#FFFFFF',
+            border: isAllSelected ? '1.5px solid #10B981' : '1.5px solid #CBD5E1',
+            backgroundColor: isAllSelected ? '#10B981' : 'transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'all 0.15s ease'
           }}>
-            {isAllSelected && <Check size={11} color="#FFFFFF" strokeWidth={3.5} />}
+            {isAllSelected && <Check size={10} color="#FFFFFF" strokeWidth={3} />}
           </div>
-          <span>{isAllSelected ? 'All' : 'Select All'}</span>
+          <span>{isAllSelected ? 'All Selected' : 'Select All'}</span>
         </button>
       </div>
 
       {/* TOAST MESSAGE WITH UNDO SHORTCUT */}
       {toastMessage && (
         <div style={{
-          background: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
-          border: '1.2px solid #86EFAC',
+          background: 'linear-gradient(135deg, rgba(220, 252, 231, 0.95) 0%, rgba(187, 247, 208, 0.85) 100%)',
+          border: '1px solid #86EFAC',
           borderRadius: '16px',
-          padding: '12px 14px',
+          padding: '10px 14px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '8px',
-          boxShadow: '0 4px 16px rgba(34, 197, 94, 0.15)'
+          boxShadow: '0 4px 16px rgba(34, 197, 94, 0.12)'
         }}>
-          <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#166534' }}>
+          <span style={{ fontSize: '12px', fontWeight: 550, color: '#166534' }}>
             {toastMessage}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -643,17 +653,18 @@ export const BalanceView: React.FC = () => {
                   backgroundColor: '#FFFFFF',
                   color: '#991B1B',
                   border: '1px solid #FECACA',
-                  borderRadius: '10px',
-                  padding: '4px 8px',
+                  borderRadius: '999px',
+                  padding: '3px 9px',
                   fontSize: '11px',
-                  fontWeight: 800,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '3px'
+                  gap: '3px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                 }}
               >
-                <RotateCcw size={11} />
+                <RotateCcw size={10} />
                 Undo
               </button>
             )}
@@ -664,11 +675,12 @@ export const BalanceView: React.FC = () => {
                 backgroundColor: '#166534',
                 color: '#FFFFFF',
                 border: 'none',
-                borderRadius: '10px',
-                padding: '4px 8px',
+                borderRadius: '999px',
+                padding: '4px 10px',
                 fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer'
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
               }}
             >
               View Calendar
@@ -678,26 +690,38 @@ export const BalanceView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. RECOVERY SECTION (ONLY SHOWN IF USER IS IN OVERLOADED STATUS)           */}
+      {/* 1. RECOVERY SECTION (MATCHING HOMEVIEW OVERLOADED CARD PATTERN)           */}
       {/* ========================================================================= */}
       {capacityProfile.dailyStatus === 'Overloaded' && (
         <div style={{
-          backgroundColor: '#FEF2F2',
-          borderRadius: '24px',
+          background: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
+          borderRadius: '26px',
           padding: '16px 18px',
-          border: '1.5px solid #FCA5A5',
-          boxShadow: '0 6px 20px rgba(220, 38, 38, 0.08)',
+          border: '1.5px solid #FECDD3',
+          boxShadow: '0 8px 30px rgba(220, 38, 38, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={20} color="#DC2626" />
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '10px',
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #FECDD3',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.2} />
+              </div>
               <span style={{
-                fontSize: '13px',
-                fontWeight: 900,
-                color: '#991B1B',
+                fontSize: '12.5px',
+                fontWeight: 650,
+                color: '#B91C1C',
                 textTransform: 'uppercase',
                 letterSpacing: '0.4px'
               }}>
@@ -706,28 +730,30 @@ export const BalanceView: React.FC = () => {
             </div>
 
             <span style={{
-              padding: '3px 8px',
-              borderRadius: '10px',
-              backgroundColor: '#FEE2E2',
-              border: '1px solid #FCA5A5',
-              color: '#991B1B',
+              padding: '2px 10px',
+              borderRadius: '999px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #FECDD3',
+              color: '#B91C1C',
               fontSize: '11px',
-              fontWeight: 800
+              fontWeight: 600,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
             }}>
               Priority Rest
             </span>
           </div>
 
           <p style={{
-            fontSize: '13px',
-            color: '#991B1B',
-            lineHeight: '1.45',
-            margin: 0
+            fontSize: '12.5px',
+            color: '#475569',
+            lineHeight: '1.5',
+            margin: 0,
+            fontWeight: 400
           }}>
             Your cognitive demand is outstripping energy reserves today. Taking an intentional 20-minute recovery break before tackling analytical work will restore focus.
           </p>
 
-          {/* Quicklinks to Recovery Features */}
+          {/* Quicklinks to Recovery Features (HomeView Cover Page style) */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               type="button"
@@ -735,21 +761,22 @@ export const BalanceView: React.FC = () => {
               style={{
                 flex: 1,
                 height: '38px',
-                borderRadius: '12px',
-                border: '1px solid #FCA5A5',
+                borderRadius: '14px',
+                border: '1px solid rgba(187, 247, 208, 0.9)',
                 backgroundColor: '#FFFFFF',
-                color: '#991B1B',
-                fontWeight: 800,
+                color: '#166534',
+                fontWeight: 550,
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                transition: 'all 0.15s ease'
               }}
             >
-              <Feather size={14} color="#DC2626" />
+              <Feather size={14} color="#16A34A" />
               <span>Tree Hole Release</span>
             </button>
 
@@ -759,21 +786,22 @@ export const BalanceView: React.FC = () => {
               style={{
                 flex: 1,
                 height: '38px',
-                borderRadius: '12px',
-                border: '1px solid #FCA5A5',
+                borderRadius: '14px',
+                border: '1px solid rgba(221, 214, 254, 0.9)',
                 backgroundColor: '#FFFFFF',
-                color: '#991B1B',
-                fontWeight: 800,
+                color: '#6B21A8',
+                fontWeight: 550,
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                transition: 'all 0.15s ease'
               }}
             >
-              <Palette size={14} color="#DC2626" />
+              <Palette size={14} color="#7C3AED" />
               <span>Colour Reflection</span>
             </button>
           </div>
@@ -786,22 +814,45 @@ export const BalanceView: React.FC = () => {
 
       {/* A) KEEP SECTION (Green Branding) */}
       <div style={{
-        backgroundColor: '#F0FDF4',
-        borderRadius: '24px',
+        background: 'linear-gradient(180deg, rgba(214, 247, 232, 0.92) 0%, rgba(240, 253, 244, 0.6) 60%, #F8FAFC 100%)',
+        borderRadius: '26px',
         padding: '16px 18px',
-        border: '1.5px solid #86EFAC',
+        border: '1.5px solid rgba(134, 239, 172, 0.9)',
+        boxShadow: '0 8px 30px rgba(16, 185, 129, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#166534', margin: 0 }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#10B981',
+              boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)'
+            }} />
+            <h3 style={{
+              fontSize: '12.5px',
+              fontWeight: 650,
+              color: '#15803D',
+              margin: 0,
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
+            }}>
               KEEP ({groupedTasks['Keep'].length})
             </h3>
           </div>
-          <span style={{ fontSize: '11.5px', color: '#166534', fontWeight: 700 }}>
+          <span style={{
+            fontSize: '11px',
+            color: '#15803D',
+            fontWeight: 500,
+            backgroundColor: '#FFFFFF',
+            padding: '2px 10px',
+            borderRadius: '999px',
+            border: '1px solid rgba(187, 247, 208, 0.8)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
             Protect Priority Focus
           </span>
         </div>
@@ -815,22 +866,33 @@ export const BalanceView: React.FC = () => {
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '14px',
-                boxShadow: isSelected ? '0 2px 8px rgba(22, 101, 52, 0.06)' : 'none',
-                border: isSelected ? '1.5px solid #86EFAC' : '1px dashed #CBD5E1',
+                borderRadius: '20px',
+                padding: '14px 16px',
+                boxShadow: isSelected ? '0 4px 16px rgba(16, 185, 129, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)',
+                border: isSelected ? '1.5px solid rgba(187, 247, 208, 0.95)' : '1px dashed #CBD5E1',
                 opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '10px',
                 transition: 'all 0.2s ease'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <h4 style={{
+                      fontSize: '14.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      margin: 0,
+                      letterSpacing: '-0.2px'
+                    }}>
                       {item.title}
                     </h4>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', marginTop: '2px', display: 'inline-block' }}>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#166534',
+                      letterSpacing: '-0.1px'
+                    }}>
                       {decision.subtitle}
                     </span>
                   </div>
@@ -846,7 +908,8 @@ export const BalanceView: React.FC = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}
                     title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
                   >
@@ -854,51 +917,59 @@ export const BalanceView: React.FC = () => {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      border: isSelected ? '2px solid #10B981' : '1.8px solid #CBD5E1',
                       backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                      boxShadow: isSelected ? '0 2px 8px rgba(16, 185, 129, 0.28)' : 'none'
                     }}>
-                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </div>
                   </button>
                 </div>
 
-                <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
+                <p style={{
+                  fontSize: '12.5px',
+                  color: '#475569',
+                  margin: 0,
+                  lineHeight: '1.45',
+                  fontWeight: 400
+                }}>
                   {decision.rationale}
                 </p>
 
                 {/* Solution Summary */}
                 <div style={{
-                  backgroundColor: '#F0FDF4',
+                  backgroundColor: '#F8FAFC',
                   borderRadius: '12px',
                   padding: '8px 12px',
-                  border: '1px solid #DCFCE7',
+                  border: '1px solid #F1F5F9',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px'
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
                 }}>
-                  {isOS ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: Colors.textDark }}>
-                        Deadline: Sep 10 • 8:00 AM
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: Colors.textDark }}>
-                        Deadline: Sep 11 • 23:59
-                      </span>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={12} color="#64748B" />
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#475569' }}>
+                      {isOS ? 'Deadline: Sep 10 • 8:00 AM' : 'Deadline: Sep 11 • 23:59'}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    color: '#15803D',
+                    fontWeight: 500,
+                    backgroundColor: 'rgba(220, 252, 231, 0.7)',
+                    padding: '2px 8px',
+                    borderRadius: '6px'
+                  }}>
+                    {isOS ? '5.0h Target' : 'High Priority'}
+                  </span>
                 </div>
 
                 {/* Proposed Schedule Dropdown */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
                   <button
                     type="button"
                     onClick={() => toggleScheduleDropdown(item.id)}
@@ -908,47 +979,61 @@ export const BalanceView: React.FC = () => {
                       justifyContent: 'space-between',
                       width: '100%',
                       padding: '8px 12px',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '10px',
-                      border: '1px solid #BBF7D0',
+                      backgroundColor: openScheduleDropdowns[item.id] ? '#F8FAFC' : '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#166534' }}>
-                      <Calendar size={13} />
-                      <span>Proposed schedule</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <Calendar size={13} color="#166534" />
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: '#334155' }}>
+                        Proposed schedule
+                      </span>
                       <span style={{
                         fontSize: '10.5px',
-                        fontWeight: 800,
-                        backgroundColor: '#DCFCE7',
+                        fontWeight: 500,
+                        backgroundColor: 'rgba(220, 252, 231, 0.7)',
                         color: '#166534',
-                        padding: '1px 6px',
-                        borderRadius: '8px'
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(187, 247, 208, 0.8)'
                       }}>
                         {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', color: '#166534' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
                       {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </div>
                   </button>
 
                   {openScheduleDropdowns[item.id] && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      padding: '4px 0 2px 0'
+                    }}>
                       {plan.blocks.map((b, idx) => (
                         <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '6px 10px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '8px',
-                          border: '1px solid #DCFCE7'
+                          padding: '8px 12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '12px',
+                          border: '1px solid #F1F5F9',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#166534', fontWeight: 700 }}>
-                            <Clock size={13} />
-                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={12} color="#64748B" />
+                            <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
+                              {b.date} • {b.startTime} - {b.endTime}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
+                              ({b.durationHours}h)
+                            </span>
                           </div>
 
                           <button
@@ -963,20 +1048,22 @@ export const BalanceView: React.FC = () => {
                               action: 'Keep'
                             })}
                             style={{
-                              border: '1px solid #86EFAC',
-                              backgroundColor: '#F0FDF4',
-                              color: '#166534',
-                              padding: '3px 9px',
-                              borderRadius: '6px',
+                              border: '1px solid #CBD5E1',
+                              backgroundColor: '#FFFFFF',
+                              color: '#475569',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
                               fontSize: '11px',
-                              fontWeight: 800,
+                              fontWeight: 500,
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '3px'
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <Edit3 size={11} />
+                            <Edit3 size={11} color="#64748B" />
                             <span>Edit</span>
                           </button>
                         </div>
@@ -994,22 +1081,45 @@ export const BalanceView: React.FC = () => {
 
       {/* B) REDUCE SECTION (Blue Branding) */}
       <div style={{
-        backgroundColor: '#EFF6FF',
-        borderRadius: '24px',
+        background: 'linear-gradient(180deg, rgba(219, 234, 254, 0.92) 0%, rgba(239, 246, 255, 0.6) 60%, #F8FAFC 100%)',
+        borderRadius: '26px',
         padding: '16px 18px',
-        border: '1.5px solid #BFDBFE',
+        border: '1.5px solid rgba(147, 197, 253, 0.9)',
+        boxShadow: '0 8px 30px rgba(59, 130, 246, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#2563EB' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#1E40AF', margin: 0 }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#3B82F6',
+              boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
+            }} />
+            <h3 style={{
+              fontSize: '12.5px',
+              fontWeight: 650,
+              color: '#1D4ED8',
+              margin: 0,
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
+            }}>
               REDUCE ({groupedTasks['Reduce'].length})
             </h3>
           </div>
-          <span style={{ fontSize: '11.5px', color: '#2563EB', fontWeight: 700 }}>
+          <span style={{
+            fontSize: '11px',
+            color: '#1D4ED8',
+            fontWeight: 500,
+            backgroundColor: '#FFFFFF',
+            padding: '2px 10px',
+            borderRadius: '999px',
+            border: '1px solid rgba(191, 219, 254, 0.8)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
             Reduce Scope / Delegation
           </span>
         </div>
@@ -1022,22 +1132,33 @@ export const BalanceView: React.FC = () => {
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '14px',
-                boxShadow: isSelected ? '0 2px 8px rgba(37, 99, 235, 0.06)' : 'none',
-                border: isSelected ? '1.5px solid #93C5FD' : '1px dashed #CBD5E1',
+                borderRadius: '20px',
+                padding: '14px 16px',
+                boxShadow: isSelected ? '0 4px 16px rgba(37, 99, 235, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)',
+                border: isSelected ? '1.5px solid rgba(191, 219, 254, 0.95)' : '1px dashed #CBD5E1',
                 opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
                 transition: 'all 0.2s ease'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <h4 style={{
+                      fontSize: '14.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      margin: 0,
+                      letterSpacing: '-0.2px'
+                    }}>
                       {item.title}
                     </h4>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E40AF', marginTop: '2px', display: 'inline-block' }}>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#1D4ED8',
+                      letterSpacing: '-0.1px'
+                    }}>
                       {decision.subtitle}
                     </span>
                   </div>
@@ -1053,7 +1174,8 @@ export const BalanceView: React.FC = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}
                     title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
                   >
@@ -1061,58 +1183,64 @@ export const BalanceView: React.FC = () => {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      border: isSelected ? '2px solid #10B981' : '1.8px solid #CBD5E1',
                       backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                      boxShadow: isSelected ? '0 2px 8px rgba(16, 185, 129, 0.28)' : 'none'
                     }}>
-                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </div>
                   </button>
                 </div>
 
-                <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
+                <p style={{
+                  fontSize: '12.5px',
+                  color: '#475569',
+                  margin: 0,
+                  lineHeight: '1.45',
+                  fontWeight: 400
+                }}>
                   {decision.rationale}
                 </p>
 
                 {/* Suggested Delegation Breakdown */}
                 <div style={{
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: '#F8FAFC',
                   borderRadius: '12px',
                   padding: '10px 12px',
-                  border: '1px solid #BFDBFE',
+                  border: '1px solid #F1F5F9',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '6px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Users size={13} color="#2563EB" />
-                    <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#1E40AF' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#1E40AF' }}>
                       Work to hand back
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11.5px', color: '#334155' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11.5px', color: '#475569' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>• Responsive styling</span>
-                      <span style={{ fontWeight: 700, color: '#1E40AF' }}>~2h</span>
+                      <span style={{ fontWeight: 400 }}>• Responsive styling</span>
+                      <span style={{ fontWeight: 550, color: '#2563EB' }}>~2h</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>• Testing & bug fixes</span>
-                      <span style={{ fontWeight: 700, color: '#1E40AF' }}>~2h</span>
+                      <span style={{ fontWeight: 400 }}>• Testing & bug fixes</span>
+                      <span style={{ fontWeight: 550, color: '#2563EB' }}>~2h</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>• Shared documentation / final checking</span>
-                      <span style={{ fontWeight: 700, color: '#1E40AF' }}>~1h</span>
+                      <span style={{ fontWeight: 400 }}>• Shared documentation / final checking</span>
+                      <span style={{ fontWeight: 550, color: '#2563EB' }}>~1h</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Proposed Schedule Dropdown */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
                   <button
                     type="button"
                     onClick={() => toggleScheduleDropdown(item.id)}
@@ -1122,47 +1250,61 @@ export const BalanceView: React.FC = () => {
                       justifyContent: 'space-between',
                       width: '100%',
                       padding: '8px 12px',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '10px',
-                      border: '1px solid #BFDBFE',
+                      backgroundColor: openScheduleDropdowns[item.id] ? '#F8FAFC' : '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#1E40AF' }}>
-                      <Calendar size={13} />
-                      <span>Proposed schedule</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <Calendar size={13} color="#2563EB" />
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: '#334155' }}>
+                        Proposed schedule
+                      </span>
                       <span style={{
                         fontSize: '10.5px',
-                        fontWeight: 800,
-                        backgroundColor: '#DBEAFE',
-                        color: '#1E40AF',
-                        padding: '1px 6px',
-                        borderRadius: '8px'
+                        fontWeight: 500,
+                        backgroundColor: 'rgba(219, 234, 254, 0.7)',
+                        color: '#1D4ED8',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(191, 219, 254, 0.8)'
                       }}>
                         {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', color: '#1E40AF' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
                       {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </div>
                   </button>
 
                   {openScheduleDropdowns[item.id] && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      padding: '4px 0 2px 0'
+                    }}>
                       {plan.blocks.map((b, idx) => (
                         <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '6px 10px',
-                          backgroundColor: '#EFF6FF',
-                          borderRadius: '8px',
-                          border: '1px solid #BFDBFE'
+                          padding: '8px 12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '12px',
+                          border: '1px solid #F1F5F9',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#1E40AF', fontWeight: 700 }}>
-                            <Clock size={13} />
-                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={12} color="#64748B" />
+                            <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
+                              {b.date} • {b.startTime} - {b.endTime}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
+                              ({b.durationHours}h)
+                            </span>
                           </div>
 
                           <button
@@ -1177,20 +1319,22 @@ export const BalanceView: React.FC = () => {
                               action: 'Reduce'
                             })}
                             style={{
-                              border: '1px solid #BFDBFE',
+                              border: '1px solid #CBD5E1',
                               backgroundColor: '#FFFFFF',
-                              color: '#1E40AF',
-                              padding: '3px 9px',
-                              borderRadius: '6px',
+                              color: '#475569',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
                               fontSize: '11px',
-                              fontWeight: 800,
+                              fontWeight: 500,
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '3px'
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <Edit3 size={11} />
+                            <Edit3 size={11} color="#64748B" />
                             <span>Edit</span>
                           </button>
                         </div>
@@ -1204,12 +1348,13 @@ export const BalanceView: React.FC = () => {
         ) : (
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '14px',
+            borderRadius: '16px',
             padding: '12px 14px',
             border: '1px dashed #BFDBFE',
             color: '#64748B',
             fontSize: '12px',
-            lineHeight: '1.4'
+            lineHeight: '1.45',
+            fontWeight: 400
           }}>
             No workload has a clearly reducible scope based on what Restore currently knows.
           </div>
@@ -1218,22 +1363,45 @@ export const BalanceView: React.FC = () => {
 
       {/* C) RECONSIDER SECTION (Purple Branding) */}
       <div style={{
-        backgroundColor: '#FAF5FF',
-        borderRadius: '24px',
+        background: 'linear-gradient(180deg, rgba(237, 228, 255, 0.92) 0%, rgba(245, 238, 255, 0.6) 60%, #F8FAFC 100%)',
+        borderRadius: '26px',
         padding: '16px 18px',
-        border: '1.5px solid #DDD6FE',
+        border: '1.5px solid rgba(196, 181, 253, 0.9)',
+        boxShadow: '0 8px 30px rgba(139, 92, 246, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#7C3AED' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#6B21A8', margin: 0 }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#8B5CF6',
+              boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
+            }} />
+            <h3 style={{
+              fontSize: '12.5px',
+              fontWeight: 650,
+              color: '#6D28D9',
+              margin: 0,
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
+            }}>
               RECONSIDER ({groupedTasks['Reconsider'].length})
             </h3>
           </div>
-          <span style={{ fontSize: '11.5px', color: '#7C3AED', fontWeight: 700 }}>
+          <span style={{
+            fontSize: '11px',
+            color: '#6D28D9',
+            fontWeight: 500,
+            backgroundColor: '#FFFFFF',
+            padding: '2px 10px',
+            borderRadius: '999px',
+            border: '1px solid rgba(221, 214, 254, 0.8)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
             Ownership & Delegation
           </span>
         </div>
@@ -1246,22 +1414,33 @@ export const BalanceView: React.FC = () => {
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '14px',
-                boxShadow: isSelected ? '0 2px 8px rgba(124, 58, 237, 0.06)' : 'none',
-                border: isSelected ? '1.5px solid #C4B5FD' : '1px dashed #CBD5E1',
+                borderRadius: '20px',
+                padding: '14px 16px',
+                boxShadow: isSelected ? '0 4px 16px rgba(124, 58, 237, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)',
+                border: isSelected ? '1.5px solid rgba(221, 214, 254, 0.95)' : '1px dashed #CBD5E1',
                 opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
                 transition: 'all 0.2s ease'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <h4 style={{
+                      fontSize: '14.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      margin: 0,
+                      letterSpacing: '-0.2px'
+                    }}>
                       {item.title}
                     </h4>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#6B21A8', marginTop: '2px', display: 'inline-block' }}>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#6D28D9',
+                      letterSpacing: '-0.1px'
+                    }}>
                       {decision.subtitle}
                     </span>
                   </div>
@@ -1277,7 +1456,8 @@ export const BalanceView: React.FC = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}
                     title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
                   >
@@ -1285,41 +1465,50 @@ export const BalanceView: React.FC = () => {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      border: isSelected ? '2px solid #10B981' : '1.8px solid #CBD5E1',
                       backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                      boxShadow: isSelected ? '0 2px 8px rgba(16, 185, 129, 0.28)' : 'none'
                     }}>
-                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </div>
                   </button>
                 </div>
 
-                <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
+                <p style={{
+                  fontSize: '12.5px',
+                  color: '#475569',
+                  margin: 0,
+                  lineHeight: '1.45',
+                  fontWeight: 400
+                }}>
                   {decision.rationale}
                 </p>
 
                 {/* Subtask Ownership Analysis */}
                 <div style={{
-                  backgroundColor: '#FAF5FF',
+                  backgroundColor: '#F8FAFC',
                   borderRadius: '12px',
-                  padding: '12px 12px',
-                  border: '1px solid #E9D5FF',
+                  padding: '10px 12px',
+                  border: '1px solid #F1F5F9',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px'
+                  gap: '5px'
                 }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#334155', marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <div><strong style={{ color: '#166534' }}>Keep:</strong> Prepare sponsorship materials (2h planned)</div>
-                      <div><strong style={{ color: '#7C3AED' }}>Share / hand off:</strong> Part of sponsorship follow-up (proposed to share)</div>
+                  <div style={{ fontSize: '11.5px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                      <span><span style={{ fontWeight: 600, color: '#15803D' }}>Keep:</span> Prepare sponsorship materials (2h planned)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#8B5CF6' }} />
+                      <span><span style={{ fontWeight: 600, color: '#6D28D9' }}>Share / hand off:</span> Part of sponsorship follow-up (proposed to share)</span>
                     </div>
                   </div>
                 </div>
-
 
                 {/* Proposed Schedule Dropdown */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
@@ -1332,47 +1521,61 @@ export const BalanceView: React.FC = () => {
                       justifyContent: 'space-between',
                       width: '100%',
                       padding: '8px 12px',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '10px',
-                      border: '1px solid #DDD6FE',
+                      backgroundColor: openScheduleDropdowns[item.id] ? '#F8FAFC' : '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#6B21A8' }}>
-                      <Calendar size={13} />
-                      <span>Proposed schedule</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <Calendar size={13} color="#7C3AED" />
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: '#334155' }}>
+                        Proposed schedule
+                      </span>
                       <span style={{
                         fontSize: '10.5px',
-                        fontWeight: 800,
-                        backgroundColor: '#EDE9FE',
-                        color: '#6B21A8',
-                        padding: '1px 6px',
-                        borderRadius: '8px'
+                        fontWeight: 500,
+                        backgroundColor: 'rgba(237, 233, 254, 0.7)',
+                        color: '#6D28D9',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(221, 214, 254, 0.8)'
                       }}>
                         {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', color: '#6B21A8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
                       {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </div>
                   </button>
 
                   {openScheduleDropdowns[item.id] && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      padding: '4px 0 2px 0'
+                    }}>
                       {plan.blocks.map((b, idx) => (
                         <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '6px 10px',
-                          backgroundColor: '#FAF5FF',
-                          borderRadius: '8px',
-                          border: '1px solid #DDD6FE'
+                          padding: '8px 12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '12px',
+                          border: '1px solid #F1F5F9',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#6B21A8', fontWeight: 700 }}>
-                            <Clock size={13} />
-                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={12} color="#64748B" />
+                            <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
+                              {b.date} • {b.startTime} - {b.endTime}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
+                              ({b.durationHours}h)
+                            </span>
                           </div>
 
                           <button
@@ -1387,20 +1590,22 @@ export const BalanceView: React.FC = () => {
                               action: 'Reconsider'
                             })}
                             style={{
-                              border: '1px solid #DDD6FE',
+                              border: '1px solid #CBD5E1',
                               backgroundColor: '#FFFFFF',
-                              color: '#6B21A8',
-                              padding: '3px 9px',
-                              borderRadius: '6px',
+                              color: '#475569',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
                               fontSize: '11px',
-                              fontWeight: 800,
+                              fontWeight: 500,
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '3px'
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <Edit3 size={11} />
+                            <Edit3 size={11} color="#64748B" />
                             <span>Edit</span>
                           </button>
                         </div>
@@ -1414,36 +1619,60 @@ export const BalanceView: React.FC = () => {
         ) : (
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '14px',
+            borderRadius: '16px',
             padding: '12px 14px',
             border: '1px dashed #DDD6FE',
             color: '#64748B',
             fontSize: '12px',
-            lineHeight: '1.4'
+            lineHeight: '1.45',
+            fontWeight: 400
           }}>
             No responsibility currently needs an ownership decision based on the information recorded so far.
           </div>
         )}
       </div>
 
-      {/* D) MOVE / DELAY SECTION (Yellow Branding) */}
+      {/* D) MOVE / DELAY SECTION (Amber Branding) */}
       <div style={{
-        backgroundColor: '#FFFBEB',
-        borderRadius: '24px',
+        background: 'linear-gradient(180deg, rgba(254, 235, 180, 0.92) 0%, rgba(254, 243, 199, 0.6) 60%, #F8FAFC 100%)',
+        borderRadius: '26px',
         padding: '16px 18px',
-        border: '1.5px solid #FDE68A',
+        border: '1.5px solid rgba(252, 211, 77, 0.9)',
+        boxShadow: '0 8px 30px rgba(245, 158, 11, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#D97706' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#92400E', margin: 0 }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#F59E0B',
+              boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.2)'
+            }} />
+            <h3 style={{
+              fontSize: '12.5px',
+              fontWeight: 650,
+              color: '#B45309',
+              margin: 0,
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
+            }}>
               MOVE / DELAY ({groupedTasks['Move / Delay'].length})
             </h3>
           </div>
-          <span style={{ fontSize: '11.5px', color: '#D97706', fontWeight: 700 }}>
+          <span style={{
+            fontSize: '11px',
+            color: '#B45309',
+            fontWeight: 500,
+            backgroundColor: '#FFFFFF',
+            padding: '2px 10px',
+            borderRadius: '999px',
+            border: '1px solid rgba(253, 230, 138, 0.8)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
             Shift Timing / Preserve Buffer
           </span>
         </div>
@@ -1452,28 +1681,38 @@ export const BalanceView: React.FC = () => {
           groupedTasks['Move / Delay'].map(({ item, decision }) => {
             const plan = getEffortPlan(item, isStressDumpConfirmed);
             const isFCG = item.id === 'fcg-test-1';
-            const isPhilosophy = item.id === 'philosophy-reflection';
             const isSelected = selectedPlanIds.includes(item.id);
 
             return (
               <div key={item.id} style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '14px',
-                boxShadow: isSelected ? '0 2px 8px rgba(217, 119, 6, 0.06)' : 'none',
-                border: isSelected ? '1.5px solid #FCD34D' : '1px dashed #CBD5E1',
+                borderRadius: '20px',
+                padding: '14px 16px',
+                boxShadow: isSelected ? '0 4px 16px rgba(217, 119, 6, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)',
+                border: isSelected ? '1.5px solid rgba(253, 230, 138, 0.95)' : '1px dashed #CBD5E1',
                 opacity: isSelected ? 1 : 0.65,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '10px',
                 transition: 'all 0.2s ease'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <h4 style={{
+                      fontSize: '14.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      margin: 0,
+                      letterSpacing: '-0.2px'
+                    }}>
                       {item.title}
                     </h4>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400E', marginTop: '2px', display: 'inline-block' }}>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#B45309',
+                      letterSpacing: '-0.1px'
+                    }}>
                       {decision.subtitle}
                     </span>
                   </div>
@@ -1489,7 +1728,8 @@ export const BalanceView: React.FC = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}
                     title={isSelected ? 'Selected to apply in balance plan' : 'Click to select and apply'}
                   >
@@ -1497,39 +1737,45 @@ export const BalanceView: React.FC = () => {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      border: isSelected ? '2px solid #10B981' : '2px solid #CBD5E1',
+                      border: isSelected ? '2px solid #10B981' : '1.8px solid #CBD5E1',
                       backgroundColor: isSelected ? '#10B981' : '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.25)' : 'none'
+                      boxShadow: isSelected ? '0 2px 8px rgba(16, 185, 129, 0.28)' : 'none'
                     }}>
-                      {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </div>
                   </button>
                 </div>
 
-                <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
+                <p style={{
+                  fontSize: '12.5px',
+                  color: '#475569',
+                  margin: 0,
+                  lineHeight: '1.45',
+                  fontWeight: 400
+                }}>
                   {decision.rationale}
                 </p>
 
                 {/* Timing Shift Summary */}
                 <div style={{
-                  backgroundColor: '#FFFBEB',
+                  backgroundColor: '#F8FAFC',
                   borderRadius: '12px',
                   padding: '8px 12px',
-                  border: '1px solid #FEF3C7',
+                  border: '1px solid #F1F5F9',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center'
                 }}>
-                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#92400E' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#B45309' }}>
                     {isFCG
                       ? (isStressDumpConfirmed ? 'Shifted after immediate Sep 9–11 cluster' : 'Shifted after immediate deadlines')
                       : 'Prioritized after Sep 14 FCG Test'}
                   </span>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: Colors.textDark }}>
+                  <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>
                     Deadline: {item.deadline ? item.deadline.slice(5, 10).replace('-', '/') : 'Upcoming'}
                   </span>
                 </div>
@@ -1545,47 +1791,61 @@ export const BalanceView: React.FC = () => {
                       justifyContent: 'space-between',
                       width: '100%',
                       padding: '8px 12px',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '10px',
-                      border: '1px solid #FDE68A',
+                      backgroundColor: openScheduleDropdowns[item.id] ? '#F8FAFC' : '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#92400E' }}>
-                      <Calendar size={13} />
-                      <span>Proposed schedule</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <Calendar size={13} color="#D97706" />
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: '#334155' }}>
+                        Proposed schedule
+                      </span>
                       <span style={{
                         fontSize: '10.5px',
-                        fontWeight: 800,
-                        backgroundColor: '#FEF3C7',
-                        color: '#92400E',
-                        padding: '1px 6px',
-                        borderRadius: '8px'
+                        fontWeight: 500,
+                        backgroundColor: 'rgba(254, 243, 199, 0.7)',
+                        color: '#B45309',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(253, 230, 138, 0.8)'
                       }}>
                         {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', color: '#92400E' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
                       {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                     </div>
                   </button>
 
                   {openScheduleDropdowns[item.id] && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      padding: '4px 0 2px 0'
+                    }}>
                       {plan.blocks.map((b, idx) => (
                         <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '6px 10px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '8px',
-                          border: '1px solid #FEF3C7'
+                          padding: '8px 12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '12px',
+                          border: '1px solid #F1F5F9',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#92400E', fontWeight: 700 }}>
-                            <Clock size={13} />
-                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={12} color="#64748B" />
+                            <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
+                              {b.date} • {b.startTime} - {b.endTime}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
+                              ({b.durationHours}h)
+                            </span>
                           </div>
 
                           <button
@@ -1600,20 +1860,22 @@ export const BalanceView: React.FC = () => {
                               action: 'Move / Delay'
                             })}
                             style={{
-                              border: '1px solid #FDE68A',
-                              backgroundColor: '#FFFBEB',
-                              color: '#92400E',
-                              padding: '3px 9px',
-                              borderRadius: '6px',
+                              border: '1px solid #CBD5E1',
+                              backgroundColor: '#FFFFFF',
+                              color: '#475569',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
                               fontSize: '11px',
-                              fontWeight: 800,
+                              fontWeight: 500,
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '3px'
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <Edit3 size={11} />
+                            <Edit3 size={11} color="#64748B" />
                             <span>Edit</span>
                           </button>
                         </div>
@@ -1629,8 +1891,8 @@ export const BalanceView: React.FC = () => {
         )}
       </div>
 
-      {/* 3. APPLY BALANCE PLAN CTA */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* 3. REFINED APPLY BALANCE PLAN CTA */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
         <button
           type="button"
           onClick={handleApplyPlan}
@@ -1639,22 +1901,26 @@ export const BalanceView: React.FC = () => {
             width: '100%',
             height: '52px',
             borderRadius: '20px',
-            border: selectedPlanIds.length > 0 ? '1.5px solid #FDBA74' : '1.5px solid #E2E8F0',
-            background: selectedPlanIds.length > 0 ? 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)' : '#F1F5F9',
-            color: selectedPlanIds.length > 0 ? '#9A3412' : '#94A3B8',
-            fontWeight: 800,
-            fontSize: '15px',
+            border: selectedPlanIds.length > 0 ? 'none' : '1px solid #E2E8F0',
+            background: selectedPlanIds.length > 0
+              ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+              : '#F1F5F9',
+            color: selectedPlanIds.length > 0 ? '#FFFFFF' : '#94A3B8',
+            fontWeight: 600,
+            fontSize: '14.5px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
             cursor: selectedPlanIds.length > 0 ? 'pointer' : 'not-allowed',
-            boxShadow: selectedPlanIds.length > 0 ? '0 6px 20px rgba(234, 88, 12, 0.18)' : 'none',
-            transition: 'all 0.15s ease',
+            boxShadow: selectedPlanIds.length > 0
+              ? '0 6px 20px rgba(5, 150, 105, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.25)'
+              : 'none',
+            transition: 'all 0.2s ease',
             letterSpacing: '-0.2px'
           }}
         >
-          <CheckCircle2 size={18} />
+          <CheckCircle2 size={18} strokeWidth={2.2} />
           <span>
             {selectedPlanIds.length > 0
               ? `Apply Balance Plan (${selectedPlanIds.length} task${selectedPlanIds.length > 1 ? 's' : ''} selected)`
@@ -1672,6 +1938,7 @@ export const BalanceView: React.FC = () => {
           top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(15, 23, 42, 0.45)',
           backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           zIndex: 400,
           display: 'flex',
           alignItems: 'center',
@@ -1681,79 +1948,143 @@ export const BalanceView: React.FC = () => {
           <div style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '24px',
-            padding: '20px',
+            padding: '22px',
             width: '100%',
             maxWidth: '380px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px'
+            gap: '14px',
+            border: '1px solid rgba(255, 255, 255, 0.8)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
+              <h3 className="serif-title" style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: Colors.textDark,
+                margin: 0
+              }}>
                 Edit Schedule Timeblock
               </h3>
               <button
                 type="button"
                 onClick={() => setEditingTask(null)}
-                style={{ border: 'none', background: '#F1F5F9', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}
+                style={{
+                  border: 'none',
+                  background: '#F1F5F9',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B'
+                }}
               >
                 <X size={15} />
               </button>
             </div>
 
-            <div style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark }}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#475569',
+              backgroundColor: '#F8FAFC',
+              padding: '8px 12px',
+              borderRadius: '12px',
+              border: '1px solid #E2E8F0'
+            }}>
               {editingTask.title}
             </div>
 
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 800, color: Colors.textMuted }}>SCHEDULE DAY</label>
+              <label style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#64748B',
+                letterSpacing: '0.4px',
+                textTransform: 'uppercase'
+              }}>
+                SCHEDULE DAY
+              </label>
               <input
                 type="date"
                 value={editingTask.date}
                 onChange={(e) => setEditingTask({ ...editingTask, date: e.target.value })}
                 style={{
                   width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: '10px',
+                  padding: '9px 12px',
+                  borderRadius: '12px',
                   border: '1px solid #CBD5E1',
                   fontSize: '13px',
-                  marginTop: '3px'
+                  fontWeight: 500,
+                  color: '#1E293B',
+                  marginTop: '4px',
+                  outline: 'none',
+                  backgroundColor: '#FFFFFF',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: Colors.textMuted }}>START TIME</label>
+                <label style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#64748B',
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase'
+                }}>
+                  START TIME
+                </label>
                 <input
                   type="time"
                   value={editingTask.startTime}
                   onChange={(e) => setEditingTask({ ...editingTask, startTime: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
+                    padding: '9px 12px',
+                    borderRadius: '12px',
                     border: '1px solid #CBD5E1',
                     fontSize: '13px',
-                    marginTop: '3px'
+                    fontWeight: 500,
+                    color: '#1E293B',
+                    marginTop: '4px',
+                    outline: 'none',
+                    backgroundColor: '#FFFFFF',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: Colors.textMuted }}>END TIME</label>
+                <label style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#64748B',
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase'
+                }}>
+                  END TIME
+                </label>
                 <input
                   type="time"
                   value={editingTask.endTime}
                   onChange={(e) => setEditingTask({ ...editingTask, endTime: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
+                    padding: '9px 12px',
+                    borderRadius: '12px',
                     border: '1px solid #CBD5E1',
                     fontSize: '13px',
-                    marginTop: '3px'
+                    fontWeight: 500,
+                    color: '#1E293B',
+                    marginTop: '4px',
+                    outline: 'none',
+                    backgroundColor: '#FFFFFF',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1764,13 +2095,15 @@ export const BalanceView: React.FC = () => {
                 type="button"
                 onClick={() => setEditingTask(null)}
                 style={{
-                  padding: '10px',
-                  borderRadius: '12px',
+                  padding: '11px',
+                  borderRadius: '14px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#FFFFFF',
-                  fontWeight: 700,
+                  fontWeight: 500,
                   fontSize: '13px',
-                  cursor: 'pointer'
+                  color: '#475569',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                 }}
               >
                 Cancel
@@ -1780,14 +2113,15 @@ export const BalanceView: React.FC = () => {
                 type="button"
                 onClick={handleSaveScheduleEdit}
                 style={{
-                  padding: '10px',
-                  borderRadius: '12px',
+                  padding: '11px',
+                  borderRadius: '14px',
                   border: 'none',
-                  backgroundColor: '#10B981',
+                  backgroundColor: '#059669',
                   color: '#FFFFFF',
-                  fontWeight: 800,
+                  fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
                 }}
               >
                 Save Schedule
