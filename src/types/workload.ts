@@ -84,6 +84,14 @@ export interface WorkloadItem {
   scheduledDate?: string;
   scheduledStartTime?: string;
   scheduledEndTime?: string;
+  scheduledBlocks?: Array<{
+    id?: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    durationHours?: number;
+    label?: string;
+  }>;
 
   // Balance decision fields
   balanceDecision?: 'Keep' | 'Reduce' | 'Reconsider' | 'Move / Delay';

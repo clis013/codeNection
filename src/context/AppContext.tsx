@@ -129,6 +129,8 @@ interface AppContextType {
   setProtectedTimes: React.Dispatch<React.SetStateAction<ProtectedTime[]>>;
   focusBlocks: FocusBlock[];
   setFocusBlocks: React.Dispatch<React.SetStateAction<FocusBlock[]>>;
+  customSchedules: Record<string, { date: string; startTime: string; endTime: string }>;
+  setCustomSchedules: React.Dispatch<React.SetStateAction<Record<string, { date: string; startTime: string; endTime: string }>>>;
 
   // Capacity & Insight Metrics
   capacityProfile: CapacityProfile;
@@ -1248,6 +1250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [busyEvents, setBusyEvents] = useState<FixedBusyEvent[]>(NICOLE_FIXED_BUSY_EVENTS);
   const [protectedTimes, setProtectedTimes] = useState<ProtectedTime[]>(NICOLE_PROTECTED_TIME);
   const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([]);
+  const [customSchedules, setCustomSchedules] = useState<Record<string, { date: string; startTime: string; endTime: string }>>({});
 
   const candidates = calculateCandidateWindows(horizonStart, horizonEnd, busyEvents, protectedTimes, focusBlocks, 30);
   const timeResourceFacts = deriveTimeResourceFacts(candidates, horizonStart, horizonEnd, 'mock');
@@ -1364,6 +1367,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProtectedTimes,
       focusBlocks,
       setFocusBlocks,
+      customSchedules,
+      setCustomSchedules,
       capacityProfile,
       derivedWorkloadFacts,
       analysisResult

@@ -32,6 +32,15 @@ export interface WorkloadEffortPlan {
   blocks: ProposedBlockPlan[];
 }
 
+export const calculateDurationHours = (start: string, end: string): number => {
+  if (!start || !end) return 1;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  if (isNaN(sh) || isNaN(eh)) return 1;
+  const diff = (eh * 60 + (isNaN(em) ? 0 : em)) - (sh * 60 + (isNaN(sm) ? 0 : sm));
+  return Math.max(0.5, Math.round((diff / 60) * 10) / 10);
+};
+
 interface SnapshotData {
   workloads: Array<{
     id: string;
@@ -39,6 +48,7 @@ interface SnapshotData {
     scheduledDate?: string;
     scheduledStartTime?: string;
     scheduledEndTime?: string;
+    scheduledBlocks?: WorkloadItem['scheduledBlocks'];
     balanceDecision?: 'Keep' | 'Reduce' | 'Reconsider' | 'Move / Delay';
     balanceRationale?: string;
   }>;
@@ -63,6 +73,8 @@ export const BalanceView: React.FC = () => {
     setProtectedTimes,
     focusBlocks,
     setFocusBlocks,
+    customSchedules,
+    setCustomSchedules,
     chatMessages
   } = useApp();
 
@@ -94,8 +106,6 @@ export const BalanceView: React.FC = () => {
     );
   };
 
-  // Custom schedule overrides saved via the edit modal
-  const [customSchedules, setCustomSchedules] = useState<Record<string, { date: string; startTime: string; endTime: string }>>({});
 
   // Track open state for proposed schedule dropdowns by task ID
   const [openScheduleDropdowns, setOpenScheduleDropdowns] = useState<Record<string, boolean>>({});
@@ -198,20 +208,26 @@ export const BalanceView: React.FC = () => {
    * - Philosophy: 2.0h scheduled Sep 15 14:00–16:00
    */
   const getEffortPlan = (item: WorkloadItem, isPostStressDump: boolean): WorkloadEffortPlan => {
-    const override1 = customSchedules[`${item.id}-1`] || customSchedules[item.id];
-    const override2 = customSchedules[`${item.id}-2`];
+    const override1 = customSchedules[`${item.id}-1`] || customSchedules[item.id] ||
+      (item.scheduledBlocks?.[0] ? { date: item.scheduledBlocks[0].date, startTime: item.scheduledBlocks[0].startTime, endTime: item.scheduledBlocks[0].endTime } :
+        (item.scheduledDate && item.scheduledStartTime ? { date: item.scheduledDate, startTime: item.scheduledStartTime, endTime: item.scheduledEndTime || '12:00' } : undefined));
+
+    const override2 = customSchedules[`${item.id}-2`] ||
+      (item.scheduledBlocks?.[1] ? { date: item.scheduledBlocks[1].date, startTime: item.scheduledBlocks[1].startTime, endTime: item.scheduledBlocks[1].endTime } : undefined);
 
     if (item.id === 'os-quiz-1') {
       const remaining = 5;
       const b1 = override1 || { date: '2026-09-09', startTime: '08:00', endTime: '10:30' };
       const b2 = override2 || { date: '2026-09-09', startTime: '21:00', endTime: '23:30' };
+      const dur1 = calculateDurationHours(b1.startTime, b1.endTime);
+      const dur2 = calculateDurationHours(b2.startTime, b2.endTime);
       const blocks: ProposedBlockPlan[] = [
         {
           id: `${item.id}-1`,
           date: b1.date,
           startTime: b1.startTime,
           endTime: b1.endTime,
-          durationHours: 2.5,
+          durationHours: dur1,
           label: 'Part 1: Core concepts & process scheduling'
         },
         {
@@ -219,11 +235,11 @@ export const BalanceView: React.FC = () => {
           date: b2.date,
           startTime: b2.startTime,
           endTime: b2.endTime,
-          durationHours: 2.5,
+          durationHours: dur2,
           label: 'Part 2: Memory management & practice quiz'
         }
       ];
-      const planned = 5.0;
+      const planned = dur1 + dur2;
       return {
         remainingTimeHours: remaining,
         plannedHours: planned,
@@ -236,37 +252,39 @@ export const BalanceView: React.FC = () => {
       if (!isPostStressDump) {
         const remaining = 12;
         const b = override1 || { date: '2026-09-09', startTime: '17:00', endTime: '19:00' };
+        const dur = calculateDurationHours(b.startTime, b.endTime);
         const blocks: ProposedBlockPlan[] = [{
           id: `${item.id}-1`,
           date: b.date,
           startTime: b.startTime,
           endTime: b.endTime,
-          durationHours: 2.0,
+          durationHours: dur,
           label: 'Early start: Frontend component setup'
         }];
-        const planned = 2.0;
+        const planned = dur;
         return {
           remainingTimeHours: remaining,
           plannedHours: planned,
-          unscheduledHours: remaining - planned, // 10.0h unscheduled
+          unscheduledHours: Math.max(0, remaining - planned),
           blocks
         };
       } else {
         const remaining = selectedPlanIds.includes(item.id) ? 13 : 18;
         const b = override1 || { date: '2026-09-10', startTime: '14:00', endTime: '17:00' };
+        const dur = calculateDurationHours(b.startTime, b.endTime);
         const blocks: ProposedBlockPlan[] = [{
           id: `${item.id}-1`,
           date: b.date,
           startTime: b.startTime,
           endTime: b.endTime,
-          durationHours: 3.0,
+          durationHours: dur,
           label: 'Near-term plan: Core implementation & review'
         }];
-        const planned = 3.0;
+        const planned = dur;
         return {
           remainingTimeHours: remaining,
           plannedHours: planned,
-          unscheduledHours: remaining - planned, // 10.0h or 15.0h unscheduled
+          unscheduledHours: Math.max(0, remaining - planned),
           blocks
         };
       }
@@ -275,19 +293,20 @@ export const BalanceView: React.FC = () => {
     if (item.id === 'tech-carnival-sponsorship') {
       const remaining = 6;
       const b = override1 || { date: '2026-09-09', startTime: '17:00', endTime: '19:00' };
+      const dur = calculateDurationHours(b.startTime, b.endTime);
       const blocks: ProposedBlockPlan[] = [{
         id: `${item.id}-1`,
         date: b.date,
         startTime: b.startTime,
         endTime: b.endTime,
-        durationHours: 2.0,
+        durationHours: dur,
         label: 'Retained ownership: Prepare sponsorship materials'
       }];
-      const planned = 2.0;
+      const planned = dur;
       return {
         remainingTimeHours: remaining,
         plannedHours: planned,
-        unscheduledHours: 4.0, // 4h follow-up to share with committee
+        unscheduledHours: Math.max(0, remaining - planned),
         blocks
       };
     }
@@ -295,19 +314,20 @@ export const BalanceView: React.FC = () => {
     if (item.id === 'fcg-test-1') {
       const remaining = 8;
       const b = override1 || { date: '2026-09-12', startTime: '14:30', endTime: '17:30' };
+      const dur = calculateDurationHours(b.startTime, b.endTime);
       const blocks: ProposedBlockPlan[] = [{
         id: `${item.id}-1`,
         date: b.date,
         startTime: b.startTime,
         endTime: b.endTime,
-        durationHours: 3.0,
+        durationHours: dur,
         label: 'Post-cluster prep: Transformations & 3D pipeline'
       }];
-      const planned = 3.0;
+      const planned = dur;
       return {
         remainingTimeHours: remaining,
         plannedHours: planned,
-        unscheduledHours: remaining - planned, // 5.0h unscheduled
+        unscheduledHours: Math.max(0, remaining - planned),
         blocks
       };
     }
@@ -315,19 +335,20 @@ export const BalanceView: React.FC = () => {
     if (item.id === 'philosophy-reflection') {
       const remaining = 2;
       const b = override1 || { date: '2026-09-15', startTime: '14:00', endTime: '16:00' };
+      const dur = calculateDurationHours(b.startTime, b.endTime);
       const blocks: ProposedBlockPlan[] = [{
         id: `${item.id}-1`,
         date: b.date,
         startTime: b.startTime,
         endTime: b.endTime,
-        durationHours: 2.0,
+        durationHours: dur,
         label: 'Post-FCG reflection drafting & submission'
       }];
-      const planned = 2.0;
+      const planned = dur;
       return {
         remainingTimeHours: remaining,
         plannedHours: planned,
-        unscheduledHours: 0.0,
+        unscheduledHours: Math.max(0, remaining - planned),
         blocks
       };
     }
@@ -367,11 +388,23 @@ export const BalanceView: React.FC = () => {
     }));
     const target = workloads.find(w => w.id === editingTask.id);
     if (target) {
+      const dur = calculateDurationHours(editingTask.startTime, editingTask.endTime);
+      const isPrimary = !editingTask.blockKey || editingTask.blockKey === `${editingTask.id}-1` || editingTask.blockKey === editingTask.id;
+      const updatedBlocks = (target.scheduledBlocks || []).map(b => {
+        if (b.id === key) {
+          return { ...b, date: editingTask.date, startTime: editingTask.startTime, endTime: editingTask.endTime, durationHours: dur };
+        }
+        return b;
+      });
+
       updateWorkload({
         ...target,
-        scheduledDate: editingTask.date,
-        scheduledStartTime: editingTask.startTime,
-        scheduledEndTime: editingTask.endTime
+        ...(isPrimary ? {
+          scheduledDate: editingTask.date,
+          scheduledStartTime: editingTask.startTime,
+          scheduledEndTime: editingTask.endTime
+        } : {}),
+        scheduledBlocks: updatedBlocks.length > 0 ? updatedBlocks : target.scheduledBlocks
       });
     }
     // Keep the schedule dropdown open for this task so the user sees the updated time
@@ -393,6 +426,7 @@ export const BalanceView: React.FC = () => {
         scheduledDate: w.scheduledDate,
         scheduledStartTime: w.scheduledStartTime,
         scheduledEndTime: w.scheduledEndTime,
+        scheduledBlocks: w.scheduledBlocks,
         balanceDecision: w.balanceDecision,
         balanceRationale: w.balanceRationale
       })),
@@ -427,17 +461,27 @@ export const BalanceView: React.FC = () => {
         });
       });
 
+      const primaryBlock = plan.blocks[0];
+      const scheduledBlocks = plan.blocks.map(b => ({
+        id: b.id,
+        date: b.date,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        durationHours: b.durationHours,
+        label: b.label
+      }));
+
       // Update WorkloadItem fields
       // SCHEDULING NEVER REDUCES remainingTimeHours!
       // Only accepted scope reduction alters remainingTimeHours.
       if (decision.action === 'Reduce' && item.id === 'web-programming-group') {
-        const primaryBlock = plan.blocks[0];
         updateWorkload({
           ...item,
           remainingTimeHours: 13,
           scheduledDate: primaryBlock?.date,
           scheduledStartTime: primaryBlock?.startTime,
           scheduledEndTime: primaryBlock?.endTime,
+          scheduledBlocks,
           balanceDecision: 'Reduce',
           balanceRationale: 'Delegated 5h of responsive styling, testing, and documentation to group members. Early core implementation planned.'
         });
@@ -445,13 +489,13 @@ export const BalanceView: React.FC = () => {
       }
 
       if (decision.action === 'Reconsider' && item.id === 'tech-carnival-sponsorship') {
-        const primaryBlock = plan.blocks[0];
         updateWorkload({
           ...item,
           // remainingTimeHours strictly stays 6h (no arbitrary numerical reduction)
           scheduledDate: primaryBlock?.date,
           scheduledStartTime: primaryBlock?.startTime,
           scheduledEndTime: primaryBlock?.endTime,
+          scheduledBlocks,
           balanceDecision: 'Reconsider',
           balanceRationale: 'Retained sponsorship materials preparation (2h planned Sep 9); proposed sharing follow-up responsibility.'
         });
@@ -459,13 +503,13 @@ export const BalanceView: React.FC = () => {
       }
 
       // For Keep and Move / Delay workloads:
-      const primaryBlock = plan.blocks[0];
       updateWorkload({
         ...item,
         // remainingTimeHours stays unchanged
         scheduledDate: primaryBlock?.date,
         scheduledStartTime: primaryBlock?.startTime,
         scheduledEndTime: primaryBlock?.endTime,
+        scheduledBlocks,
         balanceDecision: decision.action,
         balanceRationale: decision.rationale
       });
@@ -474,7 +518,7 @@ export const BalanceView: React.FC = () => {
     // Write generated FocusBlocks to AppContext
     setFocusBlocks(newFocusBlocks);
 
-    setToastMessage(`✓ Applied balance plan for ${selectedPlanIds.length} selected task${selectedPlanIds.length > 1 ? 's' : ''}! Tap "Undo" if you wish to revert.`);
+    setToastMessage(`✓ Applied balance plan! Tap "Undo" if you wish to revert.`);
 
     setTimeout(() => {
       const topEl = document.getElementById('balance-page-top');
@@ -498,6 +542,7 @@ export const BalanceView: React.FC = () => {
           scheduledDate: snap.scheduledDate,
           scheduledStartTime: snap.scheduledStartTime,
           scheduledEndTime: snap.scheduledEndTime,
+          scheduledBlocks: snap.scheduledBlocks,
           balanceDecision: snap.balanceDecision,
           balanceRationale: snap.balanceRationale
         });
@@ -569,7 +614,7 @@ export const BalanceView: React.FC = () => {
           }}>
             {isAllSelected && <Check size={11} color="#FFFFFF" strokeWidth={3.5} />}
           </div>
-          <span>{isAllSelected ? 'Deselect All' : 'Select All'}</span>
+          <span>{isAllSelected ? 'All' : 'Select All'}</span>
         </button>
       </div>
 

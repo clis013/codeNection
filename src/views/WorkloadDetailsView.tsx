@@ -10,6 +10,8 @@ import {
   Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Edit3, X, Sparkles, CheckCircle2
 } from 'lucide-react';
 
+import { calculateDurationHours } from './BalanceView';
+
 export const WorkloadDetailsView: React.FC = () => {
   const {
     workloads,
@@ -20,6 +22,7 @@ export const WorkloadDetailsView: React.FC = () => {
     setAddWorkloadInitialArea,
     toggleSubtask,
     updateWorkload,
+    setCustomSchedules,
     sortBy,
     setSortBy,
     searchQuery,
@@ -376,8 +379,58 @@ export const WorkloadDetailsView: React.FC = () => {
     return weeks;
   };
 
+  interface ScheduledEntry {
+    task: WorkloadItem;
+    blockId?: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    durationHours: number;
+  }
+
+  const getScheduledEntriesForDate = (dateStr: string): ScheduledEntry[] => {
+    const entries: ScheduledEntry[] = [];
+    workloads.forEach(t => {
+      if (t.status === 'Completed') return;
+      if (t.scheduledBlocks && t.scheduledBlocks.length > 0) {
+        t.scheduledBlocks.forEach(b => {
+          if (b.date === dateStr) {
+            const startH = parseInt(b.startTime.slice(0, 2), 10);
+            let endH = parseInt(b.endTime.slice(0, 2), 10);
+            if (parseInt(b.endTime.slice(3, 5), 10) > 0) endH += 1;
+            const dur = Math.max(0.5, b.durationHours || (endH - startH));
+            entries.push({
+              task: t,
+              blockId: b.id,
+              date: b.date,
+              startTime: b.startTime,
+              endTime: b.endTime,
+              durationHours: dur
+            });
+          }
+        });
+      } else if (t.scheduledDate === dateStr && t.scheduledStartTime) {
+        const startH = parseInt(t.scheduledStartTime.slice(0, 2), 10);
+        let endH = t.scheduledEndTime ? parseInt(t.scheduledEndTime.slice(0, 2), 10) : startH + 1;
+        if (t.scheduledEndTime && parseInt(t.scheduledEndTime.slice(3, 5), 10) > 0) endH += 1;
+        const dur = Math.max(0.5, endH - startH);
+        entries.push({
+          task: t,
+          date: t.scheduledDate,
+          startTime: t.scheduledStartTime,
+          endTime: t.scheduledEndTime || `${String(startH + 1).padStart(2, '0')}:00`,
+          durationHours: dur
+        });
+      }
+    });
+    return entries;
+  };
+
   const getTasksForDate = (dateStr: string) => {
     return workloads.filter(w => {
+      if (w.scheduledBlocks && w.scheduledBlocks.some(b => b.date === dateStr)) {
+        return true;
+      }
       if (w.scheduledDate) {
         return w.scheduledDate === dateStr;
       }
@@ -409,7 +462,11 @@ export const WorkloadDetailsView: React.FC = () => {
   };
 
   const getTasksForDay = (day: number) => {
+    const dStr = `2026-09-${String(day).padStart(2, '0')}`;
     return workloads.filter(w => {
+      if (w.scheduledBlocks && w.scheduledBlocks.some(b => b.date === dStr)) {
+        return true;
+      }
       if (w.scheduledDate) {
         const dNum = parseInt(w.scheduledDate.split('-')[2], 10);
         return dNum === day;
@@ -452,13 +509,42 @@ export const WorkloadDetailsView: React.FC = () => {
     if (!editingScheduleTask) return;
     const target = workloads.find(w => w.id === editingScheduleTask.id);
     if (target) {
+      const dur = calculateDurationHours(editingScheduleTask.startTime, editingScheduleTask.endTime);
+      const updatedBlocks = (target.scheduledBlocks || []).map(b => {
+        if (b.date === editingScheduleTask.date) {
+          return {
+            ...b,
+            date: editingScheduleTask.date,
+            startTime: editingScheduleTask.startTime,
+            endTime: editingScheduleTask.endTime,
+            durationHours: dur
+          };
+        }
+        return b;
+      });
+
       updateWorkload({
         ...target,
         scheduledDate: editingScheduleTask.date,
         scheduledStartTime: editingScheduleTask.startTime,
         scheduledEndTime: editingScheduleTask.endTime,
+        scheduledBlocks: updatedBlocks.length > 0 ? updatedBlocks : target.scheduledBlocks,
         deadline: `${editingScheduleTask.date}T${editingScheduleTask.endTime}:00.000Z`
       });
+
+      setCustomSchedules(prev => ({
+        ...prev,
+        [target.id]: {
+          date: editingScheduleTask.date,
+          startTime: editingScheduleTask.startTime,
+          endTime: editingScheduleTask.endTime
+        },
+        [`${target.id}-1`]: {
+          date: editingScheduleTask.date,
+          startTime: editingScheduleTask.startTime,
+          endTime: editingScheduleTask.endTime
+        }
+      }));
     }
     setEditingScheduleTask(null);
   };
@@ -1383,17 +1469,31 @@ export const WorkloadDetailsView: React.FC = () => {
                       {(weekDaysByRange[weekIndex] || weekDaysByRange[0]).map((dObj, colIdx) => {
                         const dayNum = dObj.num;
                         const isTodayCol = dObj.isToday;
+                        const curH = parseInt(hour.slice(0, 2), 10);
+
+                        const dayEntries = getScheduledEntriesForDate(dObj.dateStr);
+                        const matchedEntry = dayEntries.find(e => {
+                          const sH = parseInt(e.startTime.slice(0, 2), 10);
+                          let eH = parseInt(e.endTime.slice(0, 2), 10);
+                          if (parseInt(e.endTime.slice(3, 5), 10) > 0) eH += 1;
+                          return curH >= sH && curH < eH;
+                        });
+                        const isEntryStart = matchedEntry && matchedEntry.startTime.slice(0, 2) === hour.slice(0, 2);
+                        const entryStartH = matchedEntry ? parseInt(matchedEntry.startTime.slice(0, 2), 10) : 0;
+                        let entryEndH = matchedEntry ? parseInt(matchedEntry.endTime.slice(0, 2), 10) : 0;
+                        if (matchedEntry && parseInt(matchedEntry.endTime.slice(3, 5), 10) > 0) entryEndH += 1;
+                        const entrySpanHours = matchedEntry ? Math.max(1, entryEndH - entryStartH) : 1;
+
                         const dayTasks = getTasksForDate(dObj.dateStr);
-                        const matched = dayTasks.find(t =>
-                          (t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))) ||
-                          (!t.scheduledStartTime && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2))
-                        );
+                        const matchedDeadlineTask = !matchedEntry ? dayTasks.find(t =>
+                          !t.scheduledStartTime && (!t.scheduledBlocks || t.scheduledBlocks.length === 0) && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2)
+                        ) : undefined;
+
                         const dayBusy = getBusyEventsForDate(dObj.dateStr);
                         const matchedBusy = dayBusy.find(b => {
                           const startH = parseInt(b.startDateTime.slice(11, 13), 10);
                           let endH = parseInt(b.endDateTime.slice(11, 13), 10);
                           if (parseInt(b.endDateTime.slice(14, 16), 10) > 0) endH += 1;
-                          const curH = parseInt(hour.slice(0, 2), 10);
                           return curH >= startH && curH < endH;
                         });
                         const isBusyStart = matchedBusy && matchedBusy.startDateTime.slice(11, 13) === hour.slice(0, 2);
@@ -1408,20 +1508,18 @@ export const WorkloadDetailsView: React.FC = () => {
                             onClick={() => {
                               if (matchedBusy) {
                                 setSelectedBusyEvent(matchedBusy);
-                              } else if (matched) {
-                                if (matched.scheduledStartTime) {
-                                  setEditingScheduleTask({
-                                    id: matched.id,
-                                    title: matched.title,
-                                    date: dObj.dateStr,
-                                    startTime: matched.scheduledStartTime || hour,
-                                    endTime: matched.scheduledEndTime || '12:00',
-                                    area: matched.area
-                                  });
-                                } else {
-                                  setSelectedWorkload(matched);
-                                  setIsWorkloadDetailOpen(true);
-                                }
+                              } else if (matchedEntry && isEntryStart) {
+                                setEditingScheduleTask({
+                                  id: matchedEntry.task.id,
+                                  title: matchedEntry.task.title,
+                                  date: matchedEntry.date,
+                                  startTime: matchedEntry.startTime,
+                                  endTime: matchedEntry.endTime,
+                                  area: matchedEntry.task.area
+                                });
+                              } else if (matchedDeadlineTask) {
+                                setSelectedWorkload(matchedDeadlineTask);
+                                setIsWorkloadDetailOpen(true);
                               } else {
                                 setSelectedDay(dayNum);
                                 setCalendarViewMode('day');
@@ -1500,24 +1598,70 @@ export const WorkloadDetailsView: React.FC = () => {
                                   </div>
                                 )}
                               </div>
-                            ) : !matchedBusy && matched ? (
+                            ) : !matchedBusy && matchedEntry && isEntryStart ? (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingScheduleTask({
+                                    id: matchedEntry.task.id,
+                                    title: matchedEntry.task.title,
+                                    date: matchedEntry.date,
+                                    startTime: matchedEntry.startTime,
+                                    endTime: matchedEntry.endTime,
+                                    area: matchedEntry.task.area
+                                  });
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '1px',
+                                  left: '1px',
+                                  right: '1px',
+                                  height: `${entrySpanHours * 36 + (entrySpanHours - 1) * 2 - 2}px`,
+                                  backgroundColor: getAreaColor(matchedEntry.task.area).bg,
+                                  border: `1.5px solid ${getAreaColor(matchedEntry.task.area).border}`,
+                                  borderLeft: `3.5px solid ${getAreaColor(matchedEntry.task.area).dot}`,
+                                  borderRadius: '6px',
+                                  padding: '3px 4px',
+                                  overflow: 'hidden',
+                                  zIndex: 14,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'flex-start',
+                                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                                  boxSizing: 'border-box'
+                                }}
+                                title={`📌 ${matchedEntry.startTime}–${matchedEntry.endTime} ${matchedEntry.task.title} (${matchedEntry.durationHours}h)`}
+                              >
+                                <div style={{ fontSize: '8px', fontWeight: 900, color: getAreaColor(matchedEntry.task.area).text, display: 'flex', alignItems: 'center', gap: '2px', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <span>📌</span>
+                                  <span>{matchedEntry.startTime}–{matchedEntry.endTime}</span>
+                                </div>
+                                <div style={{ fontSize: '8px', fontWeight: 800, color: '#1E293B', marginTop: '2px', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: entrySpanHours >= 3 ? 3 : 2, WebkitBoxOrient: 'vertical' }}>
+                                  {matchedEntry.task.title}
+                                </div>
+                                <div style={{ fontSize: '7px', color: getAreaColor(matchedEntry.task.area).text, marginTop: 'auto', fontWeight: 700 }}>
+                                  {matchedEntry.durationHours}h block
+                                </div>
+                              </div>
+                            ) : !matchedBusy && !matchedEntry && matchedDeadlineTask ? (
                               <div style={{
                                 width: '100%',
                                 height: '100%',
-                                backgroundColor: getAreaColor(matched.area).bg,
-                                borderLeft: `3px solid ${getAreaColor(matched.area).dot}`,
+                                backgroundColor: getAreaColor(matchedDeadlineTask.area).bg,
+                                borderLeft: `3px solid ${getAreaColor(matchedDeadlineTask.area).dot}`,
                                 borderRadius: '4px',
                                 padding: '1px 3px',
                                 overflow: 'hidden',
                                 fontSize: '8px',
                                 fontWeight: 800,
-                                color: getAreaColor(matched.area).text,
+                                color: getAreaColor(matchedDeadlineTask.area).text,
                                 lineHeight: '1.1',
                                 display: 'flex',
                                 alignItems: 'center'
                               }}>
                                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {matched.scheduledStartTime ? matched.title : `📌 Due: ${getShortWorkloadTitle(matched.title)}`}
+                                  📌 Due: {getShortWorkloadTitle(matchedDeadlineTask.title)}
                                 </span>
                               </div>
                             ) : null}
@@ -1693,17 +1837,31 @@ export const WorkloadDetailsView: React.FC = () => {
                 paddingRight: '4px'
               }}>
                 {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].map(hour => {
+                  const curH = parseInt(hour.slice(0, 2), 10);
+                  const selectedDateStr = `2026-09-${String(selectedDay).padStart(2, '0')}`;
+                  const dayEntries = getScheduledEntriesForDate(selectedDateStr);
+                  const matchedDayEntry = dayEntries.find(e => {
+                    const sH = parseInt(e.startTime.slice(0, 2), 10);
+                    let eH = parseInt(e.endTime.slice(0, 2), 10);
+                    if (parseInt(e.endTime.slice(3, 5), 10) > 0) eH += 1;
+                    return curH >= sH && curH < eH;
+                  });
+                  const isEntryStart = matchedDayEntry && matchedDayEntry.startTime.slice(0, 2) === hour.slice(0, 2);
+                  const entryStartH = matchedDayEntry ? parseInt(matchedDayEntry.startTime.slice(0, 2), 10) : 0;
+                  let entryEndH = matchedDayEntry ? parseInt(matchedDayEntry.endTime.slice(0, 2), 10) : 0;
+                  if (matchedDayEntry && parseInt(matchedDayEntry.endTime.slice(3, 5), 10) > 0) entryEndH += 1;
+                  const entrySpanHours = matchedDayEntry ? Math.max(1, entryEndH - entryStartH) : 1;
+
                   const dayTasks = getTasksForDay(selectedDay);
-                  const matchedTask = dayTasks.find(t =>
-                    (t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))) ||
-                    (!t.scheduledStartTime && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2))
-                  );
+                  const matchedDeadlineTask = !matchedDayEntry ? dayTasks.find(t =>
+                    !t.scheduledStartTime && (!t.scheduledBlocks || t.scheduledBlocks.length === 0) && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2)
+                  ) : undefined;
+
                   const dayBusy = getBusyEventsForDay(selectedDay);
                   const matchedBusy = dayBusy.find(b => {
                     const startH = parseInt(b.startDateTime.slice(11, 13), 10);
                     let endH = parseInt(b.endDateTime.slice(11, 13), 10);
                     if (parseInt(b.endDateTime.slice(14, 16), 10) > 0) endH += 1;
-                    const curH = parseInt(hour.slice(0, 2), 10);
                     return curH >= startH && curH < endH;
                   });
                   const isBusyStart = matchedBusy && matchedBusy.startDateTime.slice(11, 13) === hour.slice(0, 2);
@@ -1786,29 +1944,75 @@ export const WorkloadDetailsView: React.FC = () => {
                         ) : matchedBusy && !isBusyStart ? (
                           /* Covered by continuous multi-hour block above - no duplicate block */
                           <div style={{ height: '100%' }} />
-                        ) : matchedTask ? (
+                        ) : matchedDayEntry && isEntryStart ? (
                           <div
                             onClick={() => {
-                              if (matchedTask.scheduledStartTime) {
-                                setEditingScheduleTask({
-                                  id: matchedTask.id,
-                                  title: matchedTask.title,
-                                  date: `2026-09-${String(selectedDay).padStart(2, '0')}`,
-                                  startTime: matchedTask.scheduledStartTime || hour,
-                                  endTime: matchedTask.scheduledEndTime || '12:00',
-                                  area: matchedTask.area
-                                });
-                              } else {
-                                setSelectedWorkload(matchedTask);
-                                setIsWorkloadDetailOpen(true);
-                              }
+                              setEditingScheduleTask({
+                                id: matchedDayEntry.task.id,
+                                title: matchedDayEntry.task.title,
+                                date: matchedDayEntry.date,
+                                startTime: matchedDayEntry.startTime,
+                                endTime: matchedDayEntry.endTime,
+                                area: matchedDayEntry.task.area
+                              });
                             }}
                             style={{
-                              backgroundColor: getAreaColor(matchedTask.area).bg,
-                              borderLeft: `4px solid ${getAreaColor(matchedTask.area).dot}`,
-                              borderTop: `1px solid ${getAreaColor(matchedTask.area).border}`,
-                              borderRight: `1px solid ${getAreaColor(matchedTask.area).border}`,
-                              borderBottom: `1px solid ${getAreaColor(matchedTask.area).border}`,
+                              position: 'absolute',
+                              top: '2px',
+                              left: 0,
+                              right: 0,
+                              height: `${entrySpanHours * 52 + (entrySpanHours - 1) * 2 - 4}px`,
+                              backgroundColor: getAreaColor(matchedDayEntry.task.area).bg,
+                              border: `1.5px solid ${getAreaColor(matchedDayEntry.task.area).border}`,
+                              borderLeft: `4px solid ${getAreaColor(matchedDayEntry.task.area).dot}`,
+                              borderRadius: '12px',
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+                              zIndex: 18,
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                              <div>
+                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: getAreaColor(matchedDayEntry.task.area).text, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📌</span>
+                                  <span>{matchedDayEntry.task.title}</span>
+                                </div>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginTop: '2px' }}>
+                                  {matchedDayEntry.startTime} – {matchedDayEntry.endTime} ({matchedDayEntry.durationHours} {matchedDayEntry.durationHours === 1 ? 'hour' : 'hours'}) • {matchedDayEntry.task.area}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.85)', color: getAreaColor(matchedDayEntry.task.area).text, padding: '2px 8px', borderRadius: '8px', fontWeight: 700, flexShrink: 0 }}>
+                                Scheduled
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', color: '#64748B', borderTop: '1px dashed #CBD5E1', paddingTop: '6px', marginTop: '6px' }}>
+                              <span>Workload Balance Plan Block</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: getAreaColor(matchedDayEntry.task.area).text, fontWeight: 600 }}>
+                                <Clock size={13} />
+                                <span>Tap to Edit</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : matchedDayEntry && !isEntryStart ? (
+                          <div style={{ height: '100%' }} />
+                        ) : matchedDeadlineTask ? (
+                          <div
+                            onClick={() => {
+                              setSelectedWorkload(matchedDeadlineTask);
+                              setIsWorkloadDetailOpen(true);
+                            }}
+                            style={{
+                              backgroundColor: getAreaColor(matchedDeadlineTask.area).bg,
+                              borderLeft: `4px solid ${getAreaColor(matchedDeadlineTask.area).dot}`,
+                              borderTop: `1px solid ${getAreaColor(matchedDeadlineTask.area).border}`,
+                              borderRight: `1px solid ${getAreaColor(matchedDeadlineTask.area).border}`,
+                              borderBottom: `1px solid ${getAreaColor(matchedDeadlineTask.area).border}`,
                               borderRadius: '10px',
                               padding: '8px 12px',
                               cursor: 'pointer',
@@ -1819,18 +2023,16 @@ export const WorkloadDetailsView: React.FC = () => {
                             }}
                           >
                             <div>
-                              <div style={{ fontSize: '13px', fontWeight: 800, color: getAreaColor(matchedTask.area).text, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <div style={{ fontSize: '13px', fontWeight: 800, color: getAreaColor(matchedDeadlineTask.area).text, display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 <span>📌</span>
-                                <span>{matchedTask.title}</span>
+                                <span>{matchedDeadlineTask.title}</span>
                               </div>
                               <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>
-                                {matchedTask.scheduledStartTime
-                                  ? `${matchedTask.scheduledStartTime} - ${matchedTask.scheduledEndTime || '12:00'} • ${matchedTask.area}`
-                                  : `Due: ${matchedTask.deadline ? matchedTask.deadline.slice(11, 16) : 'End of day'} • ${matchedTask.area} • ${matchedTask.estimatedHours}h est`}
+                                Due: {matchedDeadlineTask.deadline ? matchedDeadlineTask.deadline.slice(11, 16) : 'End of day'} • {matchedDeadlineTask.area} • {matchedDeadlineTask.estimatedHours}h est
                               </div>
                             </div>
-                            <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '6px', color: getAreaColor(matchedTask.area).text }}>
-                              {matchedTask.scheduledStartTime ? 'Scheduled' : 'Workload Due'}
+                            <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '6px', color: getAreaColor(matchedDeadlineTask.area).text }}>
+                              Workload Due
                             </span>
                           </div>
                         ) : (
@@ -1846,13 +2048,20 @@ export const WorkloadDetailsView: React.FC = () => {
                               });
                             }}
                             style={{
-                              height: '28px',
-                              border: '1px dashed #E2E8F0',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               borderRadius: '8px',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              opacity: 0.15,
+                              transition: 'opacity 0.15s'
                             }}
-                            title="Click to schedule workload at this hour"
-                          />
+                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = '#F8FAFC'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.15'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                          >
+                            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>+ Schedule focus block</span>
+                          </div>
                         )}
                       </div>
                     </div>
