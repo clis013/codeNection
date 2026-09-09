@@ -1,0 +1,28 @@
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+
+# Logs and local tooling
+*.log
+.codex/
+.agents/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
