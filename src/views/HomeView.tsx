@@ -465,9 +465,7 @@ export const HomeView: React.FC = () => {
           }}>
             Recover Pathways <ArrowRight size={16} color={Colors.textMuted} />
           </h3>
-          <span className="aesthetic-caption">
-            Emotional release & calm
-          </span>
+
         </div>
 
         {/* Two side by side COVER PAGE cards */}

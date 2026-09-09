@@ -3,10 +3,11 @@ import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import { WorkloadItem } from '../types/workload';
 import { FixedBusyEvent, FocusBlock, ProtectedTime } from '../types/calendar';
-import { 
-  Check, Calendar, Clock, Sparkles, Edit3, X, ArrowRight, 
+import {
+  Check, Calendar, Clock, Sparkles, Edit3, X, ArrowRight,
   Heart, Feather, Palette, Coffee, ShieldAlert, CheckCircle2,
-  AlertTriangle, RotateCcw, Users, CheckSquare, Square, Share2
+  AlertTriangle, RotateCcw, Users, CheckSquare, Square, Share2,
+  ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface BalanceItemDecision {
@@ -79,6 +80,16 @@ export const BalanceView: React.FC = () => {
   // Custom schedule overrides saved via the edit modal
   const [customSchedules, setCustomSchedules] = useState<Record<string, { date: string; startTime: string; endTime: string }>>({});
 
+  // Track open state for proposed schedule dropdowns by task ID
+  const [openScheduleDropdowns, setOpenScheduleDropdowns] = useState<Record<string, boolean>>({});
+
+  const toggleScheduleDropdown = (taskId: string) => {
+    setOpenScheduleDropdowns(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }));
+  };
+
   // Modal state for editing a task's schedule
   const [editingTask, setEditingTask] = useState<null | {
     id: string;
@@ -102,7 +113,7 @@ export const BalanceView: React.FC = () => {
         action: 'Keep',
         subtitle: 'Keep this priority',
         rationale: isPostStressDump
-          ? 'This is your closest academic deadline. Keep the full 5h preparation target and protect enough study time before Sep 10 at 8:00 AM.'
+          ? 'Closest academic deadline! Keep the full 5h preparation before deadline.'
           : 'Your closest academic deadline is Sep 10 at 8:00 AM. Keep the full 5h preparation target and protect it from lower-priority work.'
       };
     }
@@ -112,7 +123,7 @@ export const BalanceView: React.FC = () => {
         return {
           action: 'Reduce',
           subtitle: 'Reduce your personal share',
-          rationale: "Stress Dump revealed that you're taking on unfinished work from group members. Instead of absorbing all of it yourself, redistribute part of the remaining work."
+          rationale: "Stress Dump showed that you're taking over unfinished group work. Keep the core work you need to own and hand 5h back to the group."
         };
       }
       return {
@@ -125,8 +136,8 @@ export const BalanceView: React.FC = () => {
     if (item.id === 'tech-carnival-sponsorship') {
       return {
         action: 'Reconsider',
-        subtitle: 'Reconsider how much you personally need to own',
-        rationale: 'This responsibility was not in your original workload list and is due Sep 10 at 6:00 PM, during an already crowded deadline period.'
+        subtitle: 'Reconsider your responsibility',
+        rationale: 'This responsibility was not in your original workload list and falls inside an already crowded deadline period. Do you need to handle all of it yourself?'
       };
     }
 
@@ -135,7 +146,7 @@ export const BalanceView: React.FC = () => {
         action: 'Move / Delay',
         subtitle: 'Delay intensive preparation',
         rationale: isPostStressDump
-          ? 'The test is on Sep 14. Protect the immediate Sep 9–11 period for the closer OS, Web Programming and Sponsorship deadlines, then shift more FCG preparation into the later available period.'
+          ? 'Lower urgency than the OS Quiz, Web Programming and Sponsorship deadlines. Focus on those first, then shift FCG preparation later.'
           : 'The test is on Sep 14, giving it more room than the OS Quiz and Web Programming deadlines. Keep the required preparation, but shift more intensive FCG work until after the immediate deadline cluster.'
       };
     }
@@ -145,7 +156,7 @@ export const BalanceView: React.FC = () => {
         action: 'Move / Delay',
         subtitle: 'Move this later',
         rationale: isPostStressDump
-          ? 'This has the latest deadline, Sep 18, and lower urgency. Keep it outside the immediate deadline cluster.'
+          ? 'Latest deadline and lower urgency.'
           : 'This has the latest deadline, Sep 18, and lower urgency. Keep it outside the immediate high-pressure period.'
       };
     }
@@ -346,6 +357,11 @@ export const BalanceView: React.FC = () => {
         scheduledEndTime: editingTask.endTime
       });
     }
+    // Keep the schedule dropdown open for this task so the user sees the updated time
+    setOpenScheduleDropdowns(prev => ({
+      ...prev,
+      [editingTask.id]: true
+    }));
     setEditingTask(null);
     setToastMessage(`✓ Updated schedule for ${editingTask.title}`);
     setTimeout(() => setToastMessage(null), 3500);
@@ -727,43 +743,6 @@ export const BalanceView: React.FC = () => {
                   {decision.rationale}
                 </p>
 
-                {/* Effort Accounting Grid */}
-                <div style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '6px',
-                  textAlign: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Remaining Work
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: Colors.textDark, marginTop: '2px' }}>
-                      {plan.remainingTimeHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Planned Focus
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#16A34A', marginTop: '2px' }}>
-                      {plan.plannedHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Unscheduled
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: plan.unscheduledHours > 0 ? '#D97706' : '#64748B', marginTop: '2px' }}>
-                      {plan.unscheduledHours}h
-                    </div>
-                  </div>
-                </div>
-
                 {/* Solution Summary */}
                 <div style={{
                   backgroundColor: '#F0FDF4',
@@ -776,9 +755,6 @@ export const BalanceView: React.FC = () => {
                 }}>
                   {isOS ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#166534' }}>
-                        ✓ Full 5.0h target protected before closest deadline
-                      </span>
                       <span style={{ fontSize: '11px', fontWeight: 800, color: Colors.textDark }}>
                         Deadline: Sep 10 • 8:00 AM
                       </span>
@@ -795,53 +771,92 @@ export const BalanceView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Planned FocusBlocks List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
-                  {plan.blocks.map((b, idx) => (
-                    <div key={idx} style={{
+                {/* Proposed Schedule Dropdown */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleScheduleDropdown(item.id)}
+                    style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '6px 8px',
+                      width: '100%',
+                      padding: '8px 12px',
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '8px',
-                      border: '1px solid #DCFCE7'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#166534', fontWeight: 700 }}>
-                        <Clock size={13} />
-                        <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
-                      </div>
+                      borderRadius: '10px',
+                      border: '1px solid #BBF7D0',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#166534' }}>
+                      <Calendar size={13} />
+                      <span>Proposed schedule</span>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        backgroundColor: '#DCFCE7',
+                        color: '#166534',
+                        padding: '1px 6px',
+                        borderRadius: '8px'
+                      }}>
+                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#166534' }}>
+                      {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </div>
+                  </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setEditingTask({
-                          id: item.id,
-                          blockKey: b.id,
-                          title: `${item.title} (${b.durationHours}h block)`,
-                          date: b.date,
-                          startTime: b.startTime,
-                          endTime: b.endTime,
-                          action: 'Keep'
-                        })}
-                        style={{
-                          border: '1px solid #86EFAC',
-                          backgroundColor: '#F0FDF4',
-                          color: '#166534',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
+                  {openScheduleDropdowns[item.id] && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                      {plan.blocks.map((b, idx) => (
+                        <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '3px'
-                        }}
-                      >
-                        <Edit3 size={11} />
-                        <span>View / Edit</span>
-                      </button>
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '8px',
+                          border: '1px solid #DCFCE7'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#166534', fontWeight: 700 }}>
+                            <Clock size={13} />
+                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingTask({
+                              id: item.id,
+                              blockKey: b.id,
+                              title: `${item.title} (${b.durationHours}h block)`,
+                              date: b.date,
+                              startTime: b.startTime,
+                              endTime: b.endTime,
+                              action: 'Keep'
+                            })}
+                            style={{
+                              border: '1px solid #86EFAC',
+                              backgroundColor: '#F0FDF4',
+                              color: '#166534',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Edit3 size={11} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             );
@@ -905,43 +920,6 @@ export const BalanceView: React.FC = () => {
                   {decision.rationale}
                 </p>
 
-                {/* Scope Comparison Bar */}
-                <div style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '12px',
-                  padding: '10px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '6px',
-                  textAlign: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Current
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#64748B', marginTop: '2px' }}>
-                      18h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Proposed
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#1E40AF', marginTop: '2px' }}>
-                      13h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Reduction
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#16A34A', marginTop: '2px' }}>
-                      -5h
-                    </div>
-                  </div>
-                </div>
-
                 {/* Suggested Delegation Breakdown */}
                 <div style={{
                   backgroundColor: '#EFF6FF',
@@ -955,7 +933,7 @@ export const BalanceView: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Users size={13} color="#2563EB" />
                     <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#1E40AF' }}>
-                      Suggested delegation (Redistribute 5h)
+                      Work to hand back
                     </span>
                   </div>
 
@@ -973,95 +951,95 @@ export const BalanceView: React.FC = () => {
                       <span style={{ fontWeight: 700, color: '#1E40AF' }}>~1h</span>
                     </div>
                   </div>
-
-                  <div style={{ fontSize: '10.5px', color: '#64748B', paddingTop: '4px', borderTop: '1px solid #DBEAFE' }}>
-                    Nicole retains core implementation (~10h) & integration/final review (~3h) for 13h personal responsibility.
-                  </div>
                 </div>
 
-                {/* Effort Accounting Grid */}
-                <div style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '6px',
-                  textAlign: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Remaining Work
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: Colors.textDark, marginTop: '2px' }}>
-                      {plan.remainingTimeHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Planned Focus
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#1E40AF', marginTop: '2px' }}>
-                      {plan.plannedHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Unscheduled
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#D97706', marginTop: '2px' }}>
-                      {plan.unscheduledHours}h
-                    </div>
-                  </div>
-                </div>
-
-                {/* Near-term FocusBlock */}
-                {plan.blocks.map((b, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '6px 8px',
-                    backgroundColor: '#EFF6FF',
-                    borderRadius: '8px',
-                    border: '1px solid #BFDBFE'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#1E40AF', fontWeight: 700 }}>
-                      <Clock size={13} />
-                      <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditingTask({
-                        id: item.id,
-                        blockKey: b.id,
-                        title: `${item.title} (${b.durationHours}h block)`,
-                        date: b.date,
-                        startTime: b.startTime,
-                        endTime: b.endTime,
-                        action: 'Reduce'
-                      })}
-                      style={{
-                        border: '1px solid #BFDBFE',
-                        backgroundColor: '#FFFFFF',
-                        color: '#1E40AF',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
+                {/* Proposed Schedule Dropdown */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleScheduleDropdown(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '8px 12px',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #BFDBFE',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#1E40AF' }}>
+                      <Calendar size={13} />
+                      <span>Proposed schedule</span>
+                      <span style={{
+                        fontSize: '10.5px',
                         fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}
-                    >
-                      <Edit3 size={11} />
-                      <span>View / Edit</span>
-                    </button>
-                  </div>
-                ))}
+                        backgroundColor: '#DBEAFE',
+                        color: '#1E40AF',
+                        padding: '1px 6px',
+                        borderRadius: '8px'
+                      }}>
+                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#1E40AF' }}>
+                      {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </div>
+                  </button>
+
+                  {openScheduleDropdowns[item.id] && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                      {plan.blocks.map((b, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          backgroundColor: '#EFF6FF',
+                          borderRadius: '8px',
+                          border: '1px solid #BFDBFE'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#1E40AF', fontWeight: 700 }}>
+                            <Clock size={13} />
+                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingTask({
+                              id: item.id,
+                              blockKey: b.id,
+                              title: `${item.title} (${b.durationHours}h block)`,
+                              date: b.date,
+                              startTime: b.startTime,
+                              endTime: b.endTime,
+                              action: 'Reduce'
+                            })}
+                            style={{
+                              border: '1px solid #BFDBFE',
+                              backgroundColor: '#FFFFFF',
+                              color: '#1E40AF',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Edit3 size={11} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Primary Action: Scope Decision Buttons */}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
@@ -1086,7 +1064,7 @@ export const BalanceView: React.FC = () => {
                     }}
                   >
                     {webReductionAccepted && <Check size={13} />}
-                    <span>{webReductionAccepted ? 'Reduction Accepted (13h)' : 'Accept Reduction'}</span>
+                    <span>{webReductionAccepted ? 'Accept (13h)' : 'Accept Reduction'}</span>
                   </button>
 
                   <button
@@ -1109,7 +1087,7 @@ export const BalanceView: React.FC = () => {
                     }}
                   >
                     {!webReductionAccepted && <Check size={13} />}
-                    <span>Keep Current Scope (18h)</span>
+                    <span>Keep (18h)</span>
                   </button>
                 </div>
               </div>
@@ -1188,120 +1166,108 @@ export const BalanceView: React.FC = () => {
                 <div style={{
                   backgroundColor: '#FAF5FF',
                   borderRadius: '12px',
-                  padding: '10px 12px',
+                  padding: '12px 12px',
                   border: '1px solid #E9D5FF',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px'
                 }}>
                   <div>
-                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase' }}>
-                      Current responsibility
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: '#334155', marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span>• Prepare sponsorship materials</span>
-                      <span>• Coordinate sponsorship follow-up</span>
-                    </div>
-                  </div>
-
-                  <div style={{ paddingTop: '6px', borderTop: '1px solid #E9D5FF' }}>
-                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase' }}>
-                      Suggested change
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: '#334155', marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ fontSize: '12px', color: '#334155', marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       <div><strong style={{ color: '#166534' }}>Keep:</strong> Prepare sponsorship materials (2h planned)</div>
                       <div><strong style={{ color: '#7C3AED' }}>Share / hand off:</strong> Part of sponsorship follow-up (proposed to share)</div>
                     </div>
                   </div>
-
-                  <div style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.4', paddingTop: '4px', borderTop: '1px solid #E9D5FF' }}>
-                    2h of sponsorship materials preparation is planned. Part of the follow-up responsibility is proposed to be shared; the exact effort reduction from sharing is not quantified in this prototype.
-                  </div>
                 </div>
 
-                {/* Effort Accounting Grid */}
-                <div style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '6px',
-                  textAlign: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Remaining Work
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: Colors.textDark, marginTop: '2px' }}>
-                      {plan.remainingTimeHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Planned Focus
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#7C3AED', marginTop: '2px' }}>
-                      {plan.plannedHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Unscheduled Effort
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#6B21A8', marginTop: '2px' }}>
-                      {plan.unscheduledHours}h
-                    </div>
-                  </div>
-                </div>
 
-                {/* Near-term FocusBlock */}
-                {plan.blocks.map((b, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '6px 8px',
-                    backgroundColor: '#FAF5FF',
-                    borderRadius: '8px',
-                    border: '1px solid #DDD6FE'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#6B21A8', fontWeight: 700 }}>
-                      <Clock size={13} />
-                      <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditingTask({
-                        id: item.id,
-                        blockKey: b.id,
-                        title: `${item.title} (${b.durationHours}h block)`,
-                        date: b.date,
-                        startTime: b.startTime,
-                        endTime: b.endTime,
-                        action: 'Reconsider'
-                      })}
-                      style={{
-                        border: '1px solid #DDD6FE',
-                        backgroundColor: '#FFFFFF',
-                        color: '#6B21A8',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
+                {/* Proposed Schedule Dropdown */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleScheduleDropdown(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '8px 12px',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #DDD6FE',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#6B21A8' }}>
+                      <Calendar size={13} />
+                      <span>Proposed schedule</span>
+                      <span style={{
+                        fontSize: '10.5px',
                         fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}
-                    >
-                      <Edit3 size={11} />
-                      <span>View / Edit</span>
-                    </button>
-                  </div>
-                ))}
+                        backgroundColor: '#EDE9FE',
+                        color: '#6B21A8',
+                        padding: '1px 6px',
+                        borderRadius: '8px'
+                      }}>
+                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#6B21A8' }}>
+                      {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </div>
+                  </button>
+
+                  {openScheduleDropdowns[item.id] && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                      {plan.blocks.map((b, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          backgroundColor: '#FAF5FF',
+                          borderRadius: '8px',
+                          border: '1px solid #DDD6FE'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#6B21A8', fontWeight: 700 }}>
+                            <Clock size={13} />
+                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingTask({
+                              id: item.id,
+                              blockKey: b.id,
+                              title: `${item.title} (${b.durationHours}h block)`,
+                              date: b.date,
+                              startTime: b.startTime,
+                              endTime: b.endTime,
+                              action: 'Reconsider'
+                            })}
+                            style={{
+                              border: '1px solid #DDD6FE',
+                              backgroundColor: '#FFFFFF',
+                              color: '#6B21A8',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Edit3 size={11} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Primary Action: Share vs Keep Ownership Buttons */}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
@@ -1326,7 +1292,7 @@ export const BalanceView: React.FC = () => {
                     }}
                   >
                     {sponsorshipShared && <Check size={13} />}
-                    <span>{sponsorshipShared ? "I'll Share This (Accepted)" : "I'll Share This"}</span>
+                    <span>{sponsorshipShared ? "Accept" : "I'll Share This"}</span>
                   </button>
 
                   <button
@@ -1349,7 +1315,7 @@ export const BalanceView: React.FC = () => {
                     }}
                   >
                     {!sponsorshipShared && <Check size={13} />}
-                    <span>I'll Keep It</span>
+                    <span>Keep</span>
                   </button>
                 </div>
 
@@ -1431,43 +1397,6 @@ export const BalanceView: React.FC = () => {
                   {decision.rationale}
                 </p>
 
-                {/* Effort Accounting Grid */}
-                <div style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '6px',
-                  textAlign: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Remaining Work
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: Colors.textDark, marginTop: '2px' }}>
-                      {plan.remainingTimeHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Planned Focus
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#D97706', marginTop: '2px' }}>
-                      {plan.plannedHours}h
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                      Unscheduled
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: plan.unscheduledHours > 0 ? '#B45309' : '#64748B', marginTop: '2px' }}>
-                      {plan.unscheduledHours}h
-                    </div>
-                  </div>
-                </div>
-
                 {/* Timing Shift Summary */}
                 <div style={{
                   backgroundColor: '#FFFBEB',
@@ -1488,53 +1417,92 @@ export const BalanceView: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Planned FocusBlocks List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
-                  {plan.blocks.map((b, idx) => (
-                    <div key={idx} style={{
+                {/* Proposed Schedule Dropdown */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleScheduleDropdown(item.id)}
+                    style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '6px 8px',
+                      width: '100%',
+                      padding: '8px 12px',
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '8px',
-                      border: '1px solid #FEF3C7'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#92400E', fontWeight: 700 }}>
-                        <Clock size={13} />
-                        <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
-                      </div>
+                      borderRadius: '10px',
+                      border: '1px solid #FDE68A',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#92400E' }}>
+                      <Calendar size={13} />
+                      <span>Proposed schedule</span>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                        padding: '1px 6px',
+                        borderRadius: '8px'
+                      }}>
+                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', color: '#92400E' }}>
+                      {openScheduleDropdowns[item.id] ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </div>
+                  </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setEditingTask({
-                          id: item.id,
-                          blockKey: b.id,
-                          title: `${item.title} (${b.durationHours}h block)`,
-                          date: b.date,
-                          startTime: b.startTime,
-                          endTime: b.endTime,
-                          action: 'Move / Delay'
-                        })}
-                        style={{
-                          border: '1px solid #FDE68A',
-                          backgroundColor: '#FFFBEB',
-                          color: '#92400E',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
+                  {openScheduleDropdowns[item.id] && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                      {plan.blocks.map((b, idx) => (
+                        <div key={idx} style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '3px'
-                        }}
-                      >
-                        <Edit3 size={11} />
-                        <span>View / Edit</span>
-                      </button>
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '8px',
+                          border: '1px solid #FEF3C7'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#92400E', fontWeight: 700 }}>
+                            <Clock size={13} />
+                            <span>{b.date} • {b.startTime} - {b.endTime} ({b.durationHours}h)</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingTask({
+                              id: item.id,
+                              blockKey: b.id,
+                              title: `${item.title} (${b.durationHours}h block)`,
+                              date: b.date,
+                              startTime: b.startTime,
+                              endTime: b.endTime,
+                              action: 'Move / Delay'
+                            })}
+                            style={{
+                              border: '1px solid #FDE68A',
+                              backgroundColor: '#FFFBEB',
+                              color: '#92400E',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Edit3 size={11} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             );

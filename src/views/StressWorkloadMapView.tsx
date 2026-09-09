@@ -193,7 +193,7 @@ export const StressWorkloadMapView: React.FC = () => {
         badgeLabel: 'Pending Check-in',
 
         overallInterpretation:
-          "Your workload is recorded, but Restore still needs today's check-in to understand how manageable it feels for you.",
+          "Your workload is recorded, but we still needs today's check-in to understand how manageable it feels for you.",
 
         recentPattern:
           "Today's stress, energy and sense of control are not available yet.",
