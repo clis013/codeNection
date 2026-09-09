@@ -16,32 +16,38 @@ export function getLocalDateString(date: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+export const DEMO_DATE = '2026-09-08';
+export const DEMO_DATETIME = '2026-09-08T22:15:00+08:00';
+export const DEMO_TIMEZONE = 'Asia/Kuala_Lumpur';
+
 /**
  * Returns today's local calendar date as 'YYYY-MM-DD'.
- * This is the canonical "today" used throughout the app.
+ * Fixed source of truth for the Nicole demo: 2026-09-08.
  */
 export function getTodayLocalDate(): string {
-  return getLocalDateString(new Date());
+  return DEMO_DATE;
 }
 
 /**
- * Returns the local date string for N days ago from today.
+ * Returns the local date string for N days ago from demo today.
  */
 export function getLocalDateStringDaysAgo(n: number): string {
-  const d = new Date();
+  const [year, month, day] = DEMO_DATE.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   d.setDate(d.getDate() - n);
   return getLocalDateString(d);
 }
 
 /**
  * Returns an ordered array of the last N local calendar dates (oldest first),
- * including today as the last element.
+ * including demo today (2026-09-08) as the last element.
  */
 export function getLastNLocalDates(n: number): Array<{ dateStr: string; date: Date; isToday: boolean }> {
-  const today = new Date();
+  const [year, month, day] = DEMO_DATE.split('-').map(Number);
+  const anchorDate = new Date(year, month - 1, day);
   return Array.from({ length: n }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (n - 1 - i));
+    const d = new Date(anchorDate);
+    d.setDate(anchorDate.getDate() - (n - 1 - i));
     return {
       dateStr: getLocalDateString(d),
       date: d,

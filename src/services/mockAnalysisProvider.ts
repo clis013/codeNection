@@ -9,7 +9,8 @@ export function buildAnalysisInput(
   todayCheckIn: any | null,
   activeWorkloads: any[],
   derivedFacts: any,
-  timeFeasibility: any | null = null
+  timeFeasibility: any | null = null,
+  stressDumpContext: string[] = []
 ): AnalysisInput {
   return {
     localDate,
@@ -18,6 +19,9 @@ export function buildAnalysisInput(
       energyLevel: todayCheckIn.energyLevel,
       controlLevel: todayCheckIn.controlScore || todayCheckIn.q2_control,
       baselineDiff: todayCheckIn.baselineDiff ?? null,
+      pssScore: todayCheckIn.pssScore,
+      mentalDemandScore: todayCheckIn.mentalDemandScore || todayCheckIn.q3_mentalDemand,
+      copingCapabilityScore: todayCheckIn.copingCapabilityScore || todayCheckIn.q4_capability,
     } : null,
     workloadFacts: {
       activeWorkloads: activeWorkloads.map(w => ({
@@ -27,16 +31,16 @@ export function buildAnalysisInput(
         activityType: w.activityType,
         urgency: w.urgency,
         flexibility: w.flexibility,
-        importance: undefined, // Do not invent importance from isMainConcern
+        importance: w.importance,
         deadline: w.deadline,
-        remainingTimeHours: w.remainingTimeHours,
+        remainingTimeHours: w.remainingTimeHours ?? w.estimatedHours,
         demandProfile: { ...w.demandProfile }
       })),
       totalRemainingHours: derivedFacts.totalRemainingHours,
       demandDistribution: derivedFacts.demandDistribution
     },
     timeFeasibility,
-    stressDumpContext: []
+    stressDumpContext
   };
 }
 
@@ -85,16 +89,12 @@ export function getMockAnalysis(input: AnalysisInput): AnalysisResult {
 
   // 2. Base Confidence
   const hasCalendar = input.timeFeasibility?.calendarDataAvailable ?? false;
-  // Conservative confidence semantics:
-  // Missing check-in or missing calendar caps it at Moderate.
-  // High confidence should only become possible when strong evidence justifies it (for MVP we remain conservative).
   let confidence: 'Low' | 'Moderate' | 'High' = hasCalendar ? 'Moderate' : 'Moderate';
-  if (!hasCalendar) confidence = 'Low'; // Fallback to Low if no check-in & no calendar (Wait, check-in exists here)
+  if (!hasCalendar) confidence = 'Low';
   if (hasCalendar && !isCheckInMissing) {
-    // Stage 2 baseline semantics: we only achieve High if there are strong alignments. For now, Moderate is safe, but we can allow High if we want to simulate full data. The user specifically asked: "High confidence should only become possible when the existing Analysis Provider's evidence and data-quality conditions justify it." Let's stick with Moderate or High.
     confidence = 'High';
   }
-  if (!hasCalendar) confidence = 'Moderate'; // Restore original Stage 2 missing-calendar ceiling
+  if (!hasCalendar) confidence = 'Moderate';
 
   const dataLimitations: string[] = [];
   if (!hasCalendar) {
@@ -115,7 +115,6 @@ export function getMockAnalysis(input: AnalysisInput): AnalysisResult {
   const energy = input.checkInState?.energyLevel;
   const control = input.checkInState?.controlLevel;
   const stress = input.checkInState?.stressCategory;
-  const availHours = input.timeFeasibility?.candidateTimeHours ?? 4.5; // fallback strictly for mock reasoning if calendar is disabled
 
   let status: 'Manageable' | 'Strained' | 'Overloaded' = 'Manageable';
   const evidence: AnalysisEvidence[] = [];
@@ -123,31 +122,67 @@ export function getMockAnalysis(input: AnalysisInput): AnalysisResult {
   const contributors: AnalysisFactor[] = [];
   const recoveryNeed: RecoveryNeed = { indicated: false, type: undefined, reason: undefined };
 
-  // SCENARIO: Overloaded
-  if (wFacts.totalRemainingHours > 20) {
+  // Detect whether Stress Dump confirmation has occurred
+  const isStressDumpConfirmed = wFacts.activeWorkloads.some(w => w.id === 'tech-carnival-sponsorship') ||
+    wFacts.activeWorkloads.some(w => w.id === 'web-programming-group' && (w.remainingTimeHours === 18 || (w as any).estimatedHours === 18)) ||
+    input.stressDumpContext?.includes('tech-carnival-sponsorship-added') ||
+    input.stressDumpContext?.includes('confirmed');
+
+  // SCENARIO: Converging Overload (Justified by multiple converging signals:
+  // Very High stress + stress substantially above baseline + very low energy (<=2) + low control (<=2) + high cognitive workload)
+  const isConvergingOverload = (
+    (stress === 'Very High' || stress === 'High') &&
+    energy !== undefined && energy <= 2 &&
+    control !== undefined && control <= 2 &&
+    highCognitive >= 2
+  );
+
+  if (isConvergingOverload) {
     status = 'Overloaded';
-    evidence.push({ category: 'Time', message: 'Total workload volume exceeds sustainable psychological load.', severity: 'High' });
-    constraints.push({ factorType: 'Volume', description: 'Exceptionally high total workload hours' });
+    confidence = 'High';
     recoveryNeed.indicated = true;
     recoveryNeed.type = 'general';
-    recoveryNeed.reason = 'Sustained high volume load rapidly drains reserves.';
-  } else if (hasCalendar && wFacts.totalRemainingHours > (input.timeFeasibility?.candidateTimeHours ?? 0)) {
-    // Stage 3 Contextual Evidence ONLY - Does not unilaterally force Overload status since deadlines aren't checked
-    evidence.push({ category: 'Time', message: 'Total workload exceeds candidate time in the 7-day horizon. Deadline scheduling may be tight.', severity: 'Moderate' });
-  }
+    recoveryNeed.reason =
+      'Nicole reports very low energy after a difficult previous week while several demanding commitments are approaching.';
 
-  if (highCognitive >= 2 && energy !== undefined && energy <= 2) {
-    status = 'Overloaded';
-    evidence.push({ category: 'Cognitive', message: 'Multiple highly cognitive tasks while energy is depleted.', severity: 'High' });
-    evidence.push({ category: 'Energy', message: 'Current energy levels are insufficient for the planned demands.', severity: 'High' });
-    constraints.push({ factorType: 'ResourceDepletion', description: 'Low cognitive energy reserves' });
-    contributors.push({ factorType: 'Volume', description: 'Multiple high cognitive demand tasks' });
-    recoveryNeed.indicated = true;
-    recoveryNeed.type = 'cognitive';
-    recoveryNeed.reason = 'Cognitive depletion combined with demanding tasks requires mental rest.';
+    if (!isStressDumpConfirmed) {
+      // BEFORE STRESS DUMP
+      evidence.push(
+        { category: 'Stress', message: 'Your perceived stress is 18/20 today, compared with your recent baseline average of 10.4.', severity: 'High' },
+        { category: 'Energy', message: 'Your energy is 1/5 today, substantially below your recent baseline average of 3.6.', severity: 'High' },
+        { category: 'Control', message: 'Your sense of control is 2/5 today, below your recent baseline average of 3.7.', severity: 'High' },
+        { category: 'Cognitive', message: 'Several active commitments require high cognitive effort, including the OS Quiz, Web Programming assignment and FCG Test.', severity: 'High' },
+        { category: 'Time', message: 'Several substantial academic commitments have closely competing deadlines over the next few days.', severity: 'High' }
+      );
+      constraints.push(
+        { factorType: 'ResourceDepletion', description: 'Depleted energy (1/5) and low perceived control (2/5) relative to baseline' },
+        { factorType: 'Deadline', description: 'Multiple substantial academic commitments due in close proximity' }
+      );
+      contributors.push(
+        { factorType: 'Complexity', description: 'High cognitive effort required across OS Quiz, Web Programming, and FCG Test' }
+      );
+    } else {
+      // AFTER STRESS DUMP CONFIRMATION
+      evidence.push(
+        { category: 'Stress', message: 'Your perceived stress is 18/20 today, compared with your recent baseline average of 10.4.', severity: 'High' },
+        { category: 'Energy', message: 'Your energy is 1/5 today, substantially below your recent baseline average of 3.6.', severity: 'High' },
+        { category: 'Control', message: 'Your sense of control is 2/5 today, below your recent baseline average of 3.7.', severity: 'High' },
+        { category: 'Cognitive', message: 'OS Quiz, Web Programming and FCG all require high cognitive effort.', severity: 'High' },
+        { category: 'Context', message: 'Stress Dump revealed that your share of the Web Programming assignment is larger than originally recorded.', severity: 'High' },
+        { category: 'Context', message: 'Stress Dump also surfaced Tech Carnival Sponsorship as an additional responsibility.', severity: 'High' },
+        { category: 'Time', message: 'OS preparation, Tech Carnival sponsorship and Web Programming are competing for attention within a short period.', severity: 'High' }
+      );
+      constraints.push(
+        { factorType: 'ResourceDepletion', description: 'Depleted energy (1/5) and low perceived control (2/5) relative to baseline' },
+        { factorType: 'Deadline', description: 'Short-term deadline clustering across academic and extracurricular commitments' }
+      );
+      contributors.push(
+        { factorType: 'Complexity', description: 'High cognitive effort required across OS Quiz, Web Programming, and FCG Test' },
+        { factorType: 'Volume', description: 'Expanded Web Programming responsibility (18h) and Tech Carnival sponsorship (6h)' }
+      );
+    }
   } 
-  // SCENARIO: Strained
-  // Some high demands or moderate resources
+  // SCENARIO: Strained (Emotional pressure with low perceived control)
   else if (highEmotional >= 1 && control !== undefined && control <= 2) {
     status = 'Strained';
     evidence.push({ category: 'Emotional', message: 'Facing emotionally demanding work while feeling low control.', severity: 'Moderate' });
@@ -157,7 +192,7 @@ export function getMockAnalysis(input: AnalysisInput): AnalysisResult {
     recoveryNeed.type = 'emotional';
     recoveryNeed.reason = 'Low perceived control and emotional demands indicate need for emotional release.';
   }
-  // SCENARIO: Strained (General volume with low energy)
+  // SCENARIO: Strained (Significant workload compared to available energy)
   else if (wFacts.totalRemainingHours >= 15 && energy !== undefined && energy <= 3) {
     status = 'Strained';
     evidence.push({ category: 'Time', message: 'Significant workload volume compared to available energy.', severity: 'Moderate' });

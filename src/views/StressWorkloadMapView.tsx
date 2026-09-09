@@ -17,17 +17,20 @@ export const StressWorkloadMapView: React.FC = () => {
     setActiveTab,
     setSelectedWorkload,
     setIsWorkloadDetailOpen,
+    chatMessages,
   } = useApp();
 
   // "Why we're seeing this" accordion is closed by default as requested
   const [isExplanationOpen, setIsExplanationOpen] = useState<boolean>(false);
-  const [isPatternOpen, setIsPatternOpen] = useState<boolean>(false);
+
+  // Open Time Info Popover state
+  const [isOpenTimeInfoOpen, setIsOpenTimeInfoOpen] = useState<boolean>(false);
 
   // Demand Profile Pie Chart Hovered/Selected Slice
   const [activeDemandSlice, setActiveDemandSlice] = useState<'cognitive' | 'emotional' | 'physical'>('cognitive');
 
   // Workload Area Distribution Pie Chart Hovered/Selected Slice
-  const [activeAreaSlice, setActiveAreaSlice] = useState<'Academic' | 'Extracurricular' | 'Self-Care'>('Academic');
+  const [activeAreaSlice, setActiveAreaSlice] = useState<'Academic' | 'Social' | 'Self-Care'>('Academic');
 
   const activeWorkloads = workloads.filter(w => w.status === 'Active');
 
@@ -133,30 +136,225 @@ export const StressWorkloadMapView: React.FC = () => {
     else demandCounts.physical.low++;
   });
 
-  // 4. WORKLOAD AREA COUNTS & PERCENTAGES (DYNAMICALLY BASED ON NUMBER OF TASKS)
-  const totalActiveTasks = activeWorkloads.length;
-  const rawAcademicTasks = activeWorkloads.filter(w => w.area === 'Academic').length;
-  const rawExtraTasks = activeWorkloads.filter(w => w.area === 'Social' || w.area === 'Personal').length;
-  const rawSelfCareTasks = activeWorkloads.filter(w => w.area === 'Self-Care' || (!['Academic', 'Social', 'Personal'].includes(w.area))).length;
-
-  const academicTasks = totalActiveTasks > 0 ? rawAcademicTasks : 2;
-  const extracurricularTasks = totalActiveTasks > 0 ? rawExtraTasks : 2;
-  const selfCareTasks = totalActiveTasks > 0 ? rawSelfCareTasks : 1;
-  const totalAreaTasks = totalActiveTasks > 0 ? totalActiveTasks : (academicTasks + extracurricularTasks + selfCareTasks);
-
-  const academicPct = Math.round((academicTasks / totalAreaTasks) * 100);
-  const extraPct = Math.round((extracurricularTasks / totalAreaTasks) * 100);
-  const selfCarePct = Math.max(0, 100 - academicPct - extraPct);
-
   // SVG circle circumference for r=38 is 2 * PI * 38 = 238.76
   const CIRCLE_CIRCUMFERENCE = 238.76;
+
+  // 4. LIVE DEMAND DONUT CALCULATIONS (derived from workload demand scores)
+  const cogScoreSum = activeWorkloads.reduce((acc, w) => acc + (w.demandProfile?.cognitive || 1), 0);
+  const emoScoreSum = activeWorkloads.reduce((acc, w) => acc + (w.demandProfile?.emotional || 1), 0);
+  const phyScoreSum = activeWorkloads.reduce((acc, w) => acc + (w.demandProfile?.physical || 1), 0);
+  const totalDemandScore = cogScoreSum + emoScoreSum + phyScoreSum || 1;
+
+  const cogPct = Math.round((cogScoreSum / totalDemandScore) * 100);
+  const emoPct = Math.round((emoScoreSum / totalDemandScore) * 100);
+  const phyPct = Math.max(0, 100 - cogPct - emoPct);
+
+  const cogDash = Number(((cogPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
+  const emoDash = Number(((emoPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
+  const phyDash = Number(((phyPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
+
+  const cogOffset = 0;
+  const emoOffset = -cogDash;
+  const phyOffset = -(cogDash + emoDash);
+
+  // 5. WORKLOAD AREA COUNTS & PERCENTAGES (DYNAMICALLY BASED ON NUMBER OF TASKS)
+  const totalActiveTasks = activeWorkloads.length;
+  const rawAcademicTasks = activeWorkloads.filter(w => w.area === 'Academic').length;
+  const rawSocialTasks = activeWorkloads.filter(w => w.area === 'Social' || w.area === 'Personal').length;
+  const rawSelfCareTasks = activeWorkloads.filter(w => w.area === 'Self-Care').length;
+
+  const academicTasks = totalActiveTasks > 0 ? rawAcademicTasks : 0;
+  const socialTasks = totalActiveTasks > 0 ? rawSocialTasks : 0;
+  const selfCareTasks = totalActiveTasks > 0 ? rawSelfCareTasks : 0;
+  const totalAreaTasks = totalActiveTasks > 0 ? totalActiveTasks : 1;
+
+  const academicPct = Math.round((academicTasks / totalAreaTasks) * 100);
+  const socialPct = Math.round((socialTasks / totalAreaTasks) * 100);
+  const selfCarePct = Math.max(0, 100 - academicPct - socialPct);
+
   const academicDash = Number(((academicPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
-  const extraDash = Number(((extraPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
+  const socialDash = Number(((socialPct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
   const selfCareDash = Number(((selfCarePct / 100) * CIRCLE_CIRCUMFERENCE).toFixed(2));
 
   const academicOffset = 0;
-  const extraOffset = -academicDash;
-  const selfCareOffset = -(academicDash + extraDash);
+  const socialOffset = -academicDash;
+  const selfCareOffset = -(academicDash + socialDash);
+
+  const isStressDumpConfirmed = activeWorkloads.some(w => w.id === 'tech-carnival-sponsorship') ||
+    activeWorkloads.some(w => w.id === 'web-programming-group' && (w.remainingTimeHours === 18 || (w as any).estimatedHours === 18)) ||
+    (chatMessages && chatMessages.some(m => m.nicoleConfirmed));
+
+  const getLoadAnalysis = () => {
+    // ============================================================
+    // 1. INSUFFICIENT DATA / CHECK-IN NOT COMPLETED
+    // ============================================================
+    if (!todayCheckIn || isInsufficient) {
+      return {
+        badgeLabel: 'Pending Check-in',
+
+        overallInterpretation:
+          "Your workload is recorded, but Restore still needs today's check-in to understand how manageable it feels for you.",
+
+        recentPattern:
+          "Today's stress, energy and sense of control are not available yet.",
+
+        whySections: {
+          time:
+            "You already have several commitments due over the upcoming week.",
+
+          demand:
+            "Some of your recorded academic tasks require high mental effort.",
+
+          resources:
+            "Today's energy, stress and sense of control are still unknown.",
+
+          mainContributors:
+            "The Operating System Quiz and Web Programming assignment are your nearest major commitments.",
+
+          supportingPattern:
+            "Complete today's check-in to compare your current state with your recent pattern."
+        }
+      };
+    }
+
+    // ============================================================
+    // 2. OVERLOADED
+    // ============================================================
+    if (isOver) {
+
+      // ----------------------------------------------------------
+      // AFTER STRESS DUMP
+      // ----------------------------------------------------------
+      if (isStressDumpConfirmed) {
+        return {
+          badgeLabel: 'Overloaded',
+
+          overallInterpretation:
+            "Your workload is more overloaded than it first appeared. The additional Web Programming responsibility and Tech Carnival Sponsorship create even more competition around your closest deadlines.",
+
+          recentPattern:
+            "Today is much more demanding than usual for you: stress is well above your usual level, while energy and control are well below it.",
+
+          whySections: {
+            time:
+              "About 37h of work is due within the next 7 days, but only 19h of candidate calendar time is available. At least 18h currently has nowhere to fit.",
+
+            demand:
+              "3 of your 5 active workloads have high cognitive demand. Tech Carnival Sponsorship also adds high emotional and social demand alongside your academic work.",
+
+            resources:
+              "Your energy and sense of control are both much lower than usual today, while your confidence in handling your workload is also lower than usual.",
+
+            mainContributors:
+              "The immediate bottleneck is 5h for the OS Quiz by Sep 10 morning, 6h for Sponsorship by Sep 10 evening, and 18h of Web Programming work by Sep 11.",
+
+            supportingPattern: [
+              "5 of the last 7 days were Strained or Overloaded.",
+              "3 of those days occurred consecutively.",
+              "Low energy appeared on 4 of the last 7 days."
+            ]
+          }
+        };
+      }
+
+      // ----------------------------------------------------------
+      // BEFORE STRESS DUMP
+      // ----------------------------------------------------------
+      return {
+        badgeLabel: 'Overloaded',
+
+        overallInterpretation:
+          "Your current workload is overloaded mainly because several large academic commitments are competing for limited time while your energy and sense of control are unusually low.",
+
+        recentPattern:
+          "Today is much more demanding than usual for you: stress is well above your usual level, while energy and control are well below it.",
+
+        whySections: {
+          time:
+            "About 25h of work is due within the next 7 days, but only 19h of candidate calendar time is available. At least 6h currently has nowhere to fit.",
+
+          demand:
+            "3 of your 4 active workloads have high cognitive demand: the OS Quiz, Web Programming assignment and FCG Test.",
+
+          resources:
+            "Your energy and sense of control are both much lower than usual today, while your confidence in handling your workload is also lower than usual.",
+
+          mainContributors:
+            "The immediate pressure comes from 5h of OS Quiz preparation due Sep 10 and 12h of Web Programming work due Sep 11. The 8h FCG Test preparation follows soon after.",
+
+          supportingPattern: [
+            "5 of the last 7 days were Strained or Overloaded.",
+            "3 of those days occurred consecutively.",
+            "Low energy appeared on 4 of the last 7 days."
+          ]
+        }
+      };
+    }
+
+    // ============================================================
+    // 3. STRAINED
+    // ============================================================
+    if (isStrain) {
+      return {
+        badgeLabel: 'Strained',
+
+        overallInterpretation:
+          "Your current workload is creating noticeable pressure, but it may still be manageable with some adjustment.",
+
+        recentPattern:
+          "Recent check-ins suggest that pressure is starting to increase.",
+
+        whySections: {
+          time:
+            "Your upcoming work is getting close to the amount of open time available before its deadlines.",
+
+          demand:
+            "Several upcoming commitments require sustained mental effort.",
+
+          resources:
+            "Your energy or sense of control is lower than usual today.",
+
+          mainContributors:
+            "Some nearby deadlines are competing for the same focus time.",
+
+          supportingPattern:
+            "Recent check-ins suggest pressure is increasing rather than staying stable."
+        }
+      };
+    }
+
+    // ============================================================
+    // 4. MANAGEABLE
+    // ============================================================
+    return {
+      badgeLabel: 'Manageable',
+
+      overallInterpretation:
+        "Your current commitments appear manageable with the time and resources available right now.",
+
+      recentPattern:
+        "Your recent check-ins appear relatively stable.",
+
+      whySections: {
+        time:
+          "Your recorded work appears to fit within the available time before its deadlines.",
+
+        demand:
+          "Your current workload does not show a major concentration of demand.",
+
+        resources:
+          "Today's check-in does not show a strong resource constraint.",
+
+        mainContributors:
+          "No single recorded commitment is creating a major source of pressure right now.",
+
+        supportingPattern:
+          "Recent check-ins do not show a clear build-up of strain."
+      }
+    };
+  };
+
+  const loadAnalysis = getLoadAnalysis();
 
   return (
     <div style={{
@@ -212,63 +410,42 @@ export const StressWorkloadMapView: React.FC = () => {
             fontSize: '12px',
             fontWeight: 800
           }}>
-            {cardTheme.statusLabel === 'OVERLOADED' ? 'Overloaded' : cardTheme.statusLabel === 'MANAGEABLE' ? 'Manageable' : 'Strained'}
+            {loadAnalysis.badgeLabel}
           </span>
         </div>
 
-        {/* Short & Clear Natural Interpretation */}
-        <p style={{
+        {/* Overall interpretation (1–2 short sentences explaining what the state means) */}
+        <div style={{
           fontSize: '13px',
           color: Colors.textDark,
           lineHeight: 1.45,
           margin: 0
         }}>
-          {isOver
-            ? 'Your current demands exceed your available capacity. Immediate adjustments are needed to make the plan manageable.'
-            : isMan
-            ? 'Your demands and resources are currently well aligned. Your schedule has healthy recovery buffers.'
-            : isStrain 
-            ? 'Your current demands show meaningful pressure. Immediate adjustments are recommended to make the plan manageable.'
-            : (activeWorkloads.length > 0)
-            ? "Your workload is recorded, but today's resource state is missing. Complete today's check-in to compare your demands with your current resources."
-            : 'Please record some workloads and complete a daily check-in to see your analysis.'}
-        </p>
+          {loadAnalysis.overallInterpretation}
+        </div>
 
-        {/* Inner White Container (Picture 3 & 4) */}
+        {/* Inner White Container */}
         <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: 'rgba(255, 255, 255, 0.88)',
           borderRadius: '18px',
           padding: '14px 16px',
           border: `1px solid ${cardTheme.innerBorder}`,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '10px'
         }}>
-          {/* Recent pattern with Sustained strain label */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Recent pattern */}
+          <div>
             <span style={{ fontSize: '12px', fontWeight: 800, color: cardTheme.titleColor }}>
               Recent pattern
             </span>
-            {false && ( // Sustained strain removed in Stage 2B
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                color: cardTheme.badgeText,
-                backgroundColor: cardTheme.badgeBg,
-                padding: '2px 8px',
-                borderRadius: '6px',
-                border: `1px solid ${cardTheme.badgeBorder}`
-              }}>
-                Sustained strain
-              </span>
-            )}
+            <p style={{ fontSize: '12.5px', color: Colors.textDark, lineHeight: 1.45, margin: '3px 0 0 0' }}>
+              {loadAnalysis.recentPattern}
+            </p>
           </div>
-          <span style={{ fontSize: '12.5px', color: Colors.textDark, lineHeight: 1.4 }}>
-            Your recent workload pattern analysis will appear here.
-          </span>
 
-          <div style={{ height: '1px', backgroundColor: 'rgba(0, 0, 0, 0.05)', margin: '4px 0' }} />
+          <div style={{ height: '1px', backgroundColor: 'rgba(0, 0, 0, 0.05)', margin: '2px 0' }} />
 
           {/* Collapsible Accordion: Why? */}
           <button
@@ -285,7 +462,7 @@ export const StressWorkloadMapView: React.FC = () => {
               cursor: 'pointer'
             }}
           >
-            <span style={{ fontSize: '13px', fontWeight: 800, color: cardTheme.titleColor }}>
+            <span style={{ fontSize: '12px', color: cardTheme.titleColor }}>
               Why?
             </span>
             {isExplanationOpen ? <ChevronUp size={16} color={cardTheme.accentColor} /> : <ChevronDown size={16} color={cardTheme.accentColor} />}
@@ -295,45 +472,91 @@ export const StressWorkloadMapView: React.FC = () => {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
-              fontSize: '12px',
-              color: '#334155',
-              lineHeight: 1.45,
+              gap: '10px',
               paddingTop: '6px',
               borderTop: '1px solid rgba(0, 0, 0, 0.05)'
             }}>
-              {capacityProfile.analysisResult.evidence.length > 0 ? (
-                capacityProfile.analysisResult.evidence.map((ev, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                    <span style={{ color: cardTheme.accentColor, fontWeight: 900 }}>•</span>
-                    <span>{ev.message}</span>
-                  </div>
-                ))
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                  <span style={{ color: cardTheme.accentColor, fontWeight: 900 }}>•</span>
-                  <span>No specific evidence available.</span>
+              {/* Time */}
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: cardTheme.accentColor, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Time
+                </span>
+                <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, margin: '2px 0 0 0' }}>
+                  {loadAnalysis.whySections.time}
+                </p>
+              </div>
+
+              {/* Demand */}
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: cardTheme.accentColor, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Demand
+                </span>
+                <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, margin: '2px 0 0 0' }}>
+                  {loadAnalysis.whySections.demand}
+                </p>
+              </div>
+
+              {/* Resources */}
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: cardTheme.accentColor, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Resources
+                </span>
+                <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, margin: '2px 0 0 0' }}>
+                  {loadAnalysis.whySections.resources}
+                </p>
+              </div>
+
+              {/* Main contributors */}
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: cardTheme.accentColor, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Main contributors
+                </span>
+                <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, margin: '2px 0 0 0' }}>
+                  {loadAnalysis.whySections.mainContributors}
+                </p>
+              </div>
+
+              {/* Recent pattern (supporting trend) */}
+              {loadAnalysis.whySections.supportingPattern && (
+                <div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: cardTheme.accentColor,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.4px'
+                  }}>
+                    Supporting pattern
+                  </span>
+
+                  {Array.isArray(loadAnalysis.whySections.supportingPattern) ? (
+                    <ul style={{
+                      margin: '5px 0 0 0',
+                      paddingLeft: '18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}>
+                      {loadAnalysis.whySections.supportingPattern.map((pattern, index) => (
+                        <li
+                          key={index}
+                          style={{
+                            fontSize: '12px',
+                            color: '#334155',
+                            lineHeight: 1.45
+                          }}
+                        >
+                          {pattern}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, margin: '2px 0 0 0' }}>
+                      {loadAnalysis.whySections.supportingPattern}
+                    </p>
+                  )}
                 </div>
               )}
-
-              {/* Supporting pattern */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: cardTheme.titleColor }}>
-                  Supporting pattern
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: cardTheme.accentColor, fontWeight: 900 }}>•</span>
-                  <span>6 strained / overloaded days</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: cardTheme.accentColor, fontWeight: 900 }}>•</span>
-                  <span>Low energy on 3 days</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: cardTheme.accentColor, fontWeight: 900 }}>•</span>
-                  <span>Time pressure repeated across multiple days</span>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -393,11 +616,19 @@ export const StressWorkloadMapView: React.FC = () => {
       {/* 3. RESOURCES & FEASIBILITY (COMBINED CARD AS SHOWN IN PICTURE 2)          */}
       {/* ========================================================================= */}
       {(() => {
-        const totalWorkloadHours = activeWorkloads.reduce((acc, w) => acc + (w.estimatedHours || 0), 0) || 0;
-        const availableHours = capacityProfile.candidateTimeHours;
-        const deficitHours = availableHours !== null ? Math.max(0, Number((totalWorkloadHours - availableHours).toFixed(1))) : null;
-        const energyState = todayCheckIn?.energyLevel ? (todayCheckIn.energyLevel >= 4 ? 'Moderate' : todayCheckIn.energyLevel === 3 ? 'Moderate' : 'Low') : 'Moderate';
-        const controlState = todayCheckIn?.controlScore ? (todayCheckIn.controlScore >= 4 ? 'Moderate' : todayCheckIn.controlScore === 3 ? 'Moderate' : 'Low') : 'Moderate';
+        const horizonEnd = '2026-09-15T22:15:00+08:00';
+        const workloadsInHorizon = activeWorkloads.filter(w => !w.deadline || w.deadline <= horizonEnd);
+        const horizonDueHours = workloadsInHorizon.reduce((acc, w) => acc + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0);
+        const availableHours = capacityProfile.candidateTimeHours ?? 19;
+        const deficitHours = Math.max(0, Number((horizonDueHours - availableHours).toFixed(1)));
+        const hasCheckIn = !!todayCheckIn;
+        const energyState = hasCheckIn && todayCheckIn?.energyLevel != null
+          ? (todayCheckIn.energyLevel >= 4 ? 'High' : todayCheckIn.energyLevel === 3 ? 'Moderate' : 'Low')
+          : 'Pending';
+        const controlScoreVal = todayCheckIn?.controlScore ?? todayCheckIn?.q2_control;
+        const controlState = hasCheckIn && controlScoreVal != null
+          ? (controlScoreVal >= 4 ? 'High' : controlScoreVal === 3 ? 'Moderate' : 'Low')
+          : 'Pending';
 
         return (
           <div style={{
@@ -446,8 +677,11 @@ export const StressWorkloadMapView: React.FC = () => {
                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)'
               }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Energy</span>
-                <span style={{ fontSize: '15px', fontWeight: 900, color: energyState === 'Low' ? '#DC2626' : energyState === 'Moderate' ? '#B45309' : '#15803D' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: energyState === 'Low' ? '#DC2626' : energyState === 'Moderate' ? '#B45309' : energyState === 'High' ? '#15803D' : '#94A3B8' }}>
                   {energyState}
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                  {hasCheckIn && todayCheckIn?.energyLevel != null ? `${todayCheckIn.energyLevel} / 5` : '—'}
                 </span>
               </div>
 
@@ -462,8 +696,11 @@ export const StressWorkloadMapView: React.FC = () => {
                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)'
               }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Control</span>
-                <span style={{ fontSize: '15px', fontWeight: 900, color: '#1D4ED8' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: controlState === 'Low' ? '#DC2626' : controlState === 'Moderate' ? '#B45309' : controlState === 'High' ? '#1D4ED8' : '#94A3B8' }}>
                   {controlState}
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                  {hasCheckIn && controlScoreVal != null ? `${controlScoreVal} / 5` : '—'}
                 </span>
               </div>
 
@@ -475,38 +712,185 @@ export const StressWorkloadMapView: React.FC = () => {
                 flexDirection: 'column',
                 gap: '4px',
                 border: '1.5px solid #E2E8F0',
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)'
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+                position: 'relative'
               }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Candidate Time</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Open Time</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpenTimeInfoOpen(!isOpenTimeInfoOpen);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '1px',
+                      margin: 0,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: isOpenTimeInfoOpen ? '#0284C7' : '#94A3B8',
+                      transition: 'color 0.15s ease'
+                    }}
+                    title="What is Open Time?"
+                    aria-label="What is Open Time?"
+                  >
+                    <Info size={12} />
+                  </button>
+                </div>
                 <span style={{ fontSize: '15px', fontWeight: 900, color: availableHours !== null ? '#15803D' : '#94A3B8' }}>
-                  {availableHours !== null ? `${availableHours}h (7d)` : '—'}
+                  {availableHours !== null ? `${availableHours}h` : '19h'}
                 </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                  next 7 days
+                </span>
+
+                {/* Popover Explanation */}
+                {isOpenTimeInfoOpen && (
+                  <>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpenTimeInfoOpen(false);
+                      }}
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 40
+                      }}
+                    />
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        right: 0,
+                        width: '235px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1.5px solid #BAE6FD',
+                        borderRadius: '14px',
+                        padding: '12px 13px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                        zIndex: 50,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '5px',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Info size={13} color="#0284C7" />
+                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#0369A1' }}>
+                            What is Open Time?
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsOpenTimeInfoOpen(false)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '0 2px',
+                            cursor: 'pointer',
+                            color: '#94A3B8',
+                            fontSize: '15px',
+                            lineHeight: 1,
+                            fontWeight: 600
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p style={{
+                        fontSize: '11.5px',
+                        color: '#334155',
+                        lineHeight: 1.45,
+                        margin: 0
+                      }}>
+                        Time not occupied by fixed events or protected time. It shows when work could potentially be scheduled — not how much you should work.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Sub-card: Time Feasibility explanation with preserved color */}
             <div style={{
-              background: deficitHours !== null && deficitHours > 0
+              background: deficitHours > 0
                 ? 'linear-gradient(135deg, #FFF7ED 0%, #FEF2F2 100%)'
                 : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
               borderRadius: '18px',
               padding: '14px 16px',
-              border: deficitHours !== null && deficitHours > 0 ? '1.5px solid #FED7AA' : '1.5px solid #BBF7D0',
+              border: deficitHours > 0 ? '1.5px solid #FED7AA' : '1.5px solid #BBF7D0',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={16} color={deficitHours !== null && deficitHours > 0 ? '#C2410C' : '#15803D'} />
-                <span style={{ fontSize: '13.5px', fontWeight: 800, color: deficitHours !== null && deficitHours > 0 ? '#9A3412' : '#166534' }}>Candidate Time (7 Days)</span>
+                <Clock size={16} color={deficitHours > 0 ? '#C2410C' : '#15803D'} />
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: deficitHours > 0 ? '#9A3412' : '#166534' }}>Time Availability — next 7 Days</span>
               </div>
-              <p style={{ fontSize: '12.5px', color: deficitHours !== null && deficitHours > 0 ? '#7C2D12' : '#14532D', lineHeight: 1.45, margin: 0 }}>
-                {deficitHours === null
-                  ? 'Calendar data required. Connect schedule information to view candidate time.'
-                  : deficitHours > 0
-                  ? `Your 7-day candidate time (${availableHours}h) is less than your total workload volume (${totalWorkloadHours}h). Deadline scheduling may be tight.`
-                  : `Your 7-day candidate time (${availableHours}h) mathematically covers your total workload volume (${totalWorkloadHours}h), but actual feasibility depends on specific deadlines.`}
-              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {deficitHours > 0 ? (
+                  <>
+                    <p style={{
+                      fontSize: '12.5px',
+                      color: '#7C2D12',
+                      lineHeight: 1.45,
+                      margin: 0,
+                      fontWeight: 700
+                    }}>
+                      There isn't enough open time for all of your upcoming work.
+                    </p>
+
+                    <p style={{
+                      fontSize: '12.5px',
+                      color: '#7C2D12',
+                      lineHeight: 1.45,
+                      margin: 0
+                    }}>
+                      About {horizonDueHours}h of work is due within the next 7 days, but only {availableHours}h of open calendar time is currently available. At least {deficitHours}h still has nowhere to fit.
+                    </p>
+
+                    <p style={{
+                      fontSize: '11.5px',
+                      color: '#9A3412',
+                      lineHeight: 1.4,
+                      margin: 0
+                    }}>
+                      Open time means time not occupied by fixed events or protected time. It is not a recommended amount of work.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{
+                      fontSize: '12.5px',
+                      color: '#14532D',
+                      lineHeight: 1.45,
+                      margin: 0,
+                      fontWeight: 700
+                    }}>
+                      Your recorded workload fits within your open calendar time overall.
+                    </p>
+
+                    <p style={{
+                      fontSize: '12.5px',
+                      color: '#14532D',
+                      lineHeight: 1.45,
+                      margin: 0
+                    }}>
+                      About {horizonDueHours}h of work is due within the next 7 days, with {availableHours}h of open calendar time identified. Individual deadlines may still make some days tighter than others.
+                    </p>
+
+
+                  </>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -541,41 +925,41 @@ export const StressWorkloadMapView: React.FC = () => {
             <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '115px', height: '115px' }}>
               {/* Background circle */}
               <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="18" />
-              
-              {/* Cognitive: ~45% (dash 107.4) */}
+
+              {/* Cognitive */}
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
                 stroke="#7C3AED"
                 strokeWidth={activeDemandSlice === 'cognitive' ? 22 : 18}
-                strokeDasharray="107.4 238.76"
-                strokeDashoffset="0"
+                strokeDasharray={`${cogDash} 238.76`}
+                strokeDashoffset={`${cogOffset}`}
                 style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, filter 0.2s ease' }}
                 onMouseEnter={() => setActiveDemandSlice('cognitive')}
                 onClick={() => setActiveDemandSlice('cognitive')}
               />
 
-              {/* Emotional: ~30% (dash 71.6) */}
+              {/* Emotional */}
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
                 stroke="#E11D48"
                 strokeWidth={activeDemandSlice === 'emotional' ? 22 : 18}
-                strokeDasharray="71.6 238.76"
-                strokeDashoffset="-107.4"
+                strokeDasharray={`${emoDash} 238.76`}
+                strokeDashoffset={`${emoOffset}`}
                 style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, filter 0.2s ease' }}
                 onMouseEnter={() => setActiveDemandSlice('emotional')}
                 onClick={() => setActiveDemandSlice('emotional')}
               />
 
-              {/* Physical: ~25% (dash 59.7) */}
+              {/* Physical */}
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
                 stroke="#16A34A"
                 strokeWidth={activeDemandSlice === 'physical' ? 22 : 18}
-                strokeDasharray="59.7 238.76"
-                strokeDashoffset="-179"
+                strokeDasharray={`${phyDash} 238.76`}
+                strokeDashoffset={`${phyOffset}`}
                 style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, filter 0.2s ease' }}
                 onMouseEnter={() => setActiveDemandSlice('physical')}
                 onClick={() => setActiveDemandSlice('physical')}
@@ -703,7 +1087,7 @@ export const StressWorkloadMapView: React.FC = () => {
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#8B5CF6"
+                stroke="#60A5FA"
                 strokeWidth={activeAreaSlice === 'Academic' ? 24 : 17}
                 strokeDasharray={`${academicDash} 238.76`}
                 strokeDashoffset={`${academicOffset}`}
@@ -711,7 +1095,7 @@ export const StressWorkloadMapView: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: activeAreaSlice === 'Academic' ? 1 : 0.65,
-                  filter: activeAreaSlice === 'Academic' ? 'drop-shadow(0 0 5px rgba(139, 92, 246, 0.45))' : 'none'
+                  filter: activeAreaSlice === 'Academic' ? 'drop-shadow(0 0 5px rgba(37, 99, 235, 0.45))' : 'none'
                 }}
                 onMouseEnter={() => setActiveAreaSlice('Academic')}
                 onClick={() => setActiveAreaSlice('Academic')}
@@ -719,31 +1103,31 @@ export const StressWorkloadMapView: React.FC = () => {
                 <title>Academic: {academicTasks} tasks ({academicPct}%)</title>
               </circle>
 
-              {/* Extracurricular */}
+              {/* Social */}
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#FF6B6B"
-                strokeWidth={activeAreaSlice === 'Extracurricular' ? 24 : 17}
-                strokeDasharray={`${extraDash} 238.76`}
-                strokeDashoffset={`${extraOffset}`}
+                stroke="#FB923C"
+                strokeWidth={activeAreaSlice === 'Social' ? 24 : 17}
+                strokeDasharray={`${socialDash} 238.76`}
+                strokeDashoffset={`${socialOffset}`}
                 style={{
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  opacity: activeAreaSlice === 'Extracurricular' ? 1 : 0.65,
-                  filter: activeAreaSlice === 'Extracurricular' ? 'drop-shadow(0 0 5px rgba(255, 107, 107, 0.45))' : 'none'
+                  opacity: activeAreaSlice === 'Social' ? 1 : 0.65,
+                  filter: activeAreaSlice === 'Social' ? 'drop-shadow(0 0 5px rgba(234, 88, 12, 0.45))' : 'none'
                 }}
-                onMouseEnter={() => setActiveAreaSlice('Extracurricular')}
-                onClick={() => setActiveAreaSlice('Extracurricular')}
+                onMouseEnter={() => setActiveAreaSlice('Social')}
+                onClick={() => setActiveAreaSlice('Social')}
               >
-                <title>Extracurricular: {extracurricularTasks} tasks ({extraPct}%)</title>
+                <title>Social: {socialTasks} tasks ({socialPct}%)</title>
               </circle>
 
               {/* Self-Care */}
               <circle
                 cx="50" cy="50" r="38"
                 fill="none"
-                stroke="#0284C7"
+                stroke="#34D399"
                 strokeWidth={activeAreaSlice === 'Self-Care' ? 24 : 17}
                 strokeDasharray={`${selfCareDash} 238.76`}
                 strokeDashoffset={`${selfCareOffset}`}
@@ -751,7 +1135,7 @@ export const StressWorkloadMapView: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: activeAreaSlice === 'Self-Care' ? 1 : 0.65,
-                  filter: activeAreaSlice === 'Self-Care' ? 'drop-shadow(0 0 5px rgba(2, 132, 199, 0.45))' : 'none'
+                  filter: activeAreaSlice === 'Self-Care' ? 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.45))' : 'none'
                 }}
                 onMouseEnter={() => setActiveAreaSlice('Self-Care')}
                 onClick={() => setActiveAreaSlice('Self-Care')}
@@ -776,7 +1160,7 @@ export const StressWorkloadMapView: React.FC = () => {
                 color: Colors.textDark,
                 lineHeight: 1
               }}>
-                {activeAreaSlice === 'Academic' ? academicTasks : activeAreaSlice === 'Extracurricular' ? extracurricularTasks : selfCareTasks}
+                {activeAreaSlice === 'Academic' ? academicTasks : activeAreaSlice === 'Social' ? socialTasks : selfCareTasks}
               </span>
               <span style={{
                 fontSize: '11px',
@@ -784,7 +1168,7 @@ export const StressWorkloadMapView: React.FC = () => {
                 color: Colors.textMuted,
                 marginTop: '3px'
               }}>
-                {activeAreaSlice === 'Self-Care' ? (selfCareTasks === 1 ? 'buffer' : 'buffers') : (activeAreaSlice === 'Academic' ? (academicTasks === 1 ? 'task' : 'tasks') : (extracurricularTasks === 1 ? 'task' : 'tasks'))}
+                {activeAreaSlice === 'Self-Care' ? (selfCareTasks === 1 ? 'buffer' : 'buffers') : (activeAreaSlice === 'Academic' ? (academicTasks === 1 ? 'task' : 'tasks') : (socialTasks === 1 ? 'task' : 'tasks'))}
               </span>
             </div>
           </div>
@@ -801,9 +1185,9 @@ export const StressWorkloadMapView: React.FC = () => {
                 justifyContent: 'space-between',
                 padding: '8px 14px',
                 borderRadius: '12px',
-                backgroundColor: activeAreaSlice === 'Academic' ? '#F3EEFD' : '#F8FAFC',
-                border: activeAreaSlice === 'Academic' ? '2px solid #8B5CF6' : '1px solid #E2E8F0',
-                boxShadow: activeAreaSlice === 'Academic' ? '0 4px 12px rgba(139, 92, 246, 0.18)' : 'none',
+                backgroundColor: activeAreaSlice === 'Academic' ? '#EFF6FF' : '#F8FAFC',
+                border: activeAreaSlice === 'Academic' ? '2px solid #3B82F6' : '1px solid #E2E8F0',
+                boxShadow: activeAreaSlice === 'Academic' ? '0 4px 12px rgba(59, 130, 246, 0.18)' : 'none',
                 transform: activeAreaSlice === 'Academic' ? 'scale(1.02)' : 'scale(1)',
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -811,39 +1195,39 @@ export const StressWorkloadMapView: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#8B5CF6' }} />
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#7C3AED', whiteSpace: 'nowrap' }}>Academic</span>
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#3B82F6' }} />
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#1E40AF', whiteSpace: 'nowrap' }}>Academic</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 900, color: '#7C3AED' }}>
+              <span style={{ fontSize: '12px', fontWeight: 900, color: '#1E40AF' }}>
                 {academicPct}%
               </span>
             </button>
 
             <button
               type="button"
-              onMouseEnter={() => setActiveAreaSlice('Extracurricular')}
-              onClick={() => setActiveAreaSlice('Extracurricular')}
+              onMouseEnter={() => setActiveAreaSlice('Social')}
+              onClick={() => setActiveAreaSlice('Social')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '8px 14px',
                 borderRadius: '12px',
-                backgroundColor: activeAreaSlice === 'Extracurricular' ? '#FFF1F2' : '#F8FAFC',
-                border: activeAreaSlice === 'Extracurricular' ? '2px solid #FF6B6B' : '1px solid #E2E8F0',
-                boxShadow: activeAreaSlice === 'Extracurricular' ? '0 4px 12px rgba(255, 107, 107, 0.18)' : 'none',
-                transform: activeAreaSlice === 'Extracurricular' ? 'scale(1.02)' : 'scale(1)',
+                backgroundColor: activeAreaSlice === 'Social' ? '#FFF7ED' : '#F8FAFC',
+                border: activeAreaSlice === 'Social' ? '2px solid #F97316' : '1px solid #E2E8F0',
+                boxShadow: activeAreaSlice === 'Social' ? '0 4px 12px rgba(249, 115, 22, 0.18)' : 'none',
+                transform: activeAreaSlice === 'Social' ? 'scale(1.02)' : 'scale(1)',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.15s ease'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#FF6B6B' }} />
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#E11D48', whiteSpace: 'nowrap' }}>Extracurricular</span>
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#F97316' }} />
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#9A3412', whiteSpace: 'nowrap' }}>Extracurricular</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 900, color: '#E11D48' }}>
-                {extraPct}%
+              <span style={{ fontSize: '12px', fontWeight: 900, color: '#9A3412' }}>
+                {socialPct}%
               </span>
             </button>
 
@@ -857,9 +1241,9 @@ export const StressWorkloadMapView: React.FC = () => {
                 justifyContent: 'space-between',
                 padding: '8px 14px',
                 borderRadius: '12px',
-                backgroundColor: activeAreaSlice === 'Self-Care' ? '#E0F2FE' : '#F8FAFC',
-                border: activeAreaSlice === 'Self-Care' ? '2px solid #0284C7' : '1px solid #E2E8F0',
-                boxShadow: activeAreaSlice === 'Self-Care' ? '0 4px 12px rgba(2, 132, 199, 0.18)' : 'none',
+                backgroundColor: activeAreaSlice === 'Self-Care' ? '#F0FDF4' : '#F8FAFC',
+                border: activeAreaSlice === 'Self-Care' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                boxShadow: activeAreaSlice === 'Self-Care' ? '0 4px 12px rgba(16, 185, 129, 0.18)' : 'none',
                 transform: activeAreaSlice === 'Self-Care' ? 'scale(1.02)' : 'scale(1)',
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -867,10 +1251,10 @@ export const StressWorkloadMapView: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#0284C7' }} />
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#0369A1', whiteSpace: 'nowrap' }}>Self-Care</span>
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#166534', whiteSpace: 'nowrap' }}>Self-Care</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 900, color: '#0369A1' }}>
+              <span style={{ fontSize: '12px', fontWeight: 900, color: '#166534' }}>
                 {selfCarePct}%
               </span>
             </button>

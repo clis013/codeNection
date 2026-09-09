@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Colors } from '../../theme/colors';
 import { CartoonEmoji } from '../Common/CartoonEmoji';
-import { X, ArrowLeft, ArrowRight, AlertCircle, Check, CheckCircle, Activity, RefreshCw, Home } from 'lucide-react';
+import {
+  X, ArrowLeft, ArrowRight, AlertCircle, Check, CheckCircle, Activity, RefreshCw, Home,
+  TrendingUp, TrendingDown, Battery, Shield, Zap, Sparkles, Compass
+} from 'lucide-react';
 import { getTodayLocalDate } from '../../utils/dateHelpers';
 
 export const DailyCheckInModal: React.FC = () => {
@@ -14,13 +17,19 @@ export const DailyCheckInModal: React.FC = () => {
     calculatePss,
     calculateBaselineDiff,
     baselineStressAverage,
+    baselineEnergyAverage,
+    baselineControlAverage,
+    baselineMentalDemandAverage,
+    baselineCopingConfidenceAverage,
     hasBaseline,
     isRetestRequested,
-    setIsRetestRequested
+    setIsRetestRequested,
+    checkIns
   } = useApp();
 
   // Show snapshot view if already checked in or just finished
   const [showSnapshot, setShowSnapshot] = useState<boolean>(false);
+  const [snapshotTab, setSnapshotTab] = useState<'today' | 'trends'>('today');
   const [step, setStep] = useState<number>(1);
   const [q1Stress, setQ1Stress] = useState<number | null>(null);
   const [q2Control, setQ2Control] = useState<number | null>(null);
@@ -106,6 +115,43 @@ export const DailyCheckInModal: React.FC = () => {
       copingCapabilityScore: s4,
 
       // Baseline fields — only present when hasBaseline is true
+      ...(baseCalc !== null ? {
+        baselineDiff: baseCalc.diff,
+        baselineCategory: baseCalc.category,
+        baselineInterpretation: baseCalc.interpretation
+      } : {})
+    });
+
+    setIsRetestRequested(false);
+    setShowSnapshot(true);
+  };
+
+  const handleQuickFillNicoleDemo = () => {
+    setQ1Stress(5);
+    setQ2Control(2);
+    setQ3Demand(5);
+    setQ4Capability(2);
+    setQ5Energy(1);
+    setQ6Feeling('Overwhelmed');
+
+    const pssCalc = calculatePss(5, 2, 5, 2);
+    const baseCalc = calculateBaselineDiff(pssCalc.score);
+
+    saveCheckIn({
+      date: getTodayLocalDate(),
+      createdAt: '2026-09-08T22:15:00+08:00',
+      q1_stress: 5,
+      q2_control: 2,
+      q3_mentalDemand: 5,
+      q4_capability: 2,
+      energyLevel: 1,
+      emotionFeeling: 'Overwhelmed',
+      pssScore: pssCalc.score,
+      category: pssCalc.category,
+      snapshotInterpretation: pssCalc.interpretation,
+      controlScore: 2,
+      mentalDemandScore: 5,
+      copingCapabilityScore: 2,
       ...(baseCalc !== null ? {
         baselineDiff: baseCalc.diff,
         baselineCategory: baseCalc.category,
@@ -253,8 +299,8 @@ export const DailyCheckInModal: React.FC = () => {
   // Baseline: may be null when fewer than 30 prior records exist
   const activeBaseline: { diff: number; category: string; interpretation: string } | null = todayCheckIn
     ? (todayCheckIn.baselineCategory !== undefined && todayCheckIn.baselineDiff !== undefined
-        ? { diff: todayCheckIn.baselineDiff, category: todayCheckIn.baselineCategory, interpretation: todayCheckIn.baselineInterpretation || 'Typical level' }
-        : null)
+      ? { diff: todayCheckIn.baselineDiff, category: todayCheckIn.baselineCategory, interpretation: todayCheckIn.baselineInterpretation || 'Typical level' }
+      : null)
     : calculateBaselineDiff(activePss.score);
 
   // Format comparison display label (e.g. "Typical level", "Higher than normal", "Lower than normal")
@@ -452,7 +498,7 @@ export const DailyCheckInModal: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              marginTop: '6px'
+              marginTop: '2px'
             }}>
               <span style={{
                 fontSize: '11px',
@@ -466,7 +512,6 @@ export const DailyCheckInModal: React.FC = () => {
 
               {/* Two side-by-side white cards */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                
                 {/* Left Card: Stress */}
                 <div style={{
                   backgroundColor: '#FFFFFF',
@@ -479,13 +524,10 @@ export const DailyCheckInModal: React.FC = () => {
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  {/* Orange Pulse Icon */}
                   <Activity size={22} color="#F97316" strokeWidth={2.4} />
-                  
                   <span style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}>
                     Stress
                   </span>
-
                   <span style={{
                     fontSize: '15px',
                     fontWeight: 800,
@@ -493,13 +535,12 @@ export const DailyCheckInModal: React.FC = () => {
                   }}>
                     {activePss.category}
                   </span>
-
                   <span style={{ fontSize: '10px', color: '#94A3B8' }}>
                     Score: {activePss.score}/20
                   </span>
                 </div>
 
-                {/* Right Card: Baseline Comparison (only shown when ≥30 prior records exist) */}
+                {/* Right Card: Baseline Comparison */}
                 <div style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '20px',
@@ -512,11 +553,9 @@ export const DailyCheckInModal: React.FC = () => {
                   gap: '6px'
                 }}>
                   <Activity size={22} color="#8B5CF6" strokeWidth={2.4} />
-
                   <span style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}>
                     Comparison
                   </span>
-
                   {activeBaseline !== null ? (
                     <>
                       <span style={{ fontSize: '15px', fontWeight: 800, color: '#7C3AED' }}>
@@ -654,7 +693,7 @@ export const DailyCheckInModal: React.FC = () => {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
-                    Stress & Demands
+                    Stress, Control & Demands
                   </h2>
                   <p style={{ fontSize: '12px', color: Colors.textMuted, margin: 0 }}>
                     Select your rating for each question to automatically continue.
@@ -666,6 +705,31 @@ export const DailyCheckInModal: React.FC = () => {
                   {renderLikertRow(2, "How much control do you feel you have over your day?", q2Control, onSelectQ2, q2Labels)}
                   {renderLikertRow(3, "How mentally demanding has your day been?", q3Demand, onSelectQ3, q3Labels)}
                 </div>
+
+                {/* Optional Demo Shortcut */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={handleQuickFillNicoleDemo}
+                    style={{
+                      background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+                      border: '1.2px solid #FED7AA',
+                      borderRadius: '12px',
+                      padding: '8px 14px',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      color: '#C2410C',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 6px rgba(234, 88, 12, 0.08)'
+                    }}
+                  >
+                    <Sparkles size={13} color="#EA580C" />
+                    <span>⚡ Quick Fill: Nicole's Demo State (Overwhelmed)</span>
+                  </button>
+                </div>
               </>
             )}
 
@@ -674,10 +738,10 @@ export const DailyCheckInModal: React.FC = () => {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 800, color: Colors.textDark, margin: 0 }}>
-                    Handling & Energy
+                    Coping & Energy
                   </h2>
                   <p style={{ fontSize: '12px', color: Colors.textMuted, margin: 0 }}>
-                    Rate coping capability and energy to automatically continue.
+                    Rate your coping confidence and energy to continue.
                   </p>
                 </div>
 

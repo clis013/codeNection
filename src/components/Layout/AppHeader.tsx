@@ -1,7 +1,13 @@
 import React from 'react';
 import { Colors } from '../../theme/colors';
+import { getTodayLocalDate } from '../../utils/dateHelpers';
 
 export const AppHeader: React.FC = () => {
+  const todayStr = getTodayLocalDate();
+  const [year, month, day] = todayStr.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  const formattedDate = `Today, ${String(day).padStart(2, '0')} ${dateObj.toLocaleString('en-US', { month: 'short' })}`;
+
   return (
     <div style={{
       padding: '20px 20px 8px 20px',
@@ -44,7 +50,7 @@ export const AppHeader: React.FC = () => {
         </div>
       </div>
 
-      {/* Right: Date badge ('Today, 05 Sep') */}
+      {/* Right: Date badge ('Today, 08 Sep') */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -59,7 +65,7 @@ export const AppHeader: React.FC = () => {
         color: Colors.textDark,
         boxShadow: '0 2px 10px rgba(255, 138, 80, 0.06)'
       }}>
-        <span>Today, 05 Sep</span>
+        <span>{formattedDate}</span>
       </div>
     </div>
   );

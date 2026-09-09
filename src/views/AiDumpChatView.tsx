@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
-import { 
-  Send, Mic, Sparkles, Check, ArrowRight, Zap, Coffee, Clock, 
+import {
+  Send, Mic, Sparkles, Check, ArrowRight, Zap, Coffee, Clock,
   Play, Pause, Volume2, X, RotateCcw, Feather, TreePine, AlertCircle,
-  Square, CheckCircle2, Edit3, Heart, Palette, Scale, MapPin, Plus, AlertTriangle
+  Square, CheckCircle2, Edit3, Heart, Palette, Scale, BarChart2, Plus, AlertTriangle
 } from 'lucide-react';
 import { TreeHoleAnimationView } from '../components/Recovery/TreeHoleAnimationView';
+import { NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
 
 interface LeafParticle {
   id: number;
@@ -37,7 +38,10 @@ const AiAnalysisNextPlanCard: React.FC<{
   taskTitle?: string;
   taskHours?: number;
   totalWorkloadHours?: number;
+  availableHours?: number;
+  deficit?: number;
   isOverloaded?: boolean;
+  isNicoleAnalysisPlan?: boolean;
   onTreeHole: () => void;
   onColourReflection: () => void;
   onGoToAnalysis: () => void;
@@ -46,208 +50,705 @@ const AiAnalysisNextPlanCard: React.FC<{
   taskTitle,
   taskHours,
   totalWorkloadHours = 20,
+  availableHours,
+  deficit,
   isOverloaded = false,
+  isNicoleAnalysisPlan = false,
   onTreeHole,
   onColourReflection,
   onGoToAnalysis,
   onGoToBalance,
 }) => {
-  return (
-    <div style={{
-      backgroundColor: 'rgba(255, 255, 255, 0.98)',
-      borderRadius: '20px',
-      padding: '16px',
-      border: isOverloaded ? '1.5px solid rgba(252, 165, 165, 0.95)' : '1.5px solid rgba(226, 232, 240, 0.95)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      boxShadow: isOverloaded ? '0 6px 22px rgba(220, 38, 38, 0.08)' : '0 6px 20px rgba(0, 0, 0, 0.05)',
-      width: '100%',
-      boxSizing: 'border-box'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 800, color: Colors.textDark }}>
-          <Sparkles size={16} color={isOverloaded ? "#DC2626" : "#F97316"} />
-          <span>AI Analysis & Next Step Plan</span>
-        </div>
-        <span style={{
-          fontSize: '10.5px',
-          fontWeight: 800,
-          color: isOverloaded ? '#DC2626' : '#C2410C',
-          backgroundColor: isOverloaded ? '#FEE2E2' : '#FFF7ED',
-          padding: '3px 8px',
-          borderRadius: '10px',
-          border: isOverloaded ? '1px solid #FCA5A5' : '1px solid #FED7AA'
-        }}>
-          State: {isOverloaded ? 'Overloaded' : 'Strained'}
-        </span>
-      </div>
-
-      {/* Capacity & Workload Impact */}
+    return (
       <div style={{
-        backgroundColor: isOverloaded ? '#FEF2F2' : '#F8FAFC',
-        borderRadius: '16px',
-        padding: '12px 14px',
-        border: isOverloaded ? '1px solid #FEE2E2' : '1px solid #E2E8F0',
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        borderRadius: '20px',
+        padding: '16px',
+        border: isOverloaded ? '1.5px solid rgba(252, 165, 165, 0.95)' : '1.5px solid rgba(226, 232, 240, 0.95)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '6px'
+        gap: '12px',
+        boxShadow: isOverloaded ? '0 6px 22px rgba(220, 38, 38, 0.08)' : '0 6px 20px rgba(0, 0, 0, 0.05)',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
-        <span style={{ fontSize: '11px', fontWeight: 800, color: isOverloaded ? '#991B1B' : '#64748B', textTransform: 'uppercase' }}>
-          Workload & Capacity Analysis
-        </span>
-        <p style={{ margin: 0, fontSize: '12.5px', color: isOverloaded ? '#7F1D1D' : '#334155', lineHeight: 1.5 }}>
-          {taskTitle ? (
-            <>The task <strong>"{taskTitle}"</strong> {taskHours ? `(${taskHours}h)` : ''} is now active in your calendar. Your total required workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong>. Calendar data required to assess time feasibility.</>
-          ) : (
-            <>Your total active workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong>. Calendar data required to assess time feasibility.</>
-          )}
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap', fontSize: '11.5px' }}>
-          <span style={{ backgroundColor: '#F1F5F9', color: '#64748B', padding: '3px 8px', borderRadius: '8px', fontWeight: 700 }}>
-            Time Deficit: Not calculated
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 800, color: Colors.textDark }}>
+            <Sparkles size={16} color={isOverloaded ? "#DC2626" : "#F97316"} />
+            <span>AI Analysis & Next Step Plan</span>
+          </div>
           <span style={{
-            backgroundColor: isOverloaded ? '#FEE2E2' : '#FEF3C7',
-            color: isOverloaded ? '#991B1B' : '#92400E',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            color: isOverloaded ? '#DC2626' : '#C2410C',
+            backgroundColor: isOverloaded ? '#FEE2E2' : '#FFF7ED',
             padding: '3px 8px',
-            borderRadius: '8px',
-            fontWeight: 700
+            borderRadius: '10px',
+            border: isOverloaded ? '1px solid #FCA5A5' : '1px solid #FED7AA'
           }}>
-            Cognitive Strain: {isOverloaded ? 'Critical' : 'Elevated'}
+            {isOverloaded ? 'Overloaded' : 'Strained'}
           </span>
+        </div>
+
+        {/* Capacity & Workload Impact */}
+        <div style={{
+          backgroundColor: isOverloaded ? '#FEF2F2' : '#F8FAFC',
+          borderRadius: '16px',
+          padding: '12px 14px',
+          border: isOverloaded ? '1px solid #FEE2E2' : '1px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: isOverloaded ? '#991B1B' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            Workload &amp; Capacity Analysis
+          </span>
+          <p style={{ margin: 0, fontSize: '12.5px', color: isOverloaded ? '#7F1D1D' : '#334155', lineHeight: 1.5 }}>
+            {isNicoleAnalysisPlan ? (
+              <>Your total active commitments now is <strong>5 workloads (39h total)</strong>. In the next 3 days, you will have <strong>29h of urgent demands</strong> but only <strong>15.5h of available open time</strong>.</>
+            ) : taskTitle ? (
+              <>The task <strong>"{taskTitle}"</strong> {taskHours ? `(${taskHours}h)` : ''} is now active in your calendar. Your total required workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong> against <strong>{availableHours || 4.5}h</strong> available focus capacity.</>
+            ) : (
+              <>Your total active workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong> against <strong>{availableHours || 4.5}h</strong> available focus capacity.</>
+            )}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap', fontSize: '11.5px' }}>
+            <span style={{ backgroundColor: '#FEE2E2', color: '#991B1B', padding: '3px 8px', borderRadius: '8px', fontWeight: 700, border: '1px solid #FECDD3' }}>
+              Time Deficit: -{isNicoleAnalysisPlan ? '13.5' : (deficit ?? Math.max(0, totalWorkloadHours - (availableHours || 4.5)).toFixed(1))}h {isNicoleAnalysisPlan ? '(Next 3 Days)' : ''}
+            </span>
+            <span style={{
+              backgroundColor: isOverloaded ? '#FEE2E2' : '#FEF3C7',
+              color: isOverloaded ? '#991B1B' : '#92400E',
+              padding: '3px 8px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              border: isOverloaded ? '1px solid #FECDD3' : '1px solid #FED7AA'
+            }}>
+              Cognitive Strain: {isOverloaded ? 'Critical' : 'Elevated'}
+            </span>
+          </div>
+        </div>
+
+        {/* Recovery Recommendation */}
+        <div style={{
+          backgroundColor: '#FFF7ED',
+          borderRadius: '16px',
+          padding: '12px 14px',
+          border: '1.2px solid #FED7AA',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C2410C', fontWeight: 800, fontSize: '12.5px' }}>
+            <Coffee size={15} color="#EA580C" />
+            <span>Recovery Recommendation</span>
+          </div>
+          <p style={{ margin: 0, fontSize: '12px', color: '#9A3412', lineHeight: 1.45 }}>
+            {isOverloaded ? 'Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery!' : 'Cognitive load and deadline density are elevated. We recommend taking 15–20 minutes to recover before commencing deep work.'}
+          </p>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={onTreeHole}
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1.2px solid #86EFAC',
+                color: '#166534',
+                borderRadius: '12px',
+                padding: '6px 12px',
+                fontSize: '11.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.1)'
+              }}
+            >
+              <Feather size={13} /> Tree Hole Vent
+            </button>
+            <button
+              type="button"
+              onClick={onColourReflection}
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1.2px solid #DDD6FE',
+                color: '#6B21A8',
+                borderRadius: '12px',
+                padding: '6px 12px',
+                fontSize: '11.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                boxShadow: '0 2px 6px rgba(124, 58, 237, 0.1)'
+              }}
+            >
+              <Palette size={13} /> Colour Reflection
+            </button>
+          </div>
+        </div>
+
+        {/* Next Action Selection */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B' }}>
+            Select Next Action:
+          </span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={onGoToAnalysis}
+              style={{
+                background: '#F8FAFC',
+                border: '1.5px solid #E2E8F0',
+                borderRadius: '14px',
+                padding: '11px 12px',
+                color: Colors.textDark,
+                fontWeight: 800,
+                fontSize: '12.5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                transition: 'all 0.15s ease',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+              }}
+              title="Analysis"
+            >
+              <BarChart2 size={16} color="#475569" strokeWidth={2.2} />
+              <span>Analysis</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onGoToBalance}
+              style={{
+                background: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
+                border: '1.5px solid #FDBA74',
+                borderRadius: '14px',
+                padding: '11px 12px',
+                color: '#9A3412',
+                fontWeight: 800,
+                fontSize: '12.5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.18)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Balance"
+            >
+              <Scale size={15} color="#9A3412" />
+              <span>Balance</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+// ─── Nicole Canonical Demo Extraction Card ──────────────────────────────────
+const getAreaColor = (area?: string) => {
+  switch (area?.toLowerCase()) {
+    case 'academic':
+      return '#2563EB'; // Royal blue matching pie chart
+    case 'social':
+    case 'extracurricular':
+      return '#EA580C'; // Warm orange matching pie chart
+    case 'self-care':
+    case 'selfcare':
+      return '#166534'; // Emerald green matching pie chart
+    case 'personal':
+      return '#7C3AED'; // Purple
+    default:
+      return '#475569';
+  }
+};
+
+const NicoleDemoExtractionCard: React.FC<{
+  msg: any;
+  onClarify: () => void;
+  onConfirm: () => void;
+  onGoToWorkloads: () => void;
+}> = ({ msg, onClarify, onConfirm, onGoToWorkloads }) => {
+  const {
+    setSelectedWorkload,
+    setIsWorkloadDetailOpen,
+    workloads,
+    setIsTreeHoleOpen,
+    setIsColourReflectionOpen,
+    setActiveTab,
+    clarifiedWorkloadIds
+  } = useApp();
+  const isClarified = !!msg.nicoleClarified;
+  const isConfirmed = !!msg.nicoleConfirmed;
+
+  const webProg = workloads.find(w => w.id === 'web-programming-group');
+  const osQuiz = workloads.find(w => w.id === 'os-quiz-1');
+  const fcgTest = workloads.find(w => w.id === 'fcg-test-1');
+  const sponsorship = workloads.find(w => w.id === 'tech-carnival-sponsorship');
+
+  // Edit button ONLY turns clarified if they press "Save Changes" in the edit modal
+  const isItemClarified = (workloadId: string) => {
+    return (clarifiedWorkloadIds || []).includes(workloadId);
+  };
+
+  const handleEditWorkload = (workloadId: string) => {
+    const existing = workloads.find(w => w.id === workloadId);
+    if (existing) {
+      setSelectedWorkload(existing);
+    } else if (workloadId === 'tech-carnival-sponsorship') {
+      setSelectedWorkload(TECH_CARNIVAL_SPONSORSHIP_ITEM);
+    }
+    setIsWorkloadDetailOpen(true);
+  };
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(255, 248, 241, 0.98) 0%, rgba(255, 241, 242, 0.8) 50%, rgba(245, 243, 255, 0.92) 100%)',
+      borderRadius: '20px',
+      border: '1.5px solid rgba(251, 146, 60, 0.7)',
+      padding: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '14px',
+      width: '100%',
+      boxSizing: 'border-box',
+      boxShadow: '0 4px 18px rgba(251, 146, 60, 0.08)'
+    }}>
+      {/* CARD HEADER */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EA580C', fontWeight: 800, fontSize: '13.5px' }}>
+          <Sparkles size={16} color="#EA580C" />
+          <span>Extracted Info:</span>
         </div>
       </div>
 
-      {/* Recovery Recommendation */}
+      {/* QUALITATIVE STRESS CONTEXT (Vertically stacked, no horizontal flex) */}
       <div style={{
-        backgroundColor: '#FFF7ED',
-        borderRadius: '16px',
+        backgroundColor: '#FFFFFF',
+        borderRadius: '14px',
         padding: '12px 14px',
-        border: '1.2px solid #FED7AA',
+        border: '1px solid #E2E8F0',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C2410C', fontWeight: 800, fontSize: '12.5px' }}>
-          <Coffee size={15} color="#EA580C" />
-          <span>Recovery Recommendation</span>
-        </div>
-        <p style={{ margin: 0, fontSize: '12px', color: '#9A3412', lineHeight: 1.45 }}>
-          According to our analysis, {isOverloaded ? 'your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes to recover before commencing deep work.' : 'cognitive load and deadline density are elevated. We recommend taking 15–20 minutes to recover before commencing deep work.'}
-        </p>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={onTreeHole}
-            style={{
-              backgroundColor: '#FFFFFF',
-              border: '1.2px solid #86EFAC',
-              color: '#166534',
-              borderRadius: '12px',
-              padding: '6px 12px',
-              fontSize: '11.5px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              boxShadow: '0 2px 6px rgba(34, 197, 94, 0.1)'
-            }}
-          >
-            <Feather size={13} /> Tree Hole Vent
-          </button>
-          <button
-            type="button"
-            onClick={onColourReflection}
-            style={{
-              backgroundColor: '#FFFFFF',
-              border: '1.2px solid #DDD6FE',
-              color: '#6B21A8',
-              borderRadius: '12px',
-              padding: '6px 12px',
-              fontSize: '11.5px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              boxShadow: '0 2px 6px rgba(124, 58, 237, 0.1)'
-            }}
-          >
-            <Palette size={13} /> Colour Reflection
-          </button>
+        <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Identified Stress Context
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+          <div>
+            <div style={{ fontWeight: 700, color: '#DC2626', fontSize: '11.5px' }}>Primary Concern:</div>
+            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
+              Competing academic deadlines (OS Quiz vs Web Programming)
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, color: '#EA580C', fontSize: '11.5px' }}>Secondary Concern:</div>
+            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
+              Taking on additional responsibility in group assignment
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, color: '#7C3AED', fontSize: '11.5px' }}>Additional Demand:</div>
+            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
+              Tech Carnival sponsorship responsibility
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, color: '#0284C7', fontSize: '11.5px' }}>Current Feeling:</div>
+            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
+              Unsure what to prioritize first
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, color: '#475569', fontSize: '11.5px' }}>Recent Context:</div>
+            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
+              Just finished difficult previous week and still feels depleted
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Next Action Selection */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B' }}>
-          Select Next Action:
-        </span>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={onGoToAnalysis}
-            style={{
-              background: '#F8FAFC',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '14px',
-              padding: '11px 12px',
-              color: Colors.textDark,
-              fontWeight: 800,
-              fontSize: '12.5px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
-            }}
-            title="Analysis"
-          >
-            <MapPin size={15} color="#64748B" />
-            <span>Analysis</span>
-          </button>
+      {/* 4 EXTRACTED WORKLOAD ITEMS */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+            Identified Workload (4)
+          </span>
+        </div>
 
+        {/* 1. Tech Carnival Sponsorship (New Workload) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          border: isItemClarified('tech-carnival-sponsorship') ? '1.5px solid #86EFAC' : '1.5px solid #FED7AA',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* Row 1: Workload name [NEW] - NEW always right aligned at right top side */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
+              {sponsorship?.title || 'Tech Carnival Sponsorship'}
+            </span>
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              backgroundColor: '#FFF7ED',
+              color: '#C2410C',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              border: '1px solid #FED7AA',
+              flexShrink: 0,
+              marginTop: '1px'
+            }}>
+              NEW
+            </span>
+          </div>
+
+          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            <span style={{ fontWeight: 800, color: getAreaColor(sponsorship?.area || 'Social') }}>
+              {sponsorship?.area || 'Social'}
+            </span>
+            <span> · Due 10 Sep, 18:00</span>
+          </div>
+
+          {/* Row 3: Bigger edit button below workload area and due (turns to [tick] Clarified after clarification; NO separate tag) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+            <button
+              type="button"
+              onClick={() => handleEditWorkload('tech-carnival-sponsorship')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: isItemClarified('tech-carnival-sponsorship') ? '#F0FDF4' : '#FFF7ED',
+                border: isItemClarified('tech-carnival-sponsorship') ? '1.2px solid #86EFAC' : '1.2px solid #FED7AA',
+                color: isItemClarified('tech-carnival-sponsorship') ? '#166534' : '#C2410C',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Edit Tech Carnival Sponsorship"
+            >
+              {isItemClarified('tech-carnival-sponsorship') ? (
+                <>
+                  <Check size={14} strokeWidth={2.5} color="#166534" />
+                  <span>Clarified</span>
+                </>
+              ) : (
+                <>
+                  <Edit3 size={13} />
+                  <span>Edit</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Web Programming Group Assignment (Existing Workload) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          border: isItemClarified('web-programming-group') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
+              {webProg?.title || 'Web Programming Group Assignment'}
+            </span>
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              backgroundColor: '#F1F5F9',
+              color: '#475569',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              border: '1px solid #E2E8F0',
+              flexShrink: 0,
+              marginTop: '1px'
+            }}>
+              EXISTING
+            </span>
+          </div>
+
+          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            <span style={{ fontWeight: 800, color: getAreaColor(webProg?.area || 'Academic') }}>
+              {webProg?.area || 'Academic'}
+            </span>
+            <span> · Due 11 Sep, 23:59</span>
+          </div>
+
+          {/* Row 3: Bigger edit button below workload area and due (turns to [tick] Clarified after clarification; NO separate tag) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+            <button
+              type="button"
+              onClick={() => handleEditWorkload('web-programming-group')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: isItemClarified('web-programming-group') ? '#F0FDF4' : '#F8FAFC',
+                border: isItemClarified('web-programming-group') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
+                color: isItemClarified('web-programming-group') ? '#166534' : '#334155',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Edit Web Programming"
+            >
+              {isItemClarified('web-programming-group') ? (
+                <>
+                  <Check size={14} strokeWidth={2.5} color="#166534" />
+                  <span>Clarified</span>
+                </>
+              ) : (
+                <>
+                  <Edit3 size={13} />
+                  <span>Edit</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 3. OS Quiz (Existing Workload) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          border: isItemClarified('os-quiz-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
+              {osQuiz?.title || 'Operating System Quiz 1'}
+            </span>
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              backgroundColor: '#F1F5F9',
+              color: '#475569',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              border: '1px solid #E2E8F0',
+              flexShrink: 0,
+              marginTop: '1px'
+            }}>
+              EXISTING
+            </span>
+          </div>
+
+          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            <span style={{ fontWeight: 800, color: getAreaColor(osQuiz?.area || 'Academic') }}>
+              {osQuiz?.area || 'Academic'}
+            </span>
+            <span> · Due 10 Sep, 08:00</span>
+          </div>
+
+          {/* Row 3: Bigger edit button below workload area and due */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+            <button
+              type="button"
+              onClick={() => handleEditWorkload('os-quiz-1')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: isItemClarified('os-quiz-1') ? '#F0FDF4' : '#F8FAFC',
+                border: isItemClarified('os-quiz-1') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
+                color: isItemClarified('os-quiz-1') ? '#166534' : '#334155',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Edit Operating System Quiz 1"
+            >
+              {isItemClarified('os-quiz-1') ? (
+                <>
+                  <Check size={14} strokeWidth={2.5} color="#166534" />
+                  <span>Clarified</span>
+                </>
+              ) : (
+                <>
+                  <Edit3 size={13} />
+                  <span>Edit</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 4. FCG Test (Existing Workload) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          border: isItemClarified('fcg-test-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
+              {fcgTest?.title || 'FCG Test'}
+            </span>
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              backgroundColor: '#F1F5F9',
+              color: '#475569',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              border: '1px solid #E2E8F0',
+              flexShrink: 0,
+              marginTop: '1px'
+            }}>
+              EXISTING
+            </span>
+          </div>
+
+          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            <span style={{ fontWeight: 800, color: getAreaColor(fcgTest?.area || 'Academic') }}>
+              {fcgTest?.area || 'Academic'}
+            </span>
+            <span> · Due 14 Sep, 14:00</span>
+          </div>
+
+          {/* Row 3: Bigger edit button below workload area and due */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+            <button
+              type="button"
+              onClick={() => handleEditWorkload('fcg-test-1')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: isItemClarified('fcg-test-1') ? '#F0FDF4' : '#F8FAFC',
+                border: isItemClarified('fcg-test-1') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
+                color: isItemClarified('fcg-test-1') ? '#166534' : '#334155',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Edit FCG Test"
+            >
+              {isItemClarified('fcg-test-1') ? (
+                <>
+                  <Check size={14} strokeWidth={2.5} color="#166534" />
+                  <span>Clarified</span>
+                </>
+              ) : (
+                <>
+                  <Edit3 size={13} />
+                  <span>Edit</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ACTION CONTROLS */}
+      {!isConfirmed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
           <button
             type="button"
-            onClick={onGoToBalance}
+            onClick={onConfirm}
             style={{
-              background: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
-              border: '1.5px solid #FDBA74',
+              backgroundColor: '#FFF7ED',
+              color: '#C2410C',
+              border: '1.2px solid #FED7AA',
               borderRadius: '14px',
-              padding: '11px 12px',
-              color: '#9A3412',
+              padding: '12px 18px',
               fontWeight: 800,
-              fontSize: '12.5px',
+              fontSize: '13.5px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              boxShadow: '0 3px 10px rgba(234, 88, 12, 0.18)',
+              gap: '8px',
+              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
               transition: 'all 0.15s ease'
             }}
-            title="Balance"
           >
-            <Scale size={15} color="#9A3412" />
-            <span>Balance</span>
+            <Plus size={16} strokeWidth={2.5} />
+            <span style={{ color: '#C2410C' }}>Add Workload</span>
           </button>
         </div>
-      </div>
+      )}
+
+      {isConfirmed && (
+        <div style={{
+          backgroundColor: '#F0FDF4',
+          border: '1.2px solid #86EFAC',
+          color: '#166534',
+          borderRadius: '14px',
+          padding: '10px 16px',
+          fontWeight: 800,
+          fontSize: '12.5px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          marginTop: '2px'
+        }}>
+          <CheckCircle2 size={16} color="#166534" />
+          <span>Workloads Added</span>
+        </div>
+      )}
     </div>
   );
 };
 
 export const AiDumpChatView: React.FC = () => {
-  const { 
-    chatMessages, 
-    sendChatMessage, 
+  const {
+    chatMessages,
+    sendChatMessage,
     addAiChatMessage,
-    confirmAllExtractedDrafts, 
-    setIsTreeHoleOpen, 
+    confirmAllExtractedDrafts,
+    clarifyNicoleMessage,
+    confirmNicoleStressDump,
+    setIsTreeHoleOpen,
     setIsColourReflectionOpen,
     setActiveTab,
     capacityProfile,
@@ -259,7 +760,7 @@ export const AiDumpChatView: React.FC = () => {
   } = useApp();
 
   const [inputText, setInputText] = useState('');
-  
+
   // Voice Recording & Tree Hole Shout Connection State (Requirement 3)
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceStopped, setIsVoiceStopped] = useState(false);
@@ -422,30 +923,7 @@ export const AiDumpChatView: React.FC = () => {
 
   const lastOverloadNotifiedRef = useRef<number>(0);
 
-  // Proactively suggest recovery pathway & next plan when stepping into AI chat if current load is detected overloaded
-  useEffect(() => {
-    const isOver = isLoadOverloaded(capacityProfile.analysisResult.demandResourceStatus, todayCheckIn, workloads);
-    const hasExistingOverloadNotice = chatMessages.some(m => m.isOverloadNotice);
-    const now = Date.now();
-
-    if (isOver && !hasExistingOverloadNotice && (now - lastOverloadNotifiedRef.current > 5000)) {
-      lastOverloadNotifiedRef.current = now;
-      const activeTotal = Number(workloads.filter(w => w.status !== 'Completed').reduce((acc, w) => acc + (w.estimatedHours || 0), 0).toFixed(1));
-      const availHours = capacityProfile.candidateTimeHours;
-      const deficit = Number(Math.max(0, activeTotal - availHours).toFixed(1));
-
-      addAiChatMessage({
-        isOverloadNotice: true,
-        text: `⚠️ Current Workload Overloaded: Nicole, your current load is detected as Overloaded (${activeTotal}h active vs ${availHours}h 7-day candidate time). I recommend taking a short recovery break before continuing. Here is your suggested recovery pathway and next step plan:`,
-        overloadSummary: {
-          totalHours: activeTotal,
-          availableHours: availHours,
-          deficit
-        },
-        suggestedAction: 'recover'
-      });
-    }
-  }, [capacityProfile.analysisResult.demandResourceStatus, todayCheckIn]);
+  // Note: Automatic overload notice on initial entry has been removed per Section 1 requirements
 
   // Handle opening AddWorkloadModal prefilled from AI extracted unrecorded workload
   const handleOpenAddUnrecordedWorkload = (msg: any) => {
@@ -635,7 +1113,7 @@ export const AiDumpChatView: React.FC = () => {
     }
   };
 
-  const isStrainedOrHighStress = capacityProfile.analysisResult.demandResourceStatus === 'Strained' || 
+  const isStrainedOrHighStress = capacityProfile.analysisResult.demandResourceStatus === 'Strained' ||
     capacityProfile.analysisResult.demandResourceStatus === 'Overloaded' ||
     (todayCheckIn && (todayCheckIn.category === 'High' || todayCheckIn.category === 'Very High'));
 
@@ -944,7 +1422,10 @@ export const AiDumpChatView: React.FC = () => {
                     <AiAnalysisNextPlanCard
                       taskTitle={msg.overloadSummary?.taskTitle}
                       totalWorkloadHours={msg.overloadSummary?.totalHours || workloads.filter(w => w.status !== 'Completed').reduce((acc, w) => acc + (w.estimatedHours || 0), 0)}
+                      availableHours={msg.overloadSummary?.availableHours}
+                      deficit={msg.overloadSummary?.deficit}
                       isOverloaded={true}
+                      isNicoleAnalysisPlan={msg.isNicoleAnalysisPlan}
                       onTreeHole={() => setIsTreeHoleOpen(true)}
                       onColourReflection={() => setIsColourReflectionOpen(true)}
                       onGoToAnalysis={() => setActiveTab('map')}
@@ -952,8 +1433,18 @@ export const AiDumpChatView: React.FC = () => {
                     />
                   )}
 
+                  {/* NICOLE CANONICAL DEMO EXTRACTION CARD */}
+                  {!isUser && msg.isNicoleDemoExtraction && (
+                    <NicoleDemoExtractionCard
+                      msg={msg}
+                      onClarify={() => clarifyNicoleMessage(msg.id)}
+                      onConfirm={() => confirmNicoleStressDump(msg.id)}
+                      onGoToWorkloads={() => setActiveTab('workloads')}
+                    />
+                  )}
+
                   {/* AI EXTRACTED WORKLOAD & STRESS FACTORS CONFIRMATION CARD */}
-                  {!isUser && msg.extractedWorkloadDrafts && msg.extractedWorkloadDrafts.length > 0 && (
+                  {!isUser && !msg.isNicoleDemoExtraction && msg.extractedWorkloadDrafts && msg.extractedWorkloadDrafts.length > 0 && (
                     <div style={{
                       background: 'linear-gradient(135deg, rgba(255, 248, 241, 0.95) 0%, rgba(255, 241, 242, 0.7) 50%, rgba(245, 243, 255, 0.85) 100%)',
                       borderRadius: '20px',
@@ -1090,38 +1581,38 @@ export const AiDumpChatView: React.FC = () => {
         })}
       </div>
 
-      {/* QUICK CHIPS ROW */}
+      {/* DEMO HELPER CHIP ROW */}
       <div style={{
         display: 'flex',
-        gap: '6px',
+        gap: '8px',
         overflowX: 'auto',
         padding: '6px 2px',
       }}>
-        {quickChips.map((chip, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleChipClick(chip.text)}
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(254, 215, 170, 0.8)',
-              borderRadius: '18px',
-              padding: '6px 12px',
-              fontSize: '11.5px',
-              fontWeight: 700,
-              color: Colors.peachText,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(255, 138, 80, 0.05)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {chip.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setInputText(NICOLE_NARRATIVE)}
+          style={{
+            backgroundColor: '#FFF7ED',
+            backdropFilter: 'blur(10px)',
+            border: '1.5px solid #FDBA74',
+            borderRadius: '18px',
+            padding: '7px 16px',
+            fontSize: '12.5px',
+            fontWeight: 800,
+            color: '#9A3412',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 10px rgba(234, 88, 12, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.15s ease'
+          }}
+          title="Populate input with Nicole's canonical narrative"
+        >
+          <Sparkles size={14} color="#EA580C" />
+          <span>Try Nicole's Demo</span>
+        </button>
       </div>
 
       {/* ACTIVE VOICE RECORDING PANEL */}
@@ -1256,17 +1747,24 @@ export const AiDumpChatView: React.FC = () => {
             backgroundColor: 'rgba(255, 255, 255, 0.88)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            borderRadius: '30px',
+            borderRadius: inputText.includes('\n') ? '20px' : '30px',
             padding: '6px 8px 6px 16px',
             border: '1.5px solid rgba(255, 255, 255, 0.95)',
             boxShadow: Colors.shadowGlass,
+            transition: 'border-radius 0.2s ease',
           }}
         >
-          <input
-            type="text"
+          <textarea
             placeholder="Dump thoughts, or tap mic for voice message..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend(e);
+              }
+            }}
+            rows={inputText.includes('\n') ? 3 : 1}
             style={{
               flex: 1,
               border: 'none',
@@ -1274,7 +1772,12 @@ export const AiDumpChatView: React.FC = () => {
               backgroundColor: 'transparent',
               fontSize: '13.5px',
               color: Colors.textDark,
-              padding: '6px 0',
+              padding: '8px 0',
+              resize: 'none',
+              fontFamily: 'inherit',
+              lineHeight: '1.45',
+              maxHeight: '100px',
+              overflowY: 'auto'
             }}
           />
 

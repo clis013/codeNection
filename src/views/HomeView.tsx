@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import { CartoonEmoji } from '../components/Common/CartoonEmoji';
 import { getLastNLocalDates, getShortWeekdayLabel } from '../utils/dateHelpers';
-import { 
+import {
   ArrowRight, Clock, AlertTriangle, Brain, Sparkles, Feather, Palette, Activity, Heart, ShieldCheck
 } from 'lucide-react';
 
@@ -47,78 +47,12 @@ export const HomeView: React.FC = () => {
     return comp ? `${cat} • ${comp}` : cat;
   };
 
-  // Status Styling: Manageable (Green whole block), Strained (Yellow whole block), Overloaded (Red whole block), InsufficientData (Grey whole block)
+  // Status Styling: Manageable, Strained, Overloaded, InsufficientData
   const status = capacityProfile.analysisResult.demandResourceStatus;
   const isManageable = status === 'Manageable';
   const isStrained = status === 'Strained';
   const isOverloaded = status === 'Overloaded';
   const isInsufficient = status === 'InsufficientData';
-
-  const statusColors = isManageable ? {
-    cardBg: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
-    cardBorder: '1.5px solid #86EFAC',
-    cardShadow: '0 8px 28px rgba(22, 101, 52, 0.08)',
-    titleColor: '#166534',
-    subtextColor: '#15803D',
-    badgeBg: '#DCFCE7',
-    badgeText: '#166534',
-    badgeBorder: '#86EFAC',
-    innerBg: 'rgba(255, 255, 255, 0.85)',
-    innerBorder: 'rgba(134, 239, 172, 0.9)',
-    textPrimary: '#166534',
-    btnBg: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
-    btnBorder: '1.5px solid #86EFAC',
-    btnText: '#166534',
-    btnShadow: '0 4px 14px rgba(34, 197, 94, 0.15)'
-  } : isStrained ? {
-    cardBg: 'linear-gradient(135deg, #FEFCE8 0%, #FEF9C3 100%)',
-    cardBorder: '1.5px solid #FDE047',
-    cardShadow: '0 8px 28px rgba(180, 83, 9, 0.08)',
-    titleColor: '#92400E',
-    subtextColor: '#B45309',
-    badgeBg: '#FEF3C7',
-    badgeText: '#92400E',
-    badgeBorder: '#FCD34D',
-    innerBg: 'rgba(255, 255, 255, 0.85)',
-    innerBorder: 'rgba(253, 230, 138, 0.9)',
-    textPrimary: '#92400E',
-    btnBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-    btnBorder: '1.5px solid #FCD34D',
-    btnText: '#92400E',
-    btnShadow: '0 4px 14px rgba(217, 119, 6, 0.15)'
-  } : isOverloaded ? {
-    cardBg: 'linear-gradient(135deg, #FFF1F2 0%, #FEE2E2 100%)',
-    cardBorder: '1.5px solid #FECDD3',
-    cardShadow: '0 8px 28px rgba(185, 28, 28, 0.08)',
-    titleColor: '#991B1B',
-    subtextColor: '#B91C1C',
-    badgeBg: '#FEE2E2',
-    badgeText: '#991B1B',
-    badgeBorder: '#FCA5A5',
-    innerBg: 'rgba(255, 255, 255, 0.85)',
-    innerBorder: 'rgba(252, 165, 165, 0.9)',
-    textPrimary: '#991B1B',
-    btnBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
-    btnBorder: '1.5px solid #FCA5A5',
-    btnText: '#991B1B',
-    btnShadow: '0 4px 14px rgba(239, 68, 68, 0.15)'
-  } : {
-    cardBg: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
-    cardBorder: '1.5px solid #E2E8F0',
-    cardShadow: '0 8px 28px rgba(100, 116, 139, 0.08)',
-    titleColor: '#334155',
-    subtextColor: '#475569',
-    badgeBg: '#F1F5F9',
-    badgeText: '#475569',
-    badgeBorder: '#E2E8F0',
-    innerBg: 'rgba(255, 255, 255, 0.85)',
-    innerBorder: 'rgba(226, 232, 240, 0.9)',
-    textPrimary: '#475569',
-    btnBg: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
-    btnBorder: '1.5px solid #CBD5E1',
-    btnText: '#334155',
-    btnShadow: '0 4px 14px rgba(100, 116, 139, 0.15)'
-  };
 
   return (
     <div style={{
@@ -130,7 +64,7 @@ export const HomeView: React.FC = () => {
     }}>
 
       {/* ========================================================================= */}
-      {/* SECTION 1: DAILY CHECK-IN (LAST 5 DAYS STYLE WITH '?' FOR TODAY EMOJI)   */}
+      {/* SECTION 1: DAILY CHECK-IN (LAST 5 DAYS STYLE WITH '?' MATCHING IMAGE 2)  */}
       {/* ========================================================================= */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -183,31 +117,33 @@ export const HomeView: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '5px',
+                    gap: '6px',
                     cursor: item.isToday ? 'pointer' : 'default',
                     transition: 'transform 0.15s ease',
-                    transform: item.isToday ? 'scale(1.05)' : 'none'
+                    transform: item.isToday ? 'scale(1.04)' : 'none'
                   }}
                   title={item.isToday ? (isTodayCheckedIn ? 'Click to view snapshot or retest' : 'Click to complete check in!') : item.day}
                 >
                   <div style={{
-                    width: '46px',
-                    height: '46px',
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '50%',
                     backgroundColor: isUncheckedToday
                       ? '#FFF7ED'
                       : 'rgba(255, 255, 255, 0.95)',
                     border: item.isToday
-                      ? '2.5px solid #FB923C'
+                      ? (isUncheckedToday ? '3px solid #F97316' : '2.5px solid #FB923C')
                       : '1.5px solid rgba(226, 232, 240, 0.85)',
-                    boxShadow: item.isToday ? '0 0 0 3px rgba(251, 146, 60, 0.25)' : '0 2px 6px rgba(0,0,0,0.03)',
+                    boxShadow: isUncheckedToday
+                      ? '0 0 0 3.5px #FED7AA, 0 2px 8px rgba(234, 88, 12, 0.12)'
+                      : item.isToday ? '0 0 0 3px rgba(251, 146, 60, 0.25)' : '0 2px 6px rgba(0,0,0,0.03)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative'
                   }}>
                     {isUncheckedToday ? (
-                      <span style={{ fontSize: '20px', fontWeight: 900, color: '#EA580C' }}>
+                      <span style={{ fontSize: '22px', fontWeight: 900, color: '#EA580C', lineHeight: 1 }}>
                         ?
                       </span>
                     ) : (
@@ -216,7 +152,7 @@ export const HomeView: React.FC = () => {
                   </div>
 
                   <span style={{
-                    fontSize: '11px',
+                    fontSize: '12px',
                     fontWeight: item.isToday ? 900 : 600,
                     color: item.isToday ? '#EA580C' : Colors.textMuted
                   }}>
@@ -230,166 +166,212 @@ export const HomeView: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION 2: STATE & LOAD INSIGHT (REAL APP DATA + PREVIOUS BUTTON DESIGN)  */}
+      {/* SECTION 2: DAILY STATE & LOAD INSIGHT (EXACT MATCHING IMAGE 1 SPEC)       */}
       {/* ========================================================================= */}
       {(() => {
         const isMan = status === 'Manageable';
         const isOver = status === 'Overloaded';
         const isStrain = status === 'Strained';
+        const isPending = !isTodayCheckedIn || status === 'InsufficientData';
 
-        // Real metrics derived from today's check-in only (never yesterday's)
-        // When no check-in today, stress and energy are genuinely unknown
+        // 1. Stress Level
         const stressCategory = todayCheckIn ? todayCheckIn.category : null;
-        const stressColor = !stressCategory ? '#94A3B8'
+        const stressDisplay = stressCategory ?? '--';
+        const stressColor = !todayCheckIn ? '#94A3B8'
           : (stressCategory === 'Very High' || stressCategory === 'High')
-          ? '#DC2626'
-          : stressCategory === 'Elevated'
-          ? '#D97706'
-          : '#166534';
+            ? '#DC2626'
+            : stressCategory === 'Elevated'
+              ? '#D97706'
+              : '#15803D';
 
+        // 2. Energy
         const energyNum = todayCheckIn?.energyLevel ?? null;
         const energyDisplay = energyNum === null
-          ? null
+          ? '--'
           : (energyNum <= 2 ? 'Low' : energyNum === 3 ? 'Moderate' : 'High');
-        const energyColor = !energyDisplay ? '#94A3B8'
-          : energyDisplay === 'Low' ? '#DC2626'
-          : energyDisplay === 'Moderate' ? '#D97706'
-          : '#166534';
+        const energyColor = energyNum === null ? '#94A3B8'
+          : energyNum <= 2 ? '#991B1B'
+            : energyNum === 3 ? '#D97706'
+              : '#15803D';
 
+        // 3. Time Load (active remaining hours vs available candidate time hours)
         const activeWorkloadsList = workloads.filter(w => w.status !== 'Completed');
-        const totalWorkloadHours = Number(activeWorkloadsList.reduce((acc, w) => acc + (w.estimatedHours || 0), 0).toFixed(1));
-        const availableHours = capacityProfile.candidateTimeHours !== null ? Number(capacityProfile.candidateTimeHours.toFixed(1)) : null;
-        const timeLoadColor = availableHours !== null && totalWorkloadHours > availableHours ? '#DC2626' : (availableHours === null ? '#94A3B8' : '#166534');
+        const totalWorkloadHours = Number(activeWorkloadsList.reduce((acc, w) => acc + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+        const availableHours = capacityProfile.candidateTimeHours !== null ? Number(capacityProfile.candidateTimeHours.toFixed(1)) : 19;
+        const timeLoadDisplay = `${totalWorkloadHours}h / ${availableHours}h`;
 
-        const cardTheme = isMan ? {
-          outerBg: 'linear-gradient(135deg, rgba(240, 253, 244, 0.88) 0%, rgba(220, 252, 231, 0.68) 100%)',
-          outerBorder: '1.5px solid #86EFAC',
-          shadow: '0 8px 30px rgba(22, 101, 52, 0.08)',
-          dotColor: '#16A34A',
-          titleColor: '#166534',
-          badgeBg: '#DCFCE7',
-          badgeBorder: '#86EFAC',
-          badgeText: '#166534',
-          innerBorder: '#DCFCE7',
-          accentColor: '#16A34A',
-          captionColor: '#166534',
-          btnGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-          btnShadow: '0 4px 14px rgba(16, 185, 129, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35)',
-          defaultInsight: 'Your capacity and recovery resources are currently well balanced with your scheduled workload.'
-        } : isOver ? {
-          outerBg: 'linear-gradient(135deg, rgba(254, 242, 242, 0.88) 0%, rgba(254, 226, 226, 0.68) 100%)',
-          outerBorder: '1.5px solid #FECACA',
-          shadow: '0 8px 30px rgba(220, 38, 38, 0.08)',
-          dotColor: '#DC2626',
-          titleColor: '#991B1B',
-          badgeBg: '#FEE2E2',
-          badgeBorder: '#FECACA',
-          badgeText: '#991B1B',
-          innerBorder: '#FEE2E2',
-          accentColor: '#DC2626',
-          captionColor: '#991B1B',
-          btnGradient: 'linear-gradient(135deg, #F87171 0%, #E11D48 100%)',
-          btnShadow: '0 4px 14px rgba(225, 29, 72, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35)',
-          defaultInsight: 'Your demands significantly exceed your recovery capacity. High urgency adjustments are needed.'
-        } : isStrain ? {
-          outerBg: 'linear-gradient(135deg, rgba(254, 252, 232, 0.88) 0%, rgba(254, 243, 199, 0.68) 100%)',
-          outerBorder: '1.5px solid #FDE68A',
-          shadow: '0 8px 30px rgba(217, 119, 6, 0.08)',
-          dotColor: '#D97706',
-          titleColor: '#92400E',
-          badgeBg: '#FEF3C7',
-          badgeBorder: '#FDE68A',
-          badgeText: '#92400E',
-          innerBorder: '#FEF3C7',
-          accentColor: '#D97706',
-          captionColor: '#92400E',
-          btnGradient: 'linear-gradient(135deg, #FB923C 0%, #F43F5E 100%)',
-          btnShadow: '0 4px 14px rgba(249, 115, 22, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.35)',
-          defaultInsight: 'Your current demands show meaningful pressure, with high cognitive demand in upcoming workloads and limited recovery buffers.'
-        } : {
-          // InsufficientData
-          outerBg: 'linear-gradient(135deg, rgba(248, 250, 252, 0.88) 0%, rgba(241, 245, 249, 0.68) 100%)',
+        // Theme configuration for all states (Manageable reflects Image 1 design)
+        const theme = isPending ? {
+          outerBg: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 55%, #F1F5F9 100%)',
           outerBorder: '1.5px solid #E2E8F0',
-          shadow: '0 8px 30px rgba(100, 116, 139, 0.08)',
-          dotColor: '#94A3B8',
-          titleColor: '#334155',
-          badgeBg: '#F1F5F9',
-          badgeBorder: '#E2E8F0',
-          badgeText: '#475569',
-          innerBorder: '#F1F5F9',
-          accentColor: '#64748B',
-          captionColor: '#475569',
-          btnGradient: 'linear-gradient(135deg, #94A3B8 0%, #64748B 100%)',
-          btnShadow: '0 4px 14px rgba(100, 116, 139, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35)',
-          defaultInsight: (workloads.filter(w => w.status !== 'Completed').length > 0)
-            ? "Your workload is recorded, but today's resource state is missing. Complete today's check-in to compare your demands with your current resources."
-            : 'Please record some workloads and complete a daily check-in to see your analysis.'
+          shadow: '0 8px 30px rgba(100, 116, 139, 0.05)',
+          headerColor: '#475569',
+          badgeText: 'Pending Check-in',
+          badgeBorder: '#CBD5E1',
+          badgeColor: '#475569',
+          heroIconBg: '#F1F5F9',
+          heroIconBorder: '1px solid #E2E8F0',
+          heroIconColor: '#64748B',
+          HeroIcon: Clock,
+          heroTitle: 'Daily check-in pending',
+          heroSubtitle: "Complete today's check-in to compare your personal resources with your recorded workload.",
+          timeLoadColor: '#334155',
+          btnColor: '#334155'
+        } : isMan ? {
+          outerBg: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBorder: '1.5px solid #DCFCE7',
+          shadow: '0 8px 30px rgba(22, 101, 52, 0.05)',
+          headerColor: '#15803D',
+          badgeText: 'Manageable',
+          badgeBorder: '#86EFAC',
+          badgeColor: '#15803D',
+          heroIconBg: '#DCFCE7',
+          heroIconBorder: '1px solid #86EFAC',
+          heroIconColor: '#15803D',
+          HeroIcon: ShieldCheck,
+          heroTitle: 'Workload is balanced',
+          heroSubtitle: 'Your current commitments appear manageable with the resources you have available.',
+          timeLoadColor: '#15803D',
+          btnColor: '#15803D'
+        } : isStrain ? {
+          outerBg: 'linear-gradient(180deg, #FEFCE8 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBorder: '1.5px solid #FDE68A',
+          shadow: '0 8px 30px rgba(217, 119, 6, 0.05)',
+          headerColor: '#B45309',
+          badgeText: 'Strained',
+          badgeBorder: '#FDE68A',
+          badgeColor: '#B45309',
+          heroIconBg: '#FEF3C7',
+          heroIconBorder: '1px solid #FDE68A',
+          heroIconColor: '#D97706',
+          HeroIcon: AlertTriangle,
+          heroTitle: 'Workload pressure is elevated',
+          heroSubtitle: 'Your current demands show meaningful pressure. Adjustments are recommended to make the plan manageable.',
+          timeLoadColor: '#D97706',
+          btnColor: '#B45309'
+        } : {
+          // Overloaded
+          outerBg: 'linear-gradient(180deg, #FFF1F2 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBorder: '1.5px solid #FECDD3',
+          shadow: '0 8px 30px rgba(220, 38, 38, 0.05)',
+          headerColor: '#B91C1C',
+          badgeText: 'Overloaded',
+          badgeBorder: '#FECDD3',
+          badgeColor: '#B91C1C',
+          heroIconBg: '#FEE2E2',
+          heroIconBorder: '1px solid #FECDD3',
+          heroIconColor: '#DC2626',
+          HeroIcon: AlertTriangle,
+          heroTitle: 'Workload is overloaded',
+          heroSubtitle: 'Your current demands appear difficult to manage with the resources and time available right now.',
+          timeLoadColor: '#DC2626',
+          btnColor: '#B91C1C'
         };
 
         const analysisMismatch = capacityProfile.analysisResult.mismatch;
-        const insightText = (analysisMismatch?.detected && analysisMismatch.insight) 
-          ? analysisMismatch.insight 
-          : cardTheme.defaultInsight;
+        const displaySubtitle = (analysisMismatch?.detected && analysisMismatch.insight)
+          ? analysisMismatch.insight
+          : theme.heroSubtitle;
+
+        const { HeroIcon } = theme;
 
         return (
           <div style={{
-            background: cardTheme.outerBg,
-            backdropFilter: 'blur(20px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-            borderRadius: '24px',
-            padding: '16px 18px',
-            border: cardTheme.outerBorder,
-            boxShadow: `${cardTheme.shadow}, inset 0 1px 2px rgba(255, 255, 255, 0.9)`,
+            background: theme.outerBg,
+            borderRadius: '26px',
+            padding: '18px 18px 16px 18px',
+            border: theme.outerBorder,
+            boxShadow: `${theme.shadow}, inset 0 1px 2px rgba(255, 255, 255, 0.9)`,
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px'
+            gap: '14px'
           }}>
-            {/* Top Header: Title (STATE & LOAD INSIGHT) & Status Badge (as in picture) */}
+            {/* Top Header: Sparkle + Title & Status Badge Pill (Image 1 style) */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: cardTheme.dotColor }} />
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: cardTheme.titleColor, margin: 0, letterSpacing: '0.2px' }}>
-                  STATE & LOAD INSIGHT
+                <span style={{ fontSize: '15px', lineHeight: 1 }}>✨</span>
+                <h3 style={{
+                  fontSize: '12.5px',
+                  fontWeight: 900,
+                  color: theme.headerColor,
+                  margin: 0,
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase'
+                }}>
+                  DAILY STATE & LOAD INSIGHT
                 </h3>
               </div>
 
               <span style={{
-                fontSize: '11.5px',
-                color: cardTheme.badgeText,
+                fontSize: '12px',
+                color: theme.badgeColor,
                 fontWeight: 800,
-                backgroundColor: cardTheme.badgeBg,
-                padding: '3px 10px',
-                borderRadius: '12px',
-                border: `1px solid ${cardTheme.badgeBorder}`
+                backgroundColor: '#FFFFFF',
+                padding: '3px 12px',
+                borderRadius: '999px',
+                border: `1px solid ${theme.badgeBorder}`,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
               }}>
-                {status === 'InsufficientData' ? 'UNKNOWN' : status.toUpperCase()}
+                {theme.badgeText}
               </span>
             </div>
 
-            {/* Description */}
-            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.45' }}>
-              {insightText}
-            </p>
+            {/* Hero Insight Block: Rounded Icon Box + Title & Subtitle */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '16px',
+                backgroundColor: theme.heroIconBg,
+                border: theme.heroIconBorder,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <HeroIcon size={22} color={theme.heroIconColor} strokeWidth={2.2} />
+              </div>
 
-            {/* 3 Metric Boxes: Stress Level | Energy | Time Load (Directly derived from user's app data) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: 900,
+                  color: '#0F172A',
+                  margin: 0,
+                  letterSpacing: '-0.2px'
+                }}>
+                  {theme.heroTitle}
+                </h4>
+                <p style={{
+                  fontSize: '12.5px',
+                  color: '#475569',
+                  margin: 0,
+                  lineHeight: '1.45'
+                }}>
+                  {displaySubtitle}
+                </p>
+              </div>
+            </div>
+
+            {/* 3 Metric Cards: STRESS LEVEL | ENERGY | TIME LOAD */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {/* Stress Level */}
               <div style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
-                padding: '12px 6px',
+                padding: '10px 6px',
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                border: '1px solid rgba(0, 0, 0, 0.04)'
+                border: '1px solid #F1F5F9'
               }}>
                 <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                   STRESS LEVEL
                 </span>
-                <span style={{ fontSize: '14px', fontWeight: 900, color: stressColor }}>
-                  {stressCategory ?? <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: 700 }}>No data</span>}
+                <span style={{ fontSize: '14.5px', fontWeight: 900, color: stressColor }}>
+                  {stressDisplay}
                 </span>
               </div>
 
@@ -397,77 +379,72 @@ export const HomeView: React.FC = () => {
               <div style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
-                padding: '12px 6px',
+                padding: '10px 6px',
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                border: '1px solid rgba(0, 0, 0, 0.04)'
+                border: '1px solid #F1F5F9'
               }}>
                 <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                   ENERGY
                 </span>
-                <span style={{ fontSize: '14px', fontWeight: 900, color: energyColor }}>
-                  {energyDisplay ?? <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: 700 }}>No data</span>}
+                <span style={{ fontSize: '14.5px', fontWeight: 900, color: energyColor }}>
+                  {energyDisplay}
                 </span>
               </div>
 
-              {/* Time Load — derived from remainingTimeHours, always available */}
+              {/* Time Load */}
               <div style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
-                padding: '12px 6px',
+                padding: '10px 6px',
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                border: '1px solid rgba(0, 0, 0, 0.04)'
+                border: '1px solid #F1F5F9'
               }}>
                 <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-                  CANDIDATE TIME (7 DAYS)
+                  TIME LOAD
                 </span>
-                <span style={{ fontSize: '14px', fontWeight: 900, color: timeLoadColor }}>
-                  {availableHours !== null ? `${totalWorkloadHours}h / ${availableHours}h` : `${totalWorkloadHours}h / —`}
+                <span style={{ fontSize: '14.5px', fontWeight: 900, color: theme.timeLoadColor }}>
+                  {timeLoadDisplay}
                 </span>
               </div>
             </div>
 
-            {/* Bottom: Understand My Load button fitting full width of the box with previous gradient design */}
-            <div style={{
-              width: '100%',
-              marginTop: '4px',
-              paddingTop: '10px',
-              borderTop: `1px solid rgba(0, 0, 0, 0.06)`
-            }}>
-              <button
-                type="button"
-                onClick={() => setActiveTab('map')}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  border: 'none',
-                  background: cardTheme.btnGradient,
-                  color: '#FFFFFF',
-                  padding: '12px 20px',
-                  borderRadius: '16px',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  letterSpacing: '0.2px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: cardTheme.btnShadow,
-                  transition: 'all 0.18s ease'
-                }}
-              >
-                <span>Understand My Load</span>
-                <ArrowRight size={15} strokeWidth={2.6} color="#FFFFFF" />
-              </button>
-            </div>
+            {/* Divider Line */}
+            <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0 0 0' }} />
+
+            {/* Action Button: Understand My Load (White card-button matching Image 1) */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('map')}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                color: theme.btnColor,
+                padding: '12px 20px',
+                borderRadius: '16px',
+                fontSize: '14px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>Understand My Load</span>
+              <ArrowRight size={16} strokeWidth={2.4} color={theme.btnColor} />
+            </button>
           </div>
         );
       })()}
@@ -495,7 +472,7 @@ export const HomeView: React.FC = () => {
 
         {/* Two side by side COVER PAGE cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          
+
           {/* Tree Hole Cover Page Card */}
           <div
             onClick={() => setIsTreeHoleOpen(true)}

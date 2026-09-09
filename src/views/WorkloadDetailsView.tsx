@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { WorkloadItem, WorkloadArea } from '../types/workload';
+import { FixedBusyEvent } from '../types/calendar';
 import { Colors } from '../theme/colors';
 import { CartoonEmoji } from '../components/Common/CartoonEmoji';
 import {
@@ -12,6 +13,7 @@ import {
 export const WorkloadDetailsView: React.FC = () => {
   const {
     workloads,
+    busyEvents,
     setSelectedWorkload,
     setIsWorkloadDetailOpen,
     setIsAddWorkloadOpen,
@@ -30,7 +32,7 @@ export const WorkloadDetailsView: React.FC = () => {
 
   // Calendar Drill-Down Views: 'month' | 'week' | 'day' | 'mood'
   const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'day' | 'mood'>('month');
-  const [selectedDay, setSelectedDay] = useState<number>(5); // Default to Sept 5 (Today)
+  const [selectedDay, setSelectedDay] = useState<number>(8); // Default to Sept 8 (Demo Anchor)
   const months = ['August 2026', 'September 2026', 'October 2026', 'November 2026'];
   const [monthIndex, setMonthIndex] = useState(1); // September 2026
 
@@ -42,7 +44,8 @@ export const WorkloadDetailsView: React.FC = () => {
     'Sep 21 – Sep 27, 2026',
     'Sep 28 – Oct 4, 2026'
   ];
-  const [weekIndex, setWeekIndex] = useState(0); // Aug 31 - Sep 6 (contains Saturday Sep 5, Today)
+  const [weekIndex, setWeekIndex] = useState(1); // Default to Week 1: Sep 7 - Sep 13 (contains Tue Sep 8 Demo Anchor)
+  const [selectedBusyEvent, setSelectedBusyEvent] = useState<FixedBusyEvent | null>(null);
 
   interface WeekCalendarDay {
     name: string;
@@ -60,13 +63,13 @@ export const WorkloadDetailsView: React.FC = () => {
       { name: 'Wed', num: 2, isToday: false, dateStr: '2026-09-02' },
       { name: 'Thu', num: 3, isToday: false, dateStr: '2026-09-03' },
       { name: 'Fri', num: 4, isToday: false, dateStr: '2026-09-04' },
-      { name: 'Sat', num: 5, isToday: true, dateStr: '2026-09-05' },
+      { name: 'Sat', num: 5, isToday: false, dateStr: '2026-09-05' },
       { name: 'Sun', num: 6, isToday: false, dateStr: '2026-09-06' },
     ],
     // Week 1: Sep 7 - Sep 13, 2026 (Mon 7, Tue 8, Wed 9, Thu 10, Fri 11, Sat 12, Sun 13)
     [
       { name: 'Mon', num: 7, isToday: false, dateStr: '2026-09-07' },
-      { name: 'Tue', num: 8, isToday: false, dateStr: '2026-09-08' },
+      { name: 'Tue', num: 8, isToday: true, dateStr: '2026-09-08' },
       { name: 'Wed', num: 9, isToday: false, dateStr: '2026-09-09' },
       { name: 'Thu', num: 10, isToday: false, dateStr: '2026-09-10' },
       { name: 'Fri', num: 11, isToday: false, dateStr: '2026-09-11' },
@@ -338,7 +341,7 @@ export const WorkloadDetailsView: React.FC = () => {
 
     // 2. Current month days
     for (let d = 1; d <= daysInCurrentMonth; d++) {
-      const isToday = monthNumber === 9 && d === 5;
+      const isToday = monthNumber === 9 && d === 8;
       const dateStr = `${year}-${monthNumber.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
       allCells.push({
         day: d,
@@ -350,10 +353,10 @@ export const WorkloadDetailsView: React.FC = () => {
     }
 
     // 3. Next month trailing days to complete 42 cells (6 rows x 7 cols)
-    const remaining = 42 - allCells.length;
-    for (let d = 1; d <= remaining; d++) {
-      const nextMonth = monthNumber + 1;
-      const dateStr = `${year}-${nextMonth.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+    const remainingCells = 42 - allCells.length;
+    const nextMonth = monthNumber === 12 ? 1 : monthNumber + 1;
+    for (let d = 1; d <= remainingCells; d++) {
+      const dateStr = `${monthNumber === 12 ? year + 1 : year}-${nextMonth.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
       allCells.push({
         day: d,
         monthNum: nextMonth,
@@ -385,18 +388,24 @@ export const WorkloadDetailsView: React.FC = () => {
     });
   };
 
+  const getBusyEventsForDate = (dateStr: string): FixedBusyEvent[] => {
+    return (busyEvents || []).filter(b => b.startDateTime.startsWith(dateStr));
+  };
+
   // Calendar Data & Helpers (September 2026: 30 days. Sep 1 is Tuesday, offset = 1)
   const daysInMonth = 30;
   const startDayOffset = 1;
 
+  // Exact Nicole Emotion History (Sep 1 to Sep 8)
   const monthlyEmotions: Record<number, string> = {
-    1: 'Great', 2: 'Great', 3: 'All Good', 4: 'All Good',
-    5: todayCheckIn?.emotionFeeling || 'Tense',
-    6: 'Normal', 7: 'All Good', 8: 'Normal', 9: 'Normal', 10: 'Tense',
-    11: 'Tense', 12: 'Great', 13: 'Normal', 14: 'Tense', 15: 'Overwhelmed',
-    16: 'Tense', 17: 'Tense', 18: 'All Good', 19: 'Great', 20: 'Great',
-    21: 'All Good', 22: 'Normal', 23: 'Normal', 24: 'Tense', 25: 'All Good',
-    26: 'Great', 27: 'Great', 28: 'All Good', 29: 'Normal', 30: 'All Good'
+    1: 'All Good',
+    2: 'All Good',
+    3: 'Normal',
+    4: 'Tense',
+    5: 'Little Stressed',
+    6: 'Tense',
+    7: 'Overwhelmed',
+    8: todayCheckIn?.emotionFeeling || 'Overwhelmed',
   };
 
   const getTasksForDay = (day: number) => {
@@ -408,6 +417,27 @@ export const WorkloadDetailsView: React.FC = () => {
       const d = new Date(w.deadline);
       return d.getDate() === day;
     });
+  };
+
+  const getBusyEventsForDay = (day: number): FixedBusyEvent[] => {
+    return (busyEvents || []).filter(b => {
+      if (!b.startDateTime.startsWith('2026-09-')) return false;
+      const dayNum = parseInt(b.startDateTime.slice(8, 10), 10);
+      return dayNum === day;
+    });
+  };
+
+  const getShortWorkloadTitle = (title: string): string => {
+    const lower = title.toLowerCase();
+    if (lower.includes('operating system quiz') || lower.includes('os quiz')) return 'OS Quiz 1';
+    if (lower.includes('web programming') || lower.includes('web prog')) return 'Web Prog';
+    if (lower.includes('sponsorship') || lower.includes('sponsorship prep')) return 'TC Sponsor';
+    if (lower.includes('tech carnival') && lower.includes('logistics')) return 'TC Logistics';
+    if (lower.includes('tech carnival') && lower.includes('meeting')) return 'TC Meeting';
+    if (lower.includes('tech carnival') && (lower.includes('prep') || lower.includes('event'))) return 'TC Event';
+    if (lower.includes('fcg')) return 'FCG Test 1';
+    if (lower.includes('philosophy')) return 'Philosophy';
+    return title;
   };
 
   const handleGoogleSync = () => {
@@ -822,100 +852,97 @@ export const WorkloadDetailsView: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* Google Calendar Sync Banner Card (Matching user picture design) */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(255, 247, 237, 0.95) 0%, rgba(255, 237, 213, 0.75) 100%)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '26px',
-            padding: '12px 18px',
-            border: '1.5px solid #FED7AA',
-            boxShadow: '0 4px 18px rgba(249, 115, 22, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px'
-          }}>
-            {/* Left: Google Calendar Icon + Text */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* White rounded badge with blue Google Calendar Icon */}
-              <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '14px',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                border: '1px solid #F1F5F9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
+          {!isGoogleSynced && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255, 247, 237, 0.95) 0%, rgba(255, 237, 213, 0.75) 100%)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '26px',
+              padding: '12px 18px',
+              border: '1.5px solid #FED7AA',
+              boxShadow: '0 4px 18px rgba(249, 115, 22, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              {/* Left: Google Calendar Icon + Text */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* White rounded badge with blue Google Calendar Icon */}
                 <div style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '6px',
-                  backgroundColor: '#3B82F6',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '14px',
+                  backgroundColor: '#FFFFFF',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                  border: '1px solid #F1F5F9',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  flexShrink: 0
                 }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: '#1D4ED8' }} />
-                  <div style={{ position: 'absolute', top: '1px', left: '5px', width: '2px', height: '3px', borderRadius: '1px', backgroundColor: '#FFFFFF' }} />
-                  <div style={{ position: 'absolute', top: '1px', right: '5px', width: '2px', height: '3px', borderRadius: '1px', backgroundColor: '#FFFFFF' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 900, color: '#FFFFFF', marginTop: '4px', fontFamily: 'sans-serif' }}>
-                    G
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '6px',
+                    backgroundColor: '#3B82F6',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: '#1D4ED8' }} />
+                    <div style={{ position: 'absolute', top: '1px', left: '5px', width: '2px', height: '3px', borderRadius: '1px', backgroundColor: '#FFFFFF' }} />
+                    <div style={{ position: 'absolute', top: '1px', right: '5px', width: '2px', height: '3px', borderRadius: '1px', backgroundColor: '#FFFFFF' }} />
+                    <span style={{ fontSize: '12px', fontWeight: 900, color: '#FFFFFF', marginTop: '4px', fontFamily: 'sans-serif' }}>
+                      G
+                    </span>
+                  </div>
+                </div>
+
+                {/* Title & Subtitle */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
+                    Sync with Google Calendar?
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>
+                    Import your courses, schedules & deadlines
                   </span>
                 </div>
               </div>
 
-              {/* Title & Subtitle */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
-                  Sync with Google Calendar?
-                </span>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>
-                  Import your courses, schedules & deadlines
-                </span>
-              </div>
+              {/* Right: Sync Now Pill Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSync}
+                disabled={isSyncing}
+                style={{
+                  backgroundColor: '#FFEDD5',
+                  border: '1.5px solid #FDBA74',
+                  borderRadius: '18px',
+                  padding: '7px 18px',
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  color: '#9A3412',
+                  cursor: isSyncing ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  boxShadow: '0 2px 8px rgba(249, 115, 22, 0.12)',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {isSyncing ? (
+                  <span>Syncing...</span>
+                ) : (
+                  <span>Sync Now</span>
+                )}
+              </button>
             </div>
-
-            {/* Right: Sync Now Pill Button */}
-            <button
-              type="button"
-              onClick={handleGoogleSync}
-              disabled={isSyncing}
-              style={{
-                backgroundColor: isGoogleSynced ? '#DCFCE7' : '#FFEDD5',
-                border: isGoogleSynced ? '1.5px solid #86EFAC' : '1.5px solid #FDBA74',
-                borderRadius: '18px',
-                padding: '7px 18px',
-                fontSize: '12.5px',
-                fontWeight: 800,
-                color: isGoogleSynced ? '#166534' : '#9A3412',
-                cursor: isSyncing ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                boxShadow: '0 2px 8px rgba(249, 115, 22, 0.12)',
-                flexShrink: 0,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {isSyncing ? (
-                <span>Syncing...</span>
-              ) : isGoogleSynced ? (
-                <>
-                  <Check size={13} strokeWidth={3} />
-                  <span>Synced</span>
-                </>
-              ) : (
-                <span>Sync Now</span>
-              )}
-            </button>
-          </div>
+          )}
 
           {/* Calendar View Mode Switcher: Dropdown aligned to RIGHT SIDE */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '2px 2px 0 2px' }}>
@@ -1013,7 +1040,7 @@ export const WorkloadDetailsView: React.FC = () => {
               </div>
 
               {/* Day Headers: Mon - Sun */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748B', paddingBottom: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748B', paddingBottom: '4px' }}>
                 <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span style={{ color: '#0D9488', fontWeight: 800 }}>Sat</span><span>Sun</span>
               </div>
 
@@ -1023,18 +1050,15 @@ export const WorkloadDetailsView: React.FC = () => {
                   <div
                     key={wk.weekIdx}
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      backgroundColor: '#FAFAFA',
-                      borderRadius: '12px',
-                      padding: '4px 2px',
-                      border: '1px solid #F1F5F9',
-                      gap: '3px'
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                      gap: '4px',
+                      padding: '2px 0'
                     }}
                   >
-                    {/* Day numbers in this week */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', alignItems: 'center' }}>
-                      {wk.days.map((dObj, colIdx) => (
+                    {wk.days.map((dObj, colIdx) => {
+                      const dayTasks = getTasksForDate(dObj.dateStr);
+                      return (
                         <div
                           key={colIdx}
                           onClick={() => {
@@ -1047,50 +1071,61 @@ export const WorkloadDetailsView: React.FC = () => {
                           }}
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '24px',
-                            cursor: 'pointer'
+                            flexDirection: 'column',
+                            minHeight: '52px',
+                            minWidth: 0,
+                            width: '100%',
+                            overflow: 'hidden',
+                            backgroundColor: dObj.isToday ? 'rgba(13, 148, 136, 0.05)' : '#FAFAFA',
+                            border: dObj.isToday ? '1.5px solid rgba(13, 148, 136, 0.4)' : '1px solid #F1F5F9',
+                            borderRadius: '10px',
+                            padding: '4px 3px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxSizing: 'border-box'
                           }}
                           title={`Day ${dObj.day} - Click to switch to week view`}
                         >
-                          {dObj.isToday ? (
-                            <span style={{
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              backgroundColor: '#0D9488',
-                              color: '#FFFFFF',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              boxShadow: '0 2px 6px rgba(13, 148, 136, 0.35)'
-                            }}>
-                              {dObj.day}
-                            </span>
-                          ) : (
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: dObj.isOther ? '#CBD5E1' : '#334155'
-                            }}>
-                              {dObj.day}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                          {/* Day Number Header */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '20px',
+                            marginBottom: '3px'
+                          }}>
+                            {dObj.isToday ? (
+                              <span style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                backgroundColor: '#0D9488',
+                                color: '#FFFFFF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                boxShadow: '0 2px 6px rgba(13, 148, 136, 0.35)'
+                              }}>
+                                {dObj.day}
+                              </span>
+                            ) : (
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: dObj.isOther ? '#CBD5E1' : '#334155'
+                              }}>
+                                {dObj.day}
+                              </span>
+                            )}
+                          </div>
 
-                    {/* Real app tasks for each day column in this week */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', minHeight: '16px', alignItems: 'flex-start' }}>
-                      {wk.days.map((dObj, colIdx) => {
-                        const dayTasks = getTasksForDate(dObj.dateStr);
-                        return (
-                          <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                          {/* Workload Due Dates (Google Calendar Style Event Pills) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', minWidth: 0, overflow: 'hidden' }}>
                             {dayTasks.map(t => {
                               const colorStyle = getAreaColor(t.area);
+                              const shortTitle = getShortWorkloadTitle(t.title);
                               return (
                                 <div
                                   key={t.id}
@@ -1102,27 +1137,35 @@ export const WorkloadDetailsView: React.FC = () => {
                                   style={{
                                     backgroundColor: colorStyle.bg,
                                     color: colorStyle.text,
-                                    borderLeft: `2.5px solid ${colorStyle.dot}`,
+                                    borderLeft: `3px solid ${colorStyle.dot}`,
+                                    borderTop: `1px solid ${colorStyle.border}`,
+                                    borderRight: `1px solid ${colorStyle.border}`,
+                                    borderBottom: `1px solid ${colorStyle.border}`,
                                     fontSize: '8px',
-                                    fontWeight: 800,
-                                    padding: '1.5px 3px',
+                                    fontWeight: 700,
+                                    padding: '2px 3px',
                                     borderRadius: '4px',
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
+                                    minWidth: 0,
+                                    width: '100%',
+                                    boxSizing: 'border-box',
                                     cursor: 'pointer',
-                                    textAlign: 'left'
+                                    textAlign: 'left',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                                    lineHeight: '1.2'
                                   }}
-                                  title={`${t.title} (${t.area})`}
+                                  title={`📌 ${t.title} (Due: ${t.deadline ? t.deadline.slice(11, 16) : 'All Day'} • ${t.area})`}
                                 >
-                                  {t.title}
+                                  {shortTitle}
                                 </div>
                               );
                             })}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -1195,7 +1238,7 @@ export const WorkloadDetailsView: React.FC = () => {
               </div>
 
               {/* 7-Day Header: Dynamic based on weekIndex matching 2026 calendar */}
-              <div style={{ display: 'grid', gridTemplateColumns: '42px repeat(7, 1fr)', gap: '2px', alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '42px repeat(7, minmax(0, 1fr))', gap: '2px', alignItems: 'center' }}>
                 <div />
                 {(weekDaysByRange[weekIndex] || weekDaysByRange[0]).map((d, i) => (
                   <div
@@ -1242,7 +1285,69 @@ export const WorkloadDetailsView: React.FC = () => {
                 ))}
               </div>
 
-              {/* 7-Column Time Grid (10:00 to 23:00) with Time Indicator Line at 18:00 */}
+              {/* All-Day / Workload Due Row (Google Calendar Style) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '42px repeat(7, minmax(0, 1fr))',
+                gap: '2px',
+                padding: '4px 0',
+                borderTop: '1px solid #F1F5F9',
+                borderBottom: '1.5px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                borderRadius: '8px',
+                alignItems: 'center'
+              }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', paddingLeft: '4px' }}>
+                  Due
+                </span>
+                {(weekDaysByRange[weekIndex] || weekDaysByRange[0]).map((dObj, colIdx) => {
+                  const dayTasks = getTasksForDate(dObj.dateStr);
+                  return (
+                    <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, padding: '0 1px' }}>
+                      {dayTasks.map(t => {
+                        const colorStyle = getAreaColor(t.area);
+                        const shortTitle = getShortWorkloadTitle(t.title);
+                        return (
+                          <div
+                            key={t.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedWorkload(t);
+                              setIsWorkloadDetailOpen(true);
+                            }}
+                            style={{
+                              backgroundColor: colorStyle.bg,
+                              color: colorStyle.text,
+                              borderLeft: `3px solid ${colorStyle.dot}`,
+                              borderTop: `1px solid ${colorStyle.border}`,
+                              borderRight: `1px solid ${colorStyle.border}`,
+                              borderBottom: `1px solid ${colorStyle.border}`,
+                              fontSize: '8px',
+                              fontWeight: 700,
+                              padding: '2px 3px',
+                              borderRadius: '4px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              minWidth: 0,
+                              width: '100%',
+                              boxSizing: 'border-box',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                            }}
+                            title={`📌 ${t.title} (Due: ${t.deadline ? t.deadline.slice(11, 16) : 'All Day'} • ${t.area})`}
+                          >
+                            {shortTitle}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 7-Column Time Grid (08:00 to 23:00) with Time Indicator Line at 18:00 */}
               <div style={{
                 borderTop: '1px solid #F1F5F9',
                 paddingTop: '6px',
@@ -1253,7 +1358,7 @@ export const WorkloadDetailsView: React.FC = () => {
                 overflowY: 'auto',
                 paddingRight: '2px'
               }}>
-                {['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].map(hour => {
+                {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].map(hour => {
                   const isIndicatorRow = hour === '18:00';
 
                   return (
@@ -1261,9 +1366,10 @@ export const WorkloadDetailsView: React.FC = () => {
                       key={hour}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '42px repeat(7, 1fr)',
+                        gridTemplateColumns: '42px repeat(7, minmax(0, 1fr))',
                         gap: '2px',
-                        minHeight: '34px',
+                        height: '36px',
+                        minHeight: '36px',
                         alignItems: 'stretch',
                         position: 'relative'
                       }}
@@ -1279,22 +1385,43 @@ export const WorkloadDetailsView: React.FC = () => {
                         const isTodayCol = dObj.isToday;
                         const dayTasks = getTasksForDate(dObj.dateStr);
                         const matched = dayTasks.find(t =>
-                          t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))
+                          (t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))) ||
+                          (!t.scheduledStartTime && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2))
                         );
+                        const dayBusy = getBusyEventsForDate(dObj.dateStr);
+                        const matchedBusy = dayBusy.find(b => {
+                          const startH = parseInt(b.startDateTime.slice(11, 13), 10);
+                          let endH = parseInt(b.endDateTime.slice(11, 13), 10);
+                          if (parseInt(b.endDateTime.slice(14, 16), 10) > 0) endH += 1;
+                          const curH = parseInt(hour.slice(0, 2), 10);
+                          return curH >= startH && curH < endH;
+                        });
+                        const isBusyStart = matchedBusy && matchedBusy.startDateTime.slice(11, 13) === hour.slice(0, 2);
+                        const startH = matchedBusy ? parseInt(matchedBusy.startDateTime.slice(11, 13), 10) : 0;
+                        let endH = matchedBusy ? parseInt(matchedBusy.endDateTime.slice(11, 13), 10) : 0;
+                        if (matchedBusy && parseInt(matchedBusy.endDateTime.slice(14, 16), 10) > 0) endH += 1;
+                        const durationHours = matchedBusy ? Math.max(1, endH - startH) : 1;
 
                         return (
                           <div
                             key={colIdx}
                             onClick={() => {
-                              if (matched) {
-                                setEditingScheduleTask({
-                                  id: matched.id,
-                                  title: matched.title,
-                                  date: dObj.dateStr,
-                                  startTime: matched.scheduledStartTime || hour,
-                                  endTime: matched.scheduledEndTime || '12:00',
-                                  area: matched.area
-                                });
+                              if (matchedBusy) {
+                                setSelectedBusyEvent(matchedBusy);
+                              } else if (matched) {
+                                if (matched.scheduledStartTime) {
+                                  setEditingScheduleTask({
+                                    id: matched.id,
+                                    title: matched.title,
+                                    date: dObj.dateStr,
+                                    startTime: matched.scheduledStartTime || hour,
+                                    endTime: matched.scheduledEndTime || '12:00',
+                                    area: matched.area
+                                  });
+                                } else {
+                                  setSelectedWorkload(matched);
+                                  setIsWorkloadDetailOpen(true);
+                                }
                               } else {
                                 setSelectedDay(dayNum);
                                 setCalendarViewMode('day');
@@ -1309,7 +1436,9 @@ export const WorkloadDetailsView: React.FC = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              height: '36px',
+                              boxSizing: 'border-box'
                             }}
                           >
                             {/* Current time indicator line on Sat 5 at 18:00 */}
@@ -1329,7 +1458,49 @@ export const WorkloadDetailsView: React.FC = () => {
                               </div>
                             )}
 
-                            {matched && (
+                            {/* Render continuous fixed busy timeblock starting at its start hour */}
+                            {matchedBusy && isBusyStart ? (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBusyEvent(matchedBusy);
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '1px',
+                                  left: '1px',
+                                  right: '1px',
+                                  height: `${durationHours * 36 + (durationHours - 1) * 2 - 2}px`,
+                                  backgroundColor: '#EFF6FF',
+                                  border: '1.5px solid #93C5FD',
+                                  borderLeft: '3.5px solid #2563EB',
+                                  borderRadius: '6px',
+                                  padding: '3px 4px',
+                                  overflow: 'hidden',
+                                  zIndex: 15,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'flex-start',
+                                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.12)',
+                                  boxSizing: 'border-box'
+                                }}
+                                title={`📅 ${matchedBusy.startDateTime.slice(11, 16)}–${matchedBusy.endDateTime.slice(11, 16)} ${matchedBusy.title} (Fixed Commitment • ${durationHours}h)`}
+                              >
+                                <div style={{ fontSize: '8px', fontWeight: 900, color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: '2px', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <span>📅</span>
+                                  <span>{matchedBusy.startDateTime.slice(11, 16)}–{matchedBusy.endDateTime.slice(11, 16)}</span>
+                                </div>
+                                <div style={{ fontSize: '8px', fontWeight: 800, color: '#1E293B', marginTop: '2px', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: durationHours >= 3 ? 3 : 2, WebkitBoxOrient: 'vertical' }}>
+                                  {matchedBusy.title}
+                                </div>
+                                {durationHours >= 2 && (
+                                  <div style={{ fontSize: '7px', color: '#2563EB', marginTop: 'auto', fontWeight: 700 }}>
+                                    {durationHours}h block
+                                  </div>
+                                )}
+                              </div>
+                            ) : !matchedBusy && matched ? (
                               <div style={{
                                 width: '100%',
                                 height: '100%',
@@ -1341,11 +1512,15 @@ export const WorkloadDetailsView: React.FC = () => {
                                 fontSize: '8px',
                                 fontWeight: 800,
                                 color: getAreaColor(matched.area).text,
-                                lineHeight: '1.1'
+                                lineHeight: '1.1',
+                                display: 'flex',
+                                alignItems: 'center'
                               }}>
-                                {matched.title}
+                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {matched.scheduledStartTime ? matched.title : `📌 Due: ${getShortWorkloadTitle(matched.title)}`}
+                                </span>
                               </div>
-                            )}
+                            ) : null}
                           </div>
                         );
                       })}
@@ -1450,6 +1625,62 @@ export const WorkloadDetailsView: React.FC = () => {
                 );
               })()}
 
+              {/* Workload Due Today Banner (Google Calendar Style) */}
+              {(() => {
+                const dayDueTasks = getTasksForDay(selectedDay);
+                if (dayDueTasks.length === 0) return null;
+                return (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '12px',
+                    border: '1px solid #E2E8F0',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>📌</span> Due Today:
+                    </span>
+                    {dayDueTasks.map(t => {
+                      const colorStyle = getAreaColor(t.area);
+                      const timeStr = t.deadline ? t.deadline.slice(11, 16) : '';
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => {
+                            setSelectedWorkload(t);
+                            setIsWorkloadDetailOpen(true);
+                          }}
+                          style={{
+                            backgroundColor: colorStyle.bg,
+                            color: colorStyle.text,
+                            borderLeft: `3.5px solid ${colorStyle.dot}`,
+                            borderTop: `1px solid ${colorStyle.border}`,
+                            borderRight: `1px solid ${colorStyle.border}`,
+                            borderBottom: `1px solid ${colorStyle.border}`,
+                            borderRadius: '8px',
+                            padding: '3px 8px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                          }}
+                          title={`Click to view details for ${t.title}`}
+                        >
+                          <span>{t.title}</span>
+                          {timeStr && <span style={{ opacity: 0.85, fontSize: '10px' }}>(Due {timeStr})</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               {/* Hourly Timeline with Current Time Indicator at 18:00 */}
               <div style={{
                 borderTop: '1px solid #F1F5F9',
@@ -1461,13 +1692,29 @@ export const WorkloadDetailsView: React.FC = () => {
                 overflowY: 'auto',
                 paddingRight: '4px'
               }}>
-                {['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].map(hour => {
+                {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].map(hour => {
                   const dayTasks = getTasksForDay(selectedDay);
-                  const matchedTask = dayTasks.find(t => (t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))) || (hour === '10:00' && selectedDay === 5));
+                  const matchedTask = dayTasks.find(t =>
+                    (t.scheduledStartTime && t.scheduledStartTime.startsWith(hour.slice(0, 2))) ||
+                    (!t.scheduledStartTime && t.deadline && t.deadline.slice(11, 13) === hour.slice(0, 2))
+                  );
+                  const dayBusy = getBusyEventsForDay(selectedDay);
+                  const matchedBusy = dayBusy.find(b => {
+                    const startH = parseInt(b.startDateTime.slice(11, 13), 10);
+                    let endH = parseInt(b.endDateTime.slice(11, 13), 10);
+                    if (parseInt(b.endDateTime.slice(14, 16), 10) > 0) endH += 1;
+                    const curH = parseInt(hour.slice(0, 2), 10);
+                    return curH >= startH && curH < endH;
+                  });
+                  const isBusyStart = matchedBusy && matchedBusy.startDateTime.slice(11, 13) === hour.slice(0, 2);
+                  const startH = matchedBusy ? parseInt(matchedBusy.startDateTime.slice(11, 13), 10) : 0;
+                  let endH = matchedBusy ? parseInt(matchedBusy.endDateTime.slice(11, 13), 10) : 0;
+                  if (matchedBusy && parseInt(matchedBusy.endDateTime.slice(14, 16), 10) > 0) endH += 1;
+                  const durationHours = matchedBusy ? Math.max(1, endH - startH) : 1;
                   const is1800 = hour === '18:00';
 
                   return (
-                    <div key={hour} style={{ display: 'flex', flexDirection: 'column', gap: '2px', minHeight: '38px', position: 'relative' }}>
+                    <div key={hour} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', height: '52px', minHeight: '52px', position: 'relative', boxSizing: 'border-box' }}>
                       {/* 18:00 Current Time Line Indicator */}
                       {is1800 && (
                         <div style={{
@@ -1477,7 +1724,7 @@ export const WorkloadDetailsView: React.FC = () => {
                           right: '0',
                           display: 'flex',
                           alignItems: 'center',
-                          zIndex: 10,
+                          zIndex: 25,
                           pointerEvents: 'none'
                         }}>
                           <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0F172A', marginLeft: '-4px' }} />
@@ -1485,66 +1732,128 @@ export const WorkloadDetailsView: React.FC = () => {
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', width: '38px', paddingTop: '4px' }}>
-                          {hour}
-                        </span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', width: '38px', paddingTop: '4px' }}>
+                        {hour}
+                      </span>
 
-                        <div style={{ flex: 1, borderTop: '1px solid #F1F5F9', paddingTop: '4px' }}>
-                          {matchedTask ? (
-                            <div
-                              onClick={() => setEditingScheduleTask({
-                                id: matchedTask.id,
-                                title: matchedTask.title,
-                                date: `2026-09-${String(selectedDay).padStart(2, '0')}`,
-                                startTime: matchedTask.scheduledStartTime || hour,
-                                endTime: matchedTask.scheduledEndTime || '12:00',
-                                area: matchedTask.area
-                              })}
-                              style={{
-                                backgroundColor: getAreaColor(matchedTask.area).bg,
-                                borderLeft: `4px solid ${getAreaColor(matchedTask.area).dot}`,
-                                borderRadius: '10px',
-                                padding: '8px 12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
-                              }}
-                            >
+                      <div style={{ flex: 1, borderTop: '1px solid #F1F5F9', paddingTop: '2px', position: 'relative', height: '100%', boxSizing: 'border-box' }}>
+                        {matchedBusy && isBusyStart ? (
+                          <div
+                            onClick={() => setSelectedBusyEvent(matchedBusy)}
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              left: 0,
+                              right: 0,
+                              height: `${durationHours * 52 + (durationHours - 1) * 2 - 4}px`,
+                              backgroundColor: '#EFF6FF',
+                              border: '1.5px solid #93C5FD',
+                              borderLeft: '4px solid #2563EB',
+                              borderRadius: '12px',
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.12)',
+                              zIndex: 20,
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
                               <div>
-                                <div style={{ fontSize: '13px', fontWeight: 800, color: getAreaColor(matchedTask.area).text }}>
-                                  {matchedTask.title}
+                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📅</span>
+                                  <span>{matchedBusy.title}</span>
                                 </div>
-                                <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>
-                                  {matchedTask.scheduledStartTime || hour} - {matchedTask.scheduledEndTime || '12:00'} • {matchedTask.area}
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563EB', marginTop: '2px' }}>
+                                  {matchedBusy.startDateTime.slice(11, 16)} – {matchedBusy.endDateTime.slice(11, 16)} ({durationHours} {durationHours === 1 ? 'hour' : 'hours'})
                                 </div>
                               </div>
-                              <Edit3 size={13} color={getAreaColor(matchedTask.area).text} />
+                              <span style={{ fontSize: '10px', backgroundColor: '#DBEAFE', color: '#1D4ED8', padding: '2px 8px', borderRadius: '8px', fontWeight: 700, flexShrink: 0 }}>
+                                Fixed Commitment
+                              </span>
                             </div>
-                          ) : (
-                            <div
-                              onClick={() => {
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', color: '#64748B', borderTop: '1px dashed #BFDBFE', paddingTop: '6px', marginTop: '6px' }}>
+                              <span>Mock Calendar • Non-movable</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#2563EB', fontWeight: 600 }}>
+                                <span>Subtracted from Free Time</span>
+                                <CalendarIcon size={13} />
+                              </div>
+                            </div>
+                          </div>
+                        ) : matchedBusy && !isBusyStart ? (
+                          /* Covered by continuous multi-hour block above - no duplicate block */
+                          <div style={{ height: '100%' }} />
+                        ) : matchedTask ? (
+                          <div
+                            onClick={() => {
+                              if (matchedTask.scheduledStartTime) {
                                 setEditingScheduleTask({
-                                  id: `new-${Date.now()}`,
-                                  title: 'New Timeblock',
+                                  id: matchedTask.id,
+                                  title: matchedTask.title,
                                   date: `2026-09-${String(selectedDay).padStart(2, '0')}`,
-                                  startTime: hour,
-                                  endTime: `${parseInt(hour.slice(0, 2)) + 1}:00`,
-                                  area: 'Academic'
+                                  startTime: matchedTask.scheduledStartTime || hour,
+                                  endTime: matchedTask.scheduledEndTime || '12:00',
+                                  area: matchedTask.area
                                 });
-                              }}
-                              style={{
-                                height: '28px',
-                                border: '1px dashed #E2E8F0',
-                                borderRadius: '8px',
-                                cursor: 'pointer'
-                              }}
-                              title="Click to schedule workload at this hour"
-                            />
-                          )}
-                        </div>
+                              } else {
+                                setSelectedWorkload(matchedTask);
+                                setIsWorkloadDetailOpen(true);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: getAreaColor(matchedTask.area).bg,
+                              borderLeft: `4px solid ${getAreaColor(matchedTask.area).dot}`,
+                              borderTop: `1px solid ${getAreaColor(matchedTask.area).border}`,
+                              borderRight: `1px solid ${getAreaColor(matchedTask.area).border}`,
+                              borderBottom: `1px solid ${getAreaColor(matchedTask.area).border}`,
+                              borderRadius: '10px',
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 800, color: getAreaColor(matchedTask.area).text, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>📌</span>
+                                <span>{matchedTask.title}</span>
+                              </div>
+                              <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>
+                                {matchedTask.scheduledStartTime
+                                  ? `${matchedTask.scheduledStartTime} - ${matchedTask.scheduledEndTime || '12:00'} • ${matchedTask.area}`
+                                  : `Due: ${matchedTask.deadline ? matchedTask.deadline.slice(11, 16) : 'End of day'} • ${matchedTask.area} • ${matchedTask.estimatedHours}h est`}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '6px', color: getAreaColor(matchedTask.area).text }}>
+                              {matchedTask.scheduledStartTime ? 'Scheduled' : 'Workload Due'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => {
+                              setEditingScheduleTask({
+                                id: `new-${Date.now()}`,
+                                title: 'New Timeblock',
+                                date: `2026-09-${String(selectedDay).padStart(2, '0')}`,
+                                startTime: hour,
+                                endTime: `${parseInt(hour.slice(0, 2)) + 1}:00`,
+                                area: 'Academic'
+                              });
+                            }}
+                            style={{
+                              height: '28px',
+                              border: '1px dashed #E2E8F0',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                            title="Click to schedule workload at this hour"
+                          />
+                        )}
                       </div>
                     </div>
                   );
@@ -1613,8 +1922,8 @@ export const WorkloadDetailsView: React.FC = () => {
                   </button>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFF7ED', padding: '4px 8px', borderRadius: '10px' }}>
-                  <CartoonEmoji mood={todayCheckIn?.emotionFeeling || 'All Good'} size={18} />
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#EA580C' }}>Today: {todayCheckIn?.emotionFeeling || 'All Good'}</span>
+                  <CartoonEmoji mood={todayCheckIn?.emotionFeeling || 'Overwhelmed'} size={18} />
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#EA580C' }}>Today: {todayCheckIn?.emotionFeeling || 'Overwhelmed'}</span>
                 </div>
               </div>
 
@@ -1637,9 +1946,9 @@ export const WorkloadDetailsView: React.FC = () => {
 
                     {Array.from({ length: moodDaysInMonth }).map((_, idx) => {
                       const day = idx + 1;
-                      const mood = monthlyEmotions[day] || 'All Good';
+                      const mood = currentMonthNum === 9 ? monthlyEmotions[day] || 'Unchecked' : 'Unchecked';
                       const isSelected = selectedDay === day;
-                      const isToday = currentMonthNum === 9 && day === 5;
+                      const isToday = currentMonthNum === 9 && day === 8;
 
                       return (
                         <div
@@ -1667,7 +1976,7 @@ export const WorkloadDetailsView: React.FC = () => {
                           </span>
                           <CartoonEmoji mood={mood} size={26} />
                           <span style={{ fontSize: '8.5px', fontWeight: 700, color: isToday ? '#EA580C' : '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                            {mood}
+                            {mood === 'Unchecked' ? '-' : mood}
                           </span>
                         </div>
                       );
@@ -1945,6 +2254,105 @@ export const WorkloadDetailsView: React.FC = () => {
               }}
             >
               Save Timeblock
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* FIXED BUSY EVENT DETAIL MODAL */}
+      {selectedBusyEvent && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '26px',
+            width: '100%',
+            maxWidth: '360px',
+            padding: '22px 20px',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            border: '1.5px solid #E2E8F0'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  backgroundColor: '#EFF6FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB'
+                }}>
+                  <CalendarIcon size={18} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Fixed Calendar Event
+                  </span>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    {selectedBusyEvent.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBusyEvent(null)}
+                style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={15} color="#64748B" />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#F8FAFC', padding: '12px 14px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Date:</span>
+                <span style={{ color: '#0F172A', fontWeight: 800 }}>{selectedBusyEvent.startDateTime.slice(0, 10)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Time:</span>
+                <span style={{ color: '#0F172A', fontWeight: 800 }}>{selectedBusyEvent.startDateTime.slice(11, 16)} – {selectedBusyEvent.endDateTime.slice(11, 16)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Source:</span>
+                <span style={{ color: '#2563EB', fontWeight: 800 }}>Mock Calendar</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Flexibility:</span>
+                <span style={{ color: '#DC2626', fontWeight: 800 }}>Non-movable (Fixed)</span>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.4' }}>
+              This event is part of your fixed busy schedule. During Candidate Time calculation, Restore subtracts this block so you are never scheduled during classes or meetings.
+            </div>
+
+            <button
+              onClick={() => setSelectedBusyEvent(null)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '14px',
+                border: 'none',
+                backgroundColor: '#0F172A',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Close
             </button>
           </div>
         </div>

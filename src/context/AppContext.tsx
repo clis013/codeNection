@@ -6,6 +6,7 @@ import {
   CapacityProfile,
   StressCategory,
   BaselineComparisonCategory,
+  BaselineMetrics,
   DerivedWorkloadFacts,
   AnalysisResult
 } from '../types/stress';
@@ -21,6 +22,8 @@ import {
 import { buildAnalysisInput, getMockAnalysis } from '../services/mockAnalysisProvider';
 import { FixedBusyEvent, ProtectedTime, FocusBlock, TimeResourceFacts } from '../types/calendar';
 import { calculateCandidateWindows, deriveTimeResourceFacts } from '../services/calendarEngine';
+import { NICOLE_FIXED_BUSY_EVENTS, NICOLE_PROTECTED_TIME, NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
+export { NICOLE_FIXED_BUSY_EVENTS, NICOLE_PROTECTED_TIME, NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
 
 export type NavTab = 'home' | 'map' | 'chat' | 'workloads' | 'balance';
 
@@ -45,6 +48,7 @@ interface AppContextType {
   addWorkloadInitialData?: any | null;
   setAddWorkloadInitialData: (data: any | null) => void;
   markChatWorkloadAdded: (messageId: string) => void;
+  clarifiedWorkloadIds: string[];
 
   // Handlers
   addWorkload: (item: Omit<WorkloadItem, 'id' | 'status' | 'subtasks' | 'remainingTimeHours'> & {
@@ -84,8 +88,13 @@ interface AppContextType {
    * (baseline is insufficient — do not fabricate a comparison).
    */
   calculateBaselineDiff: (todayScore: number) => { diff: number; category: BaselineComparisonCategory; interpretation: string } | null;
-  /** The computed 30-record baseline average, or null when insufficient data. */
+  /** The fixed 30-record baseline metrics and averages */
+  baselineMetrics: BaselineMetrics;
   baselineStressAverage: number | null;
+  baselineEnergyAverage: number | null;
+  baselineControlAverage: number | null;
+  baselineMentalDemandAverage: number | null;
+  baselineCopingConfidenceAverage: number | null;
   /** True when ≥30 prior check-in records exist. */
   hasBaseline: boolean;
 
@@ -101,6 +110,16 @@ interface AppContextType {
   addAiChatMessage: (msg: Partial<AiDumpChatMessage> & { text: string }) => void;
   confirmExtractedDraft: (draft: any) => void;
   confirmAllExtractedDrafts: (drafts: any[]) => void;
+  clarifyNicoleMessage: (messageId: string) => void;
+  confirmNicoleStressDump: (messageId?: string) => void;
+
+  // Calendar & Schedule State
+  busyEvents: FixedBusyEvent[];
+  setBusyEvents: React.Dispatch<React.SetStateAction<FixedBusyEvent[]>>;
+  protectedTimes: ProtectedTime[];
+  setProtectedTimes: React.Dispatch<React.SetStateAction<ProtectedTime[]>>;
+  focusBlocks: FocusBlock[];
+  setFocusBlocks: React.Dispatch<React.SetStateAction<FocusBlock[]>>;
 
   // Capacity & Insight Metrics
   capacityProfile: CapacityProfile;
@@ -132,12 +151,16 @@ const initialWorkloads: WorkloadItem[] = [
     deadline: '2026-09-10T08:00:00+08:00',
     estimatedHours: 5,
     remainingTimeHours: 5,
+    urgency: 'High',
     importance: 'High',
     userPriority: 'High',
     timeFlexibility: 'Moderate',
     effortFlexibility: 'Strict',
-    urgency: 'High',
-    demandProfile: { cognitive: 5, emotional: 3, physical: 1 },
+    demandProfile: {
+      cognitive: 5,
+      emotional: 3,
+      physical: 1
+    },
     perceivedStressImpact: 5,
     schedulingCharacteristics: {
       splittable: true,
@@ -147,7 +170,18 @@ const initialWorkloads: WorkloadItem[] = [
       source: 'workload-default'
     },
     status: 'Active',
-    subtasks: []
+    subtasks: [
+      {
+        id: 'os-st-1',
+        title: 'Review processes and scheduling',
+        completed: false
+      },
+      {
+        id: 'os-st-2',
+        title: 'Practice past quiz questions',
+        completed: false
+      }
+    ]
   },
   {
     id: 'web-programming-group',
@@ -157,55 +191,48 @@ const initialWorkloads: WorkloadItem[] = [
     activityType: 'Deep focus',
     timingType: 'Deadline',
     deadline: '2026-09-11T23:59:00+08:00',
-    estimatedHours: 18,
-    remainingTimeHours: 18,
+    estimatedHours: 12,
+    remainingTimeHours: 12,
+    urgency: 'High',
     importance: 'High',
     userPriority: 'High',
     timeFlexibility: 'Moderate',
     effortFlexibility: 'Moderate',
-    urgency: 'High',
-    demandProfile: { cognitive: 5, emotional: 3, physical: 1 },
+    demandProfile: {
+      cognitive: 5,
+      emotional: 3,
+      physical: 1
+    },
     perceivedStressImpact: 5,
     schedulingCharacteristics: {
       splittable: true,
       spacingPreferred: true,
       preferredBlockMinutes: 90,
       minimumBlockMinutes: 30,
-      source: 'user'
+      source: 'workload-default'
     },
     status: 'Active',
-    subtasks: []
-  },
-  {
-    id: 'tech-carnival-sponsorship',
-    title: 'Tech Carnival Sponsorship Preparation',
-    area: 'Social',
-    workloadType: 'Project',
-    activityType: 'Communication',
-    timingType: 'Deadline',
-    deadline: '2026-09-10T18:00:00+08:00',
-    estimatedHours: 6,
-    remainingTimeHours: 6,
-    importance: 'High',
-    userPriority: 'Medium',
-    timeFlexibility: 'Moderate',
-    effortFlexibility: 'Moderate',
-    urgency: 'High',
-    demandProfile: { cognitive: 3, emotional: 5, physical: 1 },
-    perceivedStressImpact: 4,
-    schedulingCharacteristics: {
-      splittable: true,
-      spacingPreferred: false,
-      preferredBlockMinutes: 60,
-      minimumBlockMinutes: 30,
-      source: 'user'
-    },
-    status: 'Active',
-    subtasks: []
+    subtasks: [
+      {
+        id: 'web-st-1',
+        title: 'Complete remaining frontend integration',
+        completed: false
+      },
+      {
+        id: 'web-st-2',
+        title: "Integrate group members' unfinished sections",
+        completed: false
+      },
+      {
+        id: 'web-st-3',
+        title: 'Testing and final submission preparation',
+        completed: false
+      }
+    ]
   },
   {
     id: 'fcg-test-1',
-    title: 'FCG Test 1',
+    title: 'FCG Test',
     area: 'Academic',
     workloadType: 'ExamPreparation',
     activityType: 'Deep focus',
@@ -213,12 +240,16 @@ const initialWorkloads: WorkloadItem[] = [
     deadline: '2026-09-14T14:00:00+08:00',
     estimatedHours: 8,
     remainingTimeHours: 8,
+    urgency: 'Medium',
     importance: 'High',
     userPriority: 'Medium',
     timeFlexibility: 'Flexible',
     effortFlexibility: 'Strict',
-    urgency: 'Medium',
-    demandProfile: { cognitive: 5, emotional: 3, physical: 1 },
+    demandProfile: {
+      cognitive: 5,
+      emotional: 3,
+      physical: 1
+    },
     perceivedStressImpact: 4,
     schedulingCharacteristics: {
       splittable: true,
@@ -228,7 +259,18 @@ const initialWorkloads: WorkloadItem[] = [
       source: 'workload-default'
     },
     status: 'Active',
-    subtasks: []
+    subtasks: [
+      {
+        id: 'fcg-st-1',
+        title: 'Review test topics',
+        completed: false
+      },
+      {
+        id: 'fcg-st-2',
+        title: 'Practice problem solving',
+        completed: false
+      }
+    ]
   },
   {
     id: 'philosophy-reflection',
@@ -240,12 +282,16 @@ const initialWorkloads: WorkloadItem[] = [
     deadline: '2026-09-18T23:59:00+08:00',
     estimatedHours: 2,
     remainingTimeHours: 2,
+    urgency: 'Low',
     importance: 'Medium',
     userPriority: 'Low',
     timeFlexibility: 'Flexible',
     effortFlexibility: 'Moderate',
-    urgency: 'Low',
-    demandProfile: { cognitive: 3, emotional: 1, physical: 1 },
+    demandProfile: {
+      cognitive: 3,
+      emotional: 1,
+      physical: 1
+    },
     perceivedStressImpact: 2,
     schedulingCharacteristics: {
       splittable: true,
@@ -255,23 +301,186 @@ const initialWorkloads: WorkloadItem[] = [
       source: 'workload-default'
     },
     status: 'Active',
-    subtasks: []
+    subtasks: [
+      {
+        id: 'phil-st-1',
+        title: 'Draft reflection',
+        completed: false
+      },
+      {
+        id: 'phil-st-2',
+        title: 'Revise and submit',
+        completed: false
+      }
+    ]
   }
 ];
 
-// Nicole canonical demo scenario Check-In (single check-in today, no baseline)
+// ─── Nicole Baseline Metrics (Fixed Demo Source of Truth) ─────────────────────
+// Represents Nicole's latest 30 completed Daily Check-Ins strictly BEFORE 2026-09-08.
+// Sample size: 30 completed prior check-ins. Today's check-in (Sep 8) is NOT included.
+export const NICOLE_BASELINE: BaselineMetrics = {
+  hasBaseline: true,
+  baselineStressAverage: 10.4,
+  baselineEnergyAverage: 3.6,
+  baselineControlAverage: 3.7,
+  baselineMentalDemandAverage: 3.1,
+  baselineCopingConfidenceAverage: 3.6
+};
+
+/**
+ * Calculates per-dimension differences and qualitative interpretations between today's check-in and baseline.
+ */
+export function getBaselineDimensionComparisons(todayCheckIn: DailyCheckIn, baseline: BaselineMetrics = NICOLE_BASELINE) {
+  return {
+    stress: {
+      today: todayCheckIn.pssScore,
+      baseline: baseline.baselineStressAverage,
+      diff: Number((todayCheckIn.pssScore - baseline.baselineStressAverage).toFixed(1)),
+      interpretation: "Nicole's perceived stress is substantially above her usual level."
+    },
+    energy: {
+      today: todayCheckIn.energyLevel,
+      baseline: baseline.baselineEnergyAverage,
+      diff: Number((todayCheckIn.energyLevel - baseline.baselineEnergyAverage).toFixed(1)),
+      interpretation: "Energy is substantially below her usual level."
+    },
+    control: {
+      today: todayCheckIn.q2_control,
+      baseline: baseline.baselineControlAverage,
+      diff: Number((todayCheckIn.q2_control - baseline.baselineControlAverage).toFixed(1)),
+      interpretation: "Perceived control is below her usual level."
+    },
+    mentalDemand: {
+      today: todayCheckIn.q3_mentalDemand,
+      baseline: baseline.baselineMentalDemandAverage,
+      diff: Number((todayCheckIn.q3_mentalDemand - baseline.baselineMentalDemandAverage).toFixed(1)),
+      interpretation: "Mental demand is above her usual level."
+    },
+    copingCapability: {
+      today: todayCheckIn.q4_capability,
+      baseline: baseline.baselineCopingConfidenceAverage,
+      diff: Number((todayCheckIn.q4_capability - baseline.baselineCopingConfidenceAverage).toFixed(1)),
+      interpretation: "Coping capability is below her usual level."
+    }
+  };
+}
+
+// Nicole canonical demo scenario Check-In History (Sep 1 to Sep 8, 2026):
 const initialCheckIns: DailyCheckIn[] = [
   {
-    id: 'nicole-checkin-01',
-    date: '2026-09-08',
-    createdAt: '2026-09-08T22:15:00+08:00',
-    q1_stress: 5,
+    id: 'nicole-checkin-2026-09-01',
+    date: '2026-09-01',
+    createdAt: '2026-09-01T21:00:00+08:00',
+    q1_stress: 2,
+    q2_control: 4,
+    q3_mentalDemand: 3,
+    q4_capability: 4,
+    energyLevel: 4,
+    emotionFeeling: 'All Good',
+    pssScore: 9,
+    category: 'Normal',
+    controlScore: 4,
+    mentalDemandScore: 3,
+    copingCapabilityScore: 4,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-02',
+    date: '2026-09-02',
+    createdAt: '2026-09-02T21:00:00+08:00',
+    q1_stress: 3,
+    q2_control: 4,
+    q3_mentalDemand: 3,
+    q4_capability: 4,
+    energyLevel: 4,
+    emotionFeeling: 'All Good',
+    pssScore: 10,
+    category: 'Normal',
+    controlScore: 4,
+    mentalDemandScore: 3,
+    copingCapabilityScore: 4,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-03',
+    date: '2026-09-03',
+    createdAt: '2026-09-03T21:00:00+08:00',
+    q1_stress: 3,
+    q2_control: 3,
+    q3_mentalDemand: 3,
+    q4_capability: 4,
+    energyLevel: 3,
+    emotionFeeling: 'Normal',
+    pssScore: 11,
+    category: 'Elevated',
+    controlScore: 3,
+    mentalDemandScore: 3,
+    copingCapabilityScore: 4,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-04',
+    date: '2026-09-04',
+    createdAt: '2026-09-04T21:00:00+08:00',
+    q1_stress: 3,
+    q2_control: 3,
+    q3_mentalDemand: 4,
+    q4_capability: 3,
+    energyLevel: 3,
+    emotionFeeling: 'Tense',
+    pssScore: 13,
+    category: 'Elevated',
+    controlScore: 3,
+    mentalDemandScore: 4,
+    copingCapabilityScore: 3,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-05',
+    date: '2026-09-05',
+    createdAt: '2026-09-05T21:00:00+08:00',
+    q1_stress: 4,
+    q2_control: 3,
+    q3_mentalDemand: 4,
+    q4_capability: 3,
+    energyLevel: 2,
+    emotionFeeling: 'Normal',
+    pssScore: 14,
+    category: 'High',
+    controlScore: 3,
+    mentalDemandScore: 4,
+    copingCapabilityScore: 3,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-06',
+    date: '2026-09-06',
+    createdAt: '2026-09-06T21:00:00+08:00',
+    q1_stress: 4,
+    q2_control: 2,
+    q3_mentalDemand: 4,
+    q4_capability: 3,
+    energyLevel: 2,
+    emotionFeeling: 'Tense',
+    pssScore: 15,
+    category: 'High',
+    controlScore: 2,
+    mentalDemandScore: 4,
+    copingCapabilityScore: 3,
+    baselineDiff: undefined
+  },
+  {
+    id: 'nicole-checkin-2026-09-07',
+    date: '2026-09-07',
+    createdAt: '2026-09-07T21:00:00+08:00',
+    q1_stress: 4,
     q2_control: 2,
     q3_mentalDemand: 5,
     q4_capability: 2,
-    energyLevel: 1,
-    emotionFeeling: 'Exhausted',
-    pssScore: 18,
+    energyLevel: 2,
+    emotionFeeling: 'Overwhelmed',
+    pssScore: 17,
     category: 'Very High',
     controlScore: 2,
     mentalDemandScore: 5,
@@ -445,6 +654,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isTreeHoleOpen, setIsTreeHoleOpen] = useState(false);
   const [isColourReflectionOpen, setIsColourReflectionOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<AiDumpChatMessage[]>(initialChatMessages);
+  const [clarifiedWorkloadIds, setClarifiedWorkloadIds] = useState<string[]>([]);
 
   // ─── Date-anchored derivations ──────────────────────────────────────────────
 
@@ -458,12 +668,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     .filter(c => c.date < TODAY)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  // Personal baseline: requires exactly 30 prior completed records
-  const hasBaseline = allPriorCheckIns.length >= 30;
-  const latest30Prior = allPriorCheckIns.slice(0, 30);
-  const baselineStressAverage: number | null = hasBaseline
-    ? Math.round(latest30Prior.reduce((acc, c) => acc + c.pssScore, 0) / latest30Prior.length)
-    : null;
+  // ─── Nicole Baseline Metrics (Fixed Demo Source of Truth) ───────────────────
+  // Represents Nicole's latest 30 completed Daily Check-Ins strictly before 2026-09-08.
+  // Sample size: 30 completed prior check-ins. Today (2026-09-08) is NOT included.
+  const baselineMetrics: BaselineMetrics = NICOLE_BASELINE;
+  const hasBaseline = baselineMetrics.hasBaseline;
+  const baselineStressAverage: number = baselineMetrics.baselineStressAverage;
+  const baselineEnergyAverage: number = baselineMetrics.baselineEnergyAverage;
+  const baselineControlAverage: number = baselineMetrics.baselineControlAverage;
+  const baselineMentalDemandAverage: number = baselineMetrics.baselineMentalDemandAverage;
+  const baselineCopingConfidenceAverage: number = baselineMetrics.baselineCopingConfidenceAverage;
 
   // ─── Stress calculations ────────────────────────────────────────────────────
 
@@ -471,20 +685,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const calculatePss = (q1: number, q2: number, q3: number, q4: number) => {
     const score = q1 + (6 - q2) + q3 + (6 - q4);
     let category: StressCategory = 'Normal';
-    let interpretation = 'Stress within normal range for community adults';
+    let interpretation = 'Stress within normal range';
 
     if (score >= 17) {
       category = 'Very High';
-      interpretation = 'Stress in top 1% of scores, critical level requiring intervention';
+      interpretation = 'Stress in top tier of scores, critical level requiring recovery & rebalancing';
     } else if (score >= 14) {
       category = 'High';
-      interpretation = 'Stress in top 5% of scores, linked to burnout risk';
+      interpretation = 'Stress notably elevated, indicating substantial demand pressure';
     } else if (score >= 11) {
       category = 'Elevated';
-      interpretation = 'Stress elevated compared to the general population';
+      interpretation = 'Stress elevated compared to usual baseline';
     } else {
       category = 'Normal';
-      interpretation = 'Stress within normal range for community adults';
+      interpretation = 'Stress within normal range';
     }
 
     return { score, category, interpretation };
@@ -495,13 +709,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (baselineStressAverage === null) {
       return null; // Insufficient data — do NOT fabricate a baseline comparison
     }
-    const diff = todayScore - baselineStressAverage;
+    const diff = Number((todayScore - baselineStressAverage).toFixed(1));
     let category: BaselineComparisonCategory = 'normal';
     let interpretation = 'Typical for you';
 
     if (diff >= 6) {
       category = 'significantly elevated';
-      interpretation = 'Much higher than your normal — a notable spike';
+      interpretation = "Nicole's perceived stress is substantially above her usual level.";
     } else if (diff >= 3) {
       category = 'elevated';
       interpretation = 'Higher than your normal — monitor for patterns';
@@ -539,9 +753,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateWorkload = (updatedItem: WorkloadItem) => {
-    setWorkloads(prev => prev.map(w => w.id === updatedItem.id ? updatedItem : w));
+    setWorkloads(prev => {
+      const exists = prev.some(w => w.id === updatedItem.id);
+      if (exists) {
+        return prev.map(w => w.id === updatedItem.id ? updatedItem : w);
+      }
+      return [...prev, updatedItem];
+    });
     if (selectedWorkload?.id === updatedItem.id) {
       setSelectedWorkload(updatedItem);
+    }
+    // Track that the user explicitly pressed Save Changes in the edit modal
+    setClarifiedWorkloadIds(prev => prev.includes(updatedItem.id) ? prev : [...prev, updatedItem.id]);
+    if (updatedItem.id === 'tech-carnival-sponsorship' || updatedItem.id === 'web-programming-group') {
+      setChatMessages(prev => prev.map(msg => {
+        if (msg.isNicoleDemoExtraction) {
+          return { ...msg, nicoleClarified: true };
+        }
+        return msg;
+      }));
     }
   };
 
@@ -639,6 +869,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isShoutVent: voiceOptions?.isShoutVent,
       decibelLevel: voiceOptions?.decibelLevel,
     };
+
+    // Nicole Canonical Demo Stress Dump detection
+    const isNicoleDemo =
+      text.includes("OOP assignment last week") ||
+      text.includes("Tech Carnival and suddenly there are things I need to prepare for sponsorship") ||
+      text.includes("I feel like I should just focus on OS first") ||
+      text.trim() === NICOLE_NARRATIVE.trim();
+
+    if (isNicoleDemo) {
+      setTimeout(() => {
+        const aiReply: AiDumpChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          sender: 'ai',
+          text: "I've analyzed your thoughts, Nicole. You're carrying a heavy load right after an exhausting week. Here is the structured extraction of your workload demands and stress context:",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isNicoleDemoExtraction: true,
+          nicoleClarified: false,
+          nicoleConfirmed: false,
+          nicoleContext: {
+            primaryConcern: "Competing academic deadlines",
+            secondaryConcern: "Nicole is taking on additional responsibility in a group assignment",
+            additionalDemand: "Tech Carnival sponsorship responsibility",
+            currentFeeling: "Unsure what to prioritize first",
+            recentContext: "Nicole has just finished a difficult previous week and still feels depleted"
+          },
+          extractedWorkloadDrafts: [
+            {
+              title: "Operating System Quiz 1",
+              area: "Academic",
+              activityType: "Deep focus",
+              urgency: "High",
+              estimatedHours: 5,
+              cognitive: 5,
+              emotional: 3,
+              physical: 1
+            },
+            {
+              title: "Web Programming Group Assignment",
+              area: "Academic",
+              activityType: "Deep focus",
+              urgency: "High",
+              estimatedHours: 12,
+              cognitive: 5,
+              emotional: 3,
+              physical: 1
+            },
+            {
+              title: "Tech Carnival Sponsorship",
+              area: "Social",
+              activityType: "Communication",
+              urgency: "High",
+              estimatedHours: 6,
+              cognitive: 3,
+              emotional: 5,
+              physical: 1
+            },
+            {
+              title: "FCG Test",
+              area: "Academic",
+              activityType: "Deep focus",
+              urgency: "Medium",
+              estimatedHours: 8,
+              cognitive: 5,
+              emotional: 3,
+              physical: 1
+            }
+          ],
+          stressDrivers: [
+            "Competing academic deadlines (OS Quiz vs Web Programming)",
+            "Unfinished group partner work shifting to Nicole",
+            "Tech Carnival extracurricular commitments",
+            "Cumulative fatigue from previous week"
+          ]
+        };
+        setChatMessages(prev => [...prev, aiReply]);
+      }, 500);
+      setChatMessages(prev => [...prev, userMsg]);
+      return;
+    }
 
     const unrecorded = parseUnrecordedWorkload(text);
     if (unrecorded) {
@@ -761,6 +1070,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     drafts.forEach(draft => confirmExtractedDraft(draft));
   };
 
+  const clarifyNicoleMessage = (messageId: string) => {
+    setChatMessages(prev => prev.map(msg => {
+      if (msg.id === messageId || msg.isNicoleDemoExtraction) {
+        return { ...msg, nicoleClarified: true };
+      }
+      return msg;
+    }));
+  };
+
+  const confirmNicoleStressDump = (messageId?: string) => {
+    setWorkloads(prev => {
+      const existingSponsorship = prev.find(w => w.id === 'tech-carnival-sponsorship');
+      const updated = prev.map(w => {
+        if (w.id === 'web-programming-group') {
+          return {
+            ...w,
+            estimatedHours: 18,
+            remainingTimeHours: 18
+          };
+        }
+        return w;
+      });
+
+      if (!existingSponsorship) {
+        return [...updated, TECH_CARNIVAL_SPONSORSHIP_ITEM];
+      }
+      return updated;
+    });
+
+    setChatMessages(prev => {
+      const updated = prev.map(msg => {
+        if (msg.isNicoleDemoExtraction || (messageId && msg.id === messageId)) {
+          return { ...msg, nicoleClarified: true, nicoleConfirmed: true };
+        }
+        return msg;
+      });
+
+      // Avoid adding duplicate analysis follow-up message if already present
+      const alreadyHasAnalysis = updated.some(m => m.isNicoleAnalysisPlan || m.text?.includes('provide you some analysis'));
+      if (!alreadyHasAnalysis) {
+        updated.push({
+          id: `msg-${Date.now()}-nicole-analysis`,
+          sender: 'ai',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: "Alright, now I will provide you some analysis according to your current status.",
+          isOverloadNotice: true,
+          isNicoleAnalysisPlan: true,
+          overloadSummary: {
+            totalHours: 39,
+            availableHours: 15.5,
+            deficit: 13.5,
+            taskTitle: "Tech Carnival Sponsorship & Web Programming"
+          }
+        });
+      }
+      return updated;
+    });
+  };
+
   const addAiChatMessage = (msg: Partial<AiDumpChatMessage> & { text: string }) => {
     setChatMessages(prev => {
       if (msg.isOverloadNotice) {
@@ -804,45 +1172,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ─── Deterministic Calendar Facts (Stage 3 Mock Data) ────────────────────────
-  
+
   const horizonStart = '2026-09-08T22:15:00+08:00';
   const horizonEnd = '2026-09-15T22:15:00+08:00';
 
-  const mockBusyEvents: FixedBusyEvent[] = [
-    { id: 'b1', title: 'Operating System class', startDateTime: '2026-09-08T08:00:00+08:00', endDateTime: '2026-09-08T10:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b2', title: 'Web Programming class', startDateTime: '2026-09-09T11:00:00+08:00', endDateTime: '2026-09-09T13:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b3', title: 'Object Oriented Programming class', startDateTime: '2026-09-09T14:00:00+08:00', endDateTime: '2026-09-09T17:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b4', title: 'Tech Carnival committee prep meeting', startDateTime: '2026-09-09T19:00:00+08:00', endDateTime: '2026-09-09T21:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b5', title: 'Operating System class', startDateTime: '2026-09-10T08:00:00+08:00', endDateTime: '2026-09-10T10:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b6', title: 'Tech Carnival logistics meeting', startDateTime: '2026-09-10T19:30:00+08:00', endDateTime: '2026-09-10T21:30:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b7', title: 'Philosophy class', startDateTime: '2026-09-11T10:00:00+08:00', endDateTime: '2026-09-11T12:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b8', title: 'Tech Carnival event preparation', startDateTime: '2026-09-12T09:00:00+08:00', endDateTime: '2026-09-12T13:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b9', title: 'English Communication', startDateTime: '2026-09-14T08:00:00+08:00', endDateTime: '2026-09-14T10:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b10', title: 'Web Programming', startDateTime: '2026-09-14T11:00:00+08:00', endDateTime: '2026-09-14T13:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b11', title: 'FCG', startDateTime: '2026-09-14T14:00:00+08:00', endDateTime: '2026-09-14T17:00:00+08:00', source: 'mock', isMovable: false },
-    { id: 'b12', title: 'Operating System', startDateTime: '2026-09-15T08:00:00+08:00', endDateTime: '2026-09-15T10:00:00+08:00', source: 'mock', isMovable: false }
-  ];
+  const [busyEvents, setBusyEvents] = useState<FixedBusyEvent[]>(NICOLE_FIXED_BUSY_EVENTS);
+  const [protectedTimes, setProtectedTimes] = useState<ProtectedTime[]>(NICOLE_PROTECTED_TIME);
+  const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([]);
 
-  const mockProtectedTimes: ProtectedTime[] = [
-    {
-      id: 'protected-rest-00-04',
-      title: 'Protected Rest',
-      type: 'sleep',
-      source: 'mock',
-      isRecurring: true,
-      recurringStartTime: '00:00',
-      recurringEndTime: '04:00'
-    }
-  ];
-
-  const mockFocusBlocks: FocusBlock[] = [];
-
-  const candidates = calculateCandidateWindows(horizonStart, horizonEnd, mockBusyEvents, mockProtectedTimes, mockFocusBlocks, 30);
+  const candidates = calculateCandidateWindows(horizonStart, horizonEnd, busyEvents, protectedTimes, focusBlocks, 30);
   const timeResourceFacts = deriveTimeResourceFacts(candidates, horizonStart, horizonEnd, 'mock');
 
   // ─── Analysis Provider ───────────────────────────────────────────────────────
-  
-  const analysisInput = buildAnalysisInput(TODAY, todayCheckIn, activeWorkloads, derivedWorkloadFacts, timeResourceFacts);
+
+  const isStressDumpConfirmed = workloads.some(w => w.id === 'tech-carnival-sponsorship') ||
+    chatMessages.some(m => m.nicoleConfirmed);
+  const stressDumpContext = isStressDumpConfirmed
+    ? ['web-programming-expanded', 'tech-carnival-sponsorship-added', 'confirmed']
+    : [];
+
+  const analysisInput = buildAnalysisInput(TODAY, todayCheckIn, activeWorkloads, derivedWorkloadFacts, timeResourceFacts, stressDumpContext);
   const analysisResult = getMockAnalysis(analysisInput);
 
   // ─── Capacity profile ────────────────────────────────────────────────────────
@@ -873,7 +1222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Real derived from workloads (first value; ties represented in derivedWorkloadFacts)
     dominantArea: derivedWorkloadFacts.dominantAreas[0] ?? 'Unknown',
     mostDrainingDemand: (derivedWorkloadFacts.mostDrainingDemands[0] ?? 'Unknown') as 'Cognitive' | 'Emotional' | 'Physical' | 'Unknown',
-    
+
     analysisResult
   };
 
@@ -895,6 +1244,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addWorkloadInitialData,
       setAddWorkloadInitialData,
       markChatWorkloadAdded,
+      clarifiedWorkloadIds,
       addWorkload,
       updateWorkload,
       deleteWorkload,
@@ -917,7 +1267,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsRetestRequested,
       calculatePss,
       calculateBaselineDiff,
+      baselineMetrics,
       baselineStressAverage,
+      baselineEnergyAverage,
+      baselineControlAverage,
+      baselineMentalDemandAverage,
+      baselineCopingConfidenceAverage,
       hasBaseline,
       isTreeHoleOpen,
       setIsTreeHoleOpen,
@@ -928,6 +1283,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addAiChatMessage,
       confirmExtractedDraft,
       confirmAllExtractedDrafts,
+      clarifyNicoleMessage,
+      confirmNicoleStressDump,
+      busyEvents,
+      setBusyEvents,
+      protectedTimes,
+      setProtectedTimes,
+      focusBlocks,
+      setFocusBlocks,
       capacityProfile,
       derivedWorkloadFacts,
       analysisResult

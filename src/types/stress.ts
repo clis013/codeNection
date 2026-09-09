@@ -9,6 +9,17 @@ export type BaselineComparisonCategory =
   | 'significantly elevated'
   | 'lower than normal';
 
+// ─── Baseline Metrics ────────────────────────────────────────────────────────
+
+export interface BaselineMetrics {
+  hasBaseline: boolean;
+  baselineStressAverage: number;
+  baselineEnergyAverage: number;
+  baselineControlAverage: number;
+  baselineMentalDemandAverage: number;
+  baselineCopingConfidenceAverage: number;
+}
+
 // ─── Daily Check-In ──────────────────────────────────────────────────────────
 
 export interface DailyCheckIn {
@@ -111,6 +122,9 @@ export interface AnalysisInput {
     energyLevel: number;
     controlLevel: number;
     baselineDiff: number | null;
+    pssScore?: number;
+    mentalDemandScore?: number;
+    copingCapabilityScore?: number;
   } | null;
 
   workloadFacts: {
@@ -238,5 +252,16 @@ export interface AiDumpChatMessage {
     availableHours: number;
     deficit: number;
     taskTitle?: string;
+  };
+  isNicoleDemoExtraction?: boolean;
+  isNicoleAnalysisPlan?: boolean;
+  nicoleClarified?: boolean;
+  nicoleConfirmed?: boolean;
+  nicoleContext?: {
+    primaryConcern: string;
+    secondaryConcern: string;
+    additionalDemand: string;
+    currentFeeling: string;
+    recentContext: string;
   };
 }
