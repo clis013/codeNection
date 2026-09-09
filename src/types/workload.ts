@@ -42,6 +42,7 @@ export interface WorkloadItem {
   deadline: string; // ISO date-time string
 
   urgency: UrgencyLevel;
+  flexibility?: FlexibilityLevel;
   
   // Separation of Flexibility
   timeFlexibility: 'Strict' | 'Moderate' | 'Flexible'; // How freely blocks can move

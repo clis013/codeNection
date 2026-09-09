@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { WorkloadItem, WorkloadArea, UrgencyLevel, NasaTlxScore, SubTask, WorkloadStatus } from '../types/workload';
+import { WorkloadItem, WorkloadArea, UrgencyLevel, FlexibilityLevel, NasaTlxScore, SubTask, WorkloadStatus } from '../types/workload';
 import {
   DailyCheckIn,
   AiDumpChatMessage,
@@ -50,17 +50,24 @@ interface AppContextType {
   markChatWorkloadAdded: (messageId: string) => void;
   clarifiedWorkloadIds: string[];
 
-  // Handlers
-  addWorkload: (item: Omit<WorkloadItem, 'id' | 'status' | 'subtasks' | 'remainingTimeHours'> & {
+  addWorkload: (item: Omit<WorkloadItem, 'id' | 'status' | 'subtasks' | 'remainingTimeHours' | 'timeFlexibility' | 'effortFlexibility' | 'workloadType' | 'timingType' | 'importance' | 'schedulingCharacteristics'> & {
     subtasks?: SubTask[];
     status?: WorkloadStatus;
     nasaTlx?: NasaTlxScore;
     remainingTimeHours?: number;
+    flexibility?: FlexibilityLevel;
+    timeFlexibility?: 'Strict' | 'Moderate' | 'Flexible';
+    effortFlexibility?: 'Strict' | 'Moderate' | 'Flexible';
+    workloadType?: WorkloadItem['workloadType'];
+    timingType?: WorkloadItem['timingType'];
+    importance?: WorkloadItem['importance'];
+    schedulingCharacteristics?: WorkloadItem['schedulingCharacteristics'];
   }) => void;
   updateWorkload: (item: WorkloadItem) => void;
   deleteWorkload: (id: string) => void;
   toggleSubtask: (workloadId: string, subtaskId: string) => void;
   addSubtask: (workloadId: string, title: string) => void;
+  deleteSubtask: (workloadId: string, subtaskId: string) => void;
   saveNasaTlxScore: (workloadId: string, score: NasaTlxScore) => void;
   applyRebalancedTasks: (items: WorkloadItem[]) => void;
 
@@ -732,15 +739,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Workload handlers ──────────────────────────────────────────────────────
 
-  const addWorkload = (newItem: Omit<WorkloadItem, 'id' | 'status' | 'subtasks' | 'remainingTimeHours'> & {
+  const addWorkload = (newItem: Omit<WorkloadItem, 'id' | 'status' | 'subtasks' | 'remainingTimeHours' | 'timeFlexibility' | 'effortFlexibility' | 'workloadType' | 'timingType' | 'importance' | 'schedulingCharacteristics'> & {
     subtasks?: SubTask[];
     status?: WorkloadStatus;
     nasaTlx?: NasaTlxScore;
     remainingTimeHours?: number;
+    flexibility?: FlexibilityLevel;
+    timeFlexibility?: 'Strict' | 'Moderate' | 'Flexible';
+    effortFlexibility?: 'Strict' | 'Moderate' | 'Flexible';
+    workloadType?: WorkloadItem['workloadType'];
+    timingType?: WorkloadItem['timingType'];
+    importance?: WorkloadItem['importance'];
+    schedulingCharacteristics?: WorkloadItem['schedulingCharacteristics'];
   }) => {
     const subtasks = newItem.subtasks || [];
     const allDone = subtasks.length > 0 && subtasks.every(s => s.completed);
+    const flex = newItem.flexibility || (newItem as any).timeFlexibility || 'Moderate';
     const item: WorkloadItem = {
+      timeFlexibility: flex,
+      effortFlexibility: flex,
+      workloadType: (newItem as any).workloadType || 'Assignment',
+      timingType: (newItem as any).timingType || 'Deadline',
+      importance: (newItem as any).importance || 'Medium',
+      schedulingCharacteristics: (newItem as any).schedulingCharacteristics || {
+        splittable: true,
+        spacingPreferred: true,
+        source: 'workload-default'
+      },
       ...newItem,
       id: `w-${Date.now()}`,
       status: newItem.status || (allDone ? 'Completed' : 'Active'),
@@ -816,6 +841,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
     if (selectedWorkload?.id === workloadId) {
       setSelectedWorkload(prev => prev ? { ...prev, subtasks: [...prev.subtasks, newSt] } : null);
+    }
+  };
+
+  const deleteSubtask = (workloadId: string, subtaskId: string) => {
+    setWorkloads(prev => prev.map(w => {
+      if (w.id !== workloadId) return w;
+      return { ...w, subtasks: w.subtasks.filter(st => st.id !== subtaskId) };
+    }));
+    if (selectedWorkload?.id === workloadId) {
+      setSelectedWorkload(prev => prev ? { ...prev, subtasks: prev.subtasks.filter(st => st.id !== subtaskId) } : null);
     }
   };
 
@@ -1251,6 +1286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteWorkload,
       toggleSubtask,
       addSubtask,
+      deleteSubtask,
       saveNasaTlxScore,
       applyRebalancedTasks,
       areaFilter,

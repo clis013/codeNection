@@ -202,7 +202,7 @@ export const HomeView: React.FC = () => {
 
         // Theme configuration for all states (Manageable reflects Image 1 design)
         const theme = isPending ? {
-          outerBg: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 55%, #F1F5F9 100%)',
+          outerBg: 'linear-gradient(180deg, #e2e8f0ff 0%, #f1f5f9ff 60%, #F8FAFC 100%)',
           outerBorder: '1.5px solid #E2E8F0',
           shadow: '0 8px 30px rgba(100, 116, 139, 0.05)',
           headerColor: '#475569',
@@ -218,9 +218,9 @@ export const HomeView: React.FC = () => {
           timeLoadColor: '#334155',
           btnColor: '#334155'
         } : isMan ? {
-          outerBg: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBg: 'linear-gradient(180deg, #bbf7d0ff 0%, #dcfce7ff 60%, #F8FAFC 100%)',
           outerBorder: '1.5px solid #DCFCE7',
-          shadow: '0 8px 30px rgba(22, 101, 52, 0.05)',
+          shadow: '0 8px 30px rgba(220, 252, 231, 0.15)',
           headerColor: '#15803D',
           badgeText: 'Manageable',
           badgeBorder: '#86EFAC',
@@ -234,7 +234,7 @@ export const HomeView: React.FC = () => {
           timeLoadColor: '#15803D',
           btnColor: '#15803D'
         } : isStrain ? {
-          outerBg: 'linear-gradient(180deg, #FEFCE8 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBg: 'linear-gradient(180deg, #fde68aff 0%, #fef3c7ff 60%, #F8FAFC 100%)',
           outerBorder: '1.5px solid #FDE68A',
           shadow: '0 8px 30px rgba(217, 119, 6, 0.05)',
           headerColor: '#B45309',
@@ -251,7 +251,7 @@ export const HomeView: React.FC = () => {
           btnColor: '#B45309'
         } : {
           // Overloaded
-          outerBg: 'linear-gradient(180deg, #FFF1F2 0%, #FFFFFF 55%, #F8FAFC 100%)',
+          outerBg: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
           outerBorder: '1.5px solid #FECDD3',
           shadow: '0 8px 30px rgba(220, 38, 38, 0.05)',
           headerColor: '#B91C1C',

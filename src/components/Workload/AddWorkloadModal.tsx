@@ -27,7 +27,7 @@ export const AddWorkloadModal: React.FC = () => {
         setDueTime(addWorkloadInitialData.dueTime || '20:00');
         setArea(addWorkloadInitialData.area || 'Academic');
         setUrgency(addWorkloadInitialData.urgency || 'High');
-
+        setFlexibility(addWorkloadInitialData.flexibility || 'Moderate');
         setActivityType(addWorkloadInitialData.activityType || 'Deep focus');
         setEstimatedHours(addWorkloadInitialData.estimatedHours || 3);
         setNotes(addWorkloadInitialData.notes || '');
@@ -40,6 +40,7 @@ export const AddWorkloadModal: React.FC = () => {
     }
   }, [isAddWorkloadOpen, addWorkloadInitialData, addWorkloadInitialArea]);
   const [urgency, setUrgency] = useState<UrgencyLevel>('Medium');
+  const [flexibility, setFlexibility] = useState<FlexibilityLevel>('Flexible');
   const [activityType, setActivityType] = useState<ActivityType>('Physical');
   const [estimatedHours, setEstimatedHours] = useState(2);
   const [notes, setNotes] = useState('');
@@ -113,16 +114,7 @@ export const AddWorkloadModal: React.FC = () => {
       activityType,
       deadline: deadlineIso,
       urgency,
-      timeFlexibility: 'Moderate' as const,
-      effortFlexibility: 'Moderate' as const,
-      workloadType: 'Assignment' as const,
-      timingType: 'Deadline' as const,
-      importance: 'Medium' as const,
-      schedulingCharacteristics: {
-        splittable: true,
-        spacingPreferred: true,
-        source: 'workload-default' as const
-      },
+      flexibility,
       estimatedHours: Number(estimatedHours) || 1,
       notes: notes.trim(),
       demandProfile: { cognitive, emotional, physical },
@@ -143,14 +135,16 @@ export const AddWorkloadModal: React.FC = () => {
     setTitle('');
     setNotes('');
     setSubtasks([]);
-    setUrgency('Medium' as const);
-    setActivityType('Physical' as const);
+    setCognitive(1);
+    setEmotional(1);
+    setPhysical(2);
     setSavedNasaScore(null);
     setIsAddWorkloadOpen(false);
   };
 
   const areas: WorkloadArea[] = ['Academic', 'Personal', 'Social', 'Self-Care'];
   const urgencies: UrgencyLevel[] = ['Low', 'Medium', 'High', 'Urgent'];
+  const flexibilities: FlexibilityLevel[] = ['Strict', 'Moderate', 'Flexible'];
   const activities: ActivityType[] = ['Deep focus', 'Communication', 'Creative', 'Physical', 'Administrative'];
 
   return (
@@ -334,7 +328,7 @@ export const AddWorkloadModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Urgency Level & Activity Type Side by Side */}
+          {/* Urgency Level & Flexibility Side by Side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Urgency Level</label>
@@ -357,6 +351,26 @@ export const AddWorkloadModal: React.FC = () => {
               </select>
             </div>
 
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Flexibility</label>
+              <select
+                value={flexibility}
+                onChange={(e) => setFlexibility(e.target.value as FlexibilityLevel)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  border: `1px solid ${Colors.borderSoft}`,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: Colors.textDark,
+                  backgroundColor: Colors.background,
+                  marginTop: '4px'
+                }}
+              >
+                {flexibilities.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Activity Type & Estimated Hours Side by Side */}

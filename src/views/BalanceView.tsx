@@ -114,7 +114,7 @@ export const BalanceView: React.FC = () => {
         subtitle: 'Keep this priority',
         rationale: isPostStressDump
           ? 'Closest academic deadline! Keep the full 5h preparation before deadline.'
-          : 'Your closest academic deadline is Sep 10 at 8:00 AM. Keep the full 5h preparation target and protect it from lower-priority work.'
+          : 'Closest academic deadline! Keep the full 5h preparation before deadline.'
       };
     }
 
@@ -129,7 +129,7 @@ export const BalanceView: React.FC = () => {
       return {
         action: 'Keep',
         subtitle: 'Start this early',
-        rationale: 'This is a large, high-priority assignment due Sep 11. Starting some work before the OS deadline can reduce the amount left immediately afterward.'
+        rationale: 'This is a large and high priority assignment, start some work before OS Quiz'
       };
     }
 
@@ -147,7 +147,7 @@ export const BalanceView: React.FC = () => {
         subtitle: 'Delay intensive preparation',
         rationale: isPostStressDump
           ? 'Lower urgency than the OS Quiz, Web Programming and Sponsorship deadlines. Focus on those first, then shift FCG preparation later.'
-          : 'The test is on Sep 14, giving it more room than the OS Quiz and Web Programming deadlines. Keep the required preparation, but shift more intensive FCG work until after the immediate deadline cluster.'
+          : 'Lower urgency than the OS Quiz, Web Programming and Sponsorship deadlines. Focus on those first, then shift FCG preparation later.'
       };
     }
 
@@ -761,9 +761,7 @@ export const BalanceView: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#166534' }}>
-                        Early start before OS deadline (2h planned)
-                      </span>
+
                       <span style={{ fontSize: '11px', fontWeight: 800, color: Colors.textDark }}>
                         Deadline: Sep 11 • 23:59
                       </span>
