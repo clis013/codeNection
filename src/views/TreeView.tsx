@@ -462,9 +462,8 @@ export const TreeView: React.FC = () => {
                 position: 'relative',
                 width: '42px',
                 height: '46px',
-                transform: `rotate(${coord.rotate}deg) scale(${
-                  isPicked ? 1.4 : isHovered ? 1.22 : 1
-                })`,
+                transform: `rotate(${coord.rotate}deg) scale(${isPicked ? 1.4 : isHovered ? 1.22 : 1
+                  })`,
                 transformOrigin: 'top center',
                 animation: isTreeShaking
                   ? 'appleShake 0.3s ease infinite alternate'

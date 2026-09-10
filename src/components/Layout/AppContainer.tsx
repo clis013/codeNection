@@ -14,6 +14,7 @@ import { WorkloadDetailModal } from '../Workload/WorkloadDetailModal';
 import { AddWorkloadModal } from '../Workload/AddWorkloadModal';
 import { TreeHoleModal } from '../Recovery/TreeHoleModal';
 import { ColourReflectionModal } from '../Recovery/ColourReflectionModal';
+import { FloatingSquirrelAssistant } from '../Assistant/FloatingSquirrelAssistant';
 
 import { Colors } from '../../theme/colors';
 import { Smartphone, Monitor } from 'lucide-react';
@@ -135,6 +136,11 @@ export const AppContainer: React.FC = () => {
         }}>
           {renderActiveView()}
         </div>
+
+        {/* Floating Squirrel Mascot Assistant (Balance and Calendar/Map/Workload pages) */}
+        {(activeTab === 'balance' || activeTab === 'map' || activeTab === 'workloads') && (
+          <FloatingSquirrelAssistant />
+        )}
 
         <Navbar />
 

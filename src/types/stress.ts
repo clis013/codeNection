@@ -116,7 +116,7 @@ export interface RecoveryNeed {
 
 export interface AnalysisInput {
   localDate: string;
-  
+
   checkInState: {
     stressCategory: StressCategory;
     energyLevel: number;
@@ -163,17 +163,17 @@ export interface AnalysisInput {
 export interface AnalysisResult {
   demandResourceStatus: DemandResourceStatus;
   confidence: AnalysisConfidence;
-  
+
   evidence: AnalysisEvidence[];
   mainConstraints: AnalysisFactor[];
   mainContributors: AnalysisFactor[];
-  
+
   mismatch: {
     detected: boolean;
     type?: 'HighStressManageableLoad' | 'NormalStressOverloadedLoad';
     insight?: string;
   };
-  
+
   recoveryNeed: RecoveryNeed;
 
   isMock: boolean;
