@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import {
-  Send, Mic, Sparkles, Check, ArrowRight, Zap, Coffee, Clock,
+  Send, Mic, Sparkles, Check, ArrowRight, ArrowLeft, Zap, Coffee, Clock,
   Play, Pause, Volume2, X, RotateCcw, Feather, TreePine, AlertCircle,
   Square, CheckCircle2, Edit3, Heart, Palette, Scale, BarChart2, Plus, AlertTriangle,
   ClipboardList
@@ -283,7 +283,8 @@ const NicoleDemoExtractionCard: React.FC<{
     setIsTreeHoleOpen,
     setIsColourReflectionOpen,
     setActiveTab,
-    clarifiedWorkloadIds
+    clarifiedWorkloadIds,
+    setNewAppleWorkloadId
   } = useApp();
   const isClarified = !!msg.nicoleClarified;
   const isConfirmed = !!msg.nicoleConfirmed;
@@ -325,76 +326,40 @@ const NicoleDemoExtractionCard: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EA580C', fontWeight: 800, fontSize: '13.5px' }}>
           <Sparkles size={16} color="#EA580C" />
-          <span>Extracted Info:</span>
+          <span>Identified Workload Items to Record:</span>
         </div>
-      </div>
-
-      {/* QUALITATIVE STRESS CONTEXT (Vertically stacked, no horizontal flex) */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: '14px',
-        padding: '12px 14px',
-        border: '1px solid #E2E8F0',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
-      }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-          Identified Stress Context
+        <span style={{
+          fontSize: '10.5px',
+          color: '#166534',
+          fontWeight: 700,
+          backgroundColor: '#DCFCE7',
+          padding: '3px 8px',
+          borderRadius: '10px',
+          border: '1px solid #86EFAC'
+        }}>
+          ✨ Pre-filled by AI
         </span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-          <div>
-            <div style={{ fontWeight: 700, color: '#DC2626', fontSize: '11.5px' }}>Primary Concern:</div>
-            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
-              Competing academic deadlines (OS Quiz vs Web Programming)
-            </div>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, color: '#EA580C', fontSize: '11.5px' }}>Secondary Concern:</div>
-            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
-              Taking on additional responsibility in group assignment
-            </div>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, color: '#7C3AED', fontSize: '11.5px' }}>Additional Demand:</div>
-            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
-              Tech Carnival sponsorship responsibility
-            </div>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, color: '#0284C7', fontSize: '11.5px' }}>Current Feeling:</div>
-            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
-              Unsure what to prioritize first
-            </div>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, color: '#475569', fontSize: '11.5px' }}>Recent Context:</div>
-            <div style={{ color: '#334155', lineHeight: 1.45, marginTop: '2px' }}>
-              Just finished difficult previous week and still feels depleted
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 4 EXTRACTED WORKLOAD ITEMS */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* 4 EXTRACTED WORKLOAD ITEMS - All pre-filled by default for user to check/update */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
-            Identified Workload (4)
+          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+            Identified Workload (4) • Tap Check/Update to review
           </span>
         </div>
 
         {/* 1. Tech Carnival Sponsorship (New Workload) */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '14px',
           padding: '12px 14px',
           border: isItemClarified('tech-carnival-sponsorship') ? '1.5px solid #86EFAC' : '1.5px solid #FED7AA',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}>
-          {/* Row 1: Workload name [NEW] - NEW always right aligned at right top side */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
               {sponsorship?.title || 'Tech Carnival Sponsorship'}
@@ -415,15 +380,17 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
           </div>
 
-          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
-          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: getAreaColor(sponsorship?.area || 'Social') }}>
               {sponsorship?.area || 'Social'}
             </span>
-            <span> · Due 10 Sep, 18:00</span>
+            <span>· Due 10 Sep, 18:00</span>
+            <span>· ⏱️ 6 hrs</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
+              Pre-filled
+            </span>
           </div>
 
-          {/* Row 3: Bigger edit button below workload area and due (turns to [tick] Clarified after clarification; NO separate tag) */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
             <button
               type="button"
@@ -443,17 +410,17 @@ const NicoleDemoExtractionCard: React.FC<{
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 transition: 'all 0.15s ease'
               }}
-              title="Edit Tech Carnival Sponsorship"
+              title="Check or update Tech Carnival Sponsorship"
             >
               {isItemClarified('tech-carnival-sponsorship') ? (
                 <>
                   <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Clarified</span>
+                  <span>Checked & Updated</span>
                 </>
               ) : (
                 <>
                   <Edit3 size={13} />
-                  <span>Edit</span>
+                  <span>Check / Update</span>
                 </>
               )}
             </button>
@@ -463,14 +430,14 @@ const NicoleDemoExtractionCard: React.FC<{
         {/* 2. Web Programming Group Assignment (Existing Workload) */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '14px',
           padding: '12px 14px',
           border: isItemClarified('web-programming-group') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}>
-          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
               {webProg?.title || 'Web Programming Group Assignment'}
@@ -491,15 +458,17 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
           </div>
 
-          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
-          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: getAreaColor(webProg?.area || 'Academic') }}>
               {webProg?.area || 'Academic'}
             </span>
-            <span> · Due 11 Sep, 23:59</span>
+            <span>· Due 11 Sep, 23:59</span>
+            <span>· ⏱️ 12 hrs</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
+              Pre-filled
+            </span>
           </div>
 
-          {/* Row 3: Bigger edit button below workload area and due (turns to [tick] Clarified after clarification; NO separate tag) */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
             <button
               type="button"
@@ -519,17 +488,17 @@ const NicoleDemoExtractionCard: React.FC<{
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 transition: 'all 0.15s ease'
               }}
-              title="Edit Web Programming"
+              title="Check or update Web Programming"
             >
               {isItemClarified('web-programming-group') ? (
                 <>
                   <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Clarified</span>
+                  <span>Checked & Updated</span>
                 </>
               ) : (
                 <>
                   <Edit3 size={13} />
-                  <span>Edit</span>
+                  <span>Check / Update</span>
                 </>
               )}
             </button>
@@ -539,14 +508,14 @@ const NicoleDemoExtractionCard: React.FC<{
         {/* 3. OS Quiz (Existing Workload) */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '14px',
           padding: '12px 14px',
           border: isItemClarified('os-quiz-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}>
-          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
               {osQuiz?.title || 'Operating System Quiz 1'}
@@ -567,15 +536,17 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
           </div>
 
-          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
-          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: getAreaColor(osQuiz?.area || 'Academic') }}>
               {osQuiz?.area || 'Academic'}
             </span>
-            <span> · Due 10 Sep, 08:00</span>
+            <span>· Due 10 Sep, 08:00</span>
+            <span>· ⏱️ 5 hrs</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
+              Pre-filled
+            </span>
           </div>
 
-          {/* Row 3: Bigger edit button below workload area and due */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
             <button
               type="button"
@@ -595,17 +566,17 @@ const NicoleDemoExtractionCard: React.FC<{
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 transition: 'all 0.15s ease'
               }}
-              title="Edit Operating System Quiz 1"
+              title="Check or update Operating System Quiz 1"
             >
               {isItemClarified('os-quiz-1') ? (
                 <>
                   <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Clarified</span>
+                  <span>Checked & Updated</span>
                 </>
               ) : (
                 <>
                   <Edit3 size={13} />
-                  <span>Edit</span>
+                  <span>Check / Update</span>
                 </>
               )}
             </button>
@@ -615,14 +586,14 @@ const NicoleDemoExtractionCard: React.FC<{
         {/* 4. FCG Test (Existing Workload) */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
+          borderRadius: '14px',
           padding: '12px 14px',
           border: isItemClarified('fcg-test-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}>
-          {/* Row 1: Workload name [EXISTING] - EXISTING always right aligned at right top side */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
               {fcgTest?.title || 'FCG Test'}
@@ -643,15 +614,17 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
           </div>
 
-          {/* Row 2: Area (coloured as pie chart) · Due date (NO est hour) */}
-          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: getAreaColor(fcgTest?.area || 'Academic') }}>
               {fcgTest?.area || 'Academic'}
             </span>
-            <span> · Due 14 Sep, 14:00</span>
+            <span>· Due 14 Sep, 14:00</span>
+            <span>· ⏱️ 8 hrs</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
+              Pre-filled
+            </span>
           </div>
 
-          {/* Row 3: Bigger edit button below workload area and due */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
             <button
               type="button"
@@ -671,17 +644,17 @@ const NicoleDemoExtractionCard: React.FC<{
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 transition: 'all 0.15s ease'
               }}
-              title="Edit FCG Test"
+              title="Check or update FCG Test"
             >
               {isItemClarified('fcg-test-1') ? (
                 <>
                   <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Clarified</span>
+                  <span>Checked & Updated</span>
                 </>
               ) : (
                 <>
                   <Edit3 size={13} />
-                  <span>Edit</span>
+                  <span>Check / Update</span>
                 </>
               )}
             </button>
@@ -691,29 +664,34 @@ const NicoleDemoExtractionCard: React.FC<{
 
       {/* ACTION CONTROLS */}
       {!isConfirmed && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           <button
             type="button"
-            onClick={onConfirm}
+            id="btn-add-workload-tree"
+            onClick={() => {
+              onConfirm();
+              setNewAppleWorkloadId('tech-carnival-sponsorship');
+              setActiveTab('tree');
+            }}
             style={{
-              backgroundColor: '#FFF7ED',
-              color: '#C2410C',
-              border: '1.2px solid #FED7AA',
-              borderRadius: '14px',
-              padding: '12px 18px',
+              backgroundColor: '#166534',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '16px',
+              padding: '13px 20px',
               fontWeight: 800,
-              fontSize: '13.5px',
+              fontSize: '14px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
+              boxShadow: '0 4px 16px rgba(22, 101, 52, 0.28)',
               transition: 'all 0.15s ease'
             }}
           >
-            <Plus size={16} strokeWidth={2.5} />
-            <span style={{ color: '#C2410C' }}>Add Workload</span>
+            <Plus size={17} strokeWidth={2.8} />
+            <span>Add Workload (Add to Tree 🌳)</span>
           </button>
         </div>
       )}
@@ -760,7 +738,9 @@ export const AiDumpChatView: React.FC = () => {
     setIsAddWorkloadOpen,
     setAddWorkloadInitialData,
     markChatWorkloadAdded,
-    workloads
+    workloads,
+    chatSource,
+    setChatSource
   } = useApp();
 
   const [inputText, setInputText] = useState('');
@@ -1134,13 +1114,43 @@ export const AiDumpChatView: React.FC = () => {
 
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h2 className="serif-title" style={{ fontSize: '24px', fontWeight: 600, color: Colors.textDark, letterSpacing: '-0.4px' }}>
-            AI Stress Dump
-          </h2>
-          <p className="aesthetic-caption" style={{ marginTop: '2px' }}>
-            Dump thoughts via text or voice. AI extracts load and guides next steps.
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {chatSource === 'treehole' && (
+            <button
+              type="button"
+              id="back-to-tree-btn"
+              onClick={() => setActiveTab('tree')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 12px',
+                borderRadius: '12px',
+                backgroundColor: '#F0FDF4',
+                border: '1.2px solid #86EFAC',
+                color: '#166534',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Return to Tree"
+            >
+              <ArrowLeft size={14} />
+              <span>Tree 🌳</span>
+            </button>
+          )}
+          <div>
+            <h2 className="serif-title" style={{ fontSize: '22px', fontWeight: 600, color: Colors.textDark, letterSpacing: '-0.4px', margin: 0 }}>
+              {chatSource === 'treehole' ? '🌳 Tree Hole Sanctuary' : 'AI Stress Dump'}
+            </h2>
+            <p className="aesthetic-caption" style={{ marginTop: '2px', margin: 0 }}>
+              {chatSource === 'treehole'
+                ? 'Dump your stress into the hollow. I am here listening.'
+                : 'Dump thoughts via text or voice. AI extracts load and guides next steps.'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1179,7 +1189,11 @@ export const AiDumpChatView: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: Colors.textMuted }}>
-                {isUser ? <span>Nicole</span> : <span>MindFlow AI</span>}
+                {isUser ? (
+                  <span>Nicole</span>
+                ) : (
+                  <span>{chatSource === 'treehole' ? '🌳 Tree Hole' : 'MindFlow AI'}</span>
+                )}
                 <span>• {msg.timestamp}</span>
               </div>
 
@@ -1286,7 +1300,19 @@ export const AiDumpChatView: React.FC = () => {
                   flexDirection: 'column',
                   gap: '12px'
                 }}>
-                  <div>{msg.text}</div>
+                  {/* Message Text with Tree Hole intro message customization */}
+                  {!isUser && msg.id === 'm1' && chatSource === 'treehole' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', fontWeight: 800, fontSize: '12px' }}>
+                        <span>🍃 Tree Hole Whisper</span>
+                      </div>
+                      <div style={{ color: '#14532D', fontStyle: 'italic', fontWeight: 500, lineHeight: 1.5 }}>
+                        "Dump your stress,... I am the quiet tree hole listening to you. Whatever thoughts, deadlines, or emotional weight you are carrying, speak or dump them freely into my hollow. I will hold your burdens, identify the workloads you need to record, and lighten your load."
+                      </div>
+                    </div>
+                  ) : (
+                    <div>{msg.text}</div>
+                  )}
 
                   {/* NICOLE PRE-DUMP DAILY CHECK-IN PROMPT */}
                   {!isUser && msg.isNicoleCheckInPrompt && (

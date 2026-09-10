@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { WorkloadItem } from '../types/workload';
 import { ArrowLeft, Wind, MessageSquare, CheckSquare, Sparkles } from 'lucide-react';
@@ -34,7 +34,10 @@ export const TreeView: React.FC = () => {
     setActiveTab,
     workloads,
     setSelectedWorkload,
-    setIsWorkloadDetailOpen
+    setIsWorkloadDetailOpen,
+    setChatSource,
+    newAppleWorkloadId,
+    setNewAppleWorkloadId
   } = useApp();
 
   const [isTreeShaking, setIsTreeShaking] = useState(false);
@@ -45,6 +48,42 @@ export const TreeView: React.FC = () => {
   const [isSquirrelHovered, setIsSquirrelHovered] = useState(false);
   const [speechMessage, setSpeechMessage] = useState<string | null>(null);
   const [pickedAppleId, setPickedAppleId] = useState<string | null>(null);
+  const [animatingAppleId, setAnimatingAppleId] = useState<string | null>(null);
+  const [showCelebrationBanner, setShowCelebrationBanner] = useState(false);
+
+  // Trigger celebration & growing apple bloom animation when returning with new workload
+  useEffect(() => {
+    if (newAppleWorkloadId) {
+      setAnimatingAppleId(newAppleWorkloadId);
+      setShowCelebrationBanner(true);
+
+      // Trigger celebration confetti
+      try {
+        confetti({
+          particleCount: 55,
+          spread: 80,
+          origin: { y: 0.38 },
+          colors: ['#EF4444', '#DC2626', '#FBBF24', '#F59E0B', '#22C55E', '#166534']
+        });
+      } catch {
+        // ignore
+      }
+
+      // Rustle tree branches slightly when the new apple blossoms
+      setTimeout(() => {
+        setIsTreeShaking(true);
+        setTimeout(() => setIsTreeShaking(false), 900);
+      }, 350);
+
+      // Keep banner and bloom halo visible for 6 seconds
+      const timer = setTimeout(() => {
+        setShowCelebrationBanner(false);
+        setNewAppleWorkloadId(null);
+      }, 6000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [newAppleWorkloadId, setNewAppleWorkloadId]);
 
   // Active workloads represent apples on the tree
   const activeWorkloads = workloads.filter(w => w.status !== 'Completed');
@@ -106,12 +145,14 @@ export const TreeView: React.FC = () => {
 
   // Clicking Tree Hole links to AI dump stress (AI Dump Chat)
   const handleTreeHoleClick = () => {
+    setChatSource('treehole');
     setActiveTab('chat');
   };
 
   // Clicking Gardener links to AI chat
   const handleGardenerClick = () => {
-    setSpeechMessage("👨‍🌾 Gardener Nicole: Need to talk? Let's dump your stress in AI Chat!");
+    setChatSource('treehole');
+    setSpeechMessage("👨‍🌾 Gardener Nicole: Need to talk? Let's dump your stress in the Tree Hole chat!");
     setTimeout(() => {
       setActiveTab('chat');
     }, 450);
@@ -119,7 +160,8 @@ export const TreeView: React.FC = () => {
 
   // Clicking Squirrel links to AI chat
   const handleSquirrelClick = () => {
-    setSpeechMessage("🐿️ Squirrel: *Squeak!* Share your thoughts with AI!");
+    setChatSource('treehole');
+    setSpeechMessage("🐿️ Squirrel: *Squeak!* Whisper your stress into the tree hole!");
     setTimeout(() => {
       setActiveTab('chat');
     }, 450);
@@ -219,7 +261,10 @@ export const TreeView: React.FC = () => {
         {/* Button 2: AI Dump Chat shortcut */}
         <button
           type="button"
-          onClick={() => setActiveTab('chat')}
+          onClick={() => {
+            setChatSource('treehole');
+            setActiveTab('chat');
+          }}
           title="AI Dump Stress Chat"
           style={{
             width: '38px',
@@ -293,6 +338,73 @@ export const TreeView: React.FC = () => {
           }}
         >
           {speechMessage}
+        </div>
+      )}
+
+      {/* Top Banner: New Apple Added Celebration */}
+      {showCelebrationBanner && (
+        <div
+          id="new-apple-celebration-banner"
+          style={{
+            position: 'absolute',
+            top: '76px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 60,
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(254, 243, 199, 0.95) 100%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1.5px solid #F59E0B',
+            borderRadius: '20px',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 8px 24px rgba(245, 158, 11, 0.28)',
+            animation: 'bannerSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            maxWidth: '350px',
+            width: '92%'
+          }}
+        >
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: '#FEF3C7',
+            border: '1.2px solid #FDE68A',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            flexShrink: 0
+          }}>
+            🍎
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>New Apple on Tree!</span>
+              <Sparkles size={13} color="#D97706" />
+            </span>
+            <span style={{ fontSize: '11px', color: '#78350F', lineHeight: 1.3 }}>
+              <strong>Tech Carnival Sponsorship</strong> (6h) has bloomed on your branch.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCelebrationBanner(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '15px',
+              color: '#92400E',
+              cursor: 'pointer',
+              fontWeight: 700,
+              padding: '4px',
+              lineHeight: 1
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -432,6 +544,7 @@ export const TreeView: React.FC = () => {
         const coord = APPLE_COORDINATES[idx % APPLE_COORDINATES.length];
         const isPicked = pickedAppleId === workload.id;
         const isHovered = hoveredApple?.workload.id === workload.id;
+        const isNewApple = (animatingAppleId === workload.id) || (newAppleWorkloadId === workload.id);
 
         return (
           <div
@@ -456,6 +569,28 @@ export const TreeView: React.FC = () => {
               transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)'
             }}
           >
+            {/* New Apple Bloomed Badge */}
+            {isNewApple && (
+              <div
+                style={{
+                  marginBottom: '2px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  fontSize: '9.5px',
+                  fontWeight: 900,
+                  boxShadow: '0 3px 10px rgba(220, 38, 38, 0.45)',
+                  animation: 'fadeInUp 0.3s ease',
+                  letterSpacing: '0.3px',
+                  whiteSpace: 'nowrap',
+                  zIndex: 35
+                }}
+              >
+                ✨ +1 New Apple!
+              </div>
+            )}
+
             {/* Apple Image using assets/apple.png.png */}
             <div
               style={{
@@ -463,16 +598,36 @@ export const TreeView: React.FC = () => {
                 width: '42px',
                 height: '46px',
                 transform: `rotate(${coord.rotate}deg) scale(${
-                  isPicked ? 1.4 : isHovered ? 1.22 : 1
+                  isPicked ? 1.4 : isHovered ? 1.22 : isNewApple ? 1.15 : 1
                 })`,
                 transformOrigin: 'top center',
-                animation: isTreeShaking
+                animation: isNewApple
+                  ? 'newAppleBloom 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+                  : isTreeShaking
                   ? 'appleShake 0.3s ease infinite alternate'
                   : 'appleSway 4s ease-in-out infinite alternate',
-                animationDelay: `${idx * 0.45}s`,
+                animationDelay: isNewApple ? '0s' : `${idx * 0.45}s`,
                 transition: 'transform 0.15s ease'
               }}
             >
+              {/* Golden Glow Halo for Newly Bloomed Apple */}
+              {isNewApple && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    left: '-8px',
+                    right: '-8px',
+                    bottom: '-8px',
+                    borderRadius: '50%',
+                    border: '2px dashed #F59E0B',
+                    animation: 'sparkleSpin 3.5s linear infinite',
+                    pointerEvents: 'none',
+                    boxShadow: '0 0 16px rgba(245, 158, 11, 0.65)'
+                  }}
+                />
+              )}
+
               <img
                 src="/assets/apple.png.png"
                 alt="Workload Apple"
@@ -481,7 +636,9 @@ export const TreeView: React.FC = () => {
                   height: '100%',
                   objectFit: 'contain',
                   display: 'block',
-                  filter: isHovered
+                  filter: isNewApple
+                    ? 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9))'
+                    : isHovered
                     ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0,0,0,0.25))'
                     : 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))'
                 }}
@@ -813,6 +970,35 @@ export const TreeView: React.FC = () => {
         @keyframes fadeInUp {
           from { opacity: 0; transform: translate(-50%, 6px); }
           to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes newAppleBloom {
+          0% {
+            transform: scale(0) translateY(-40px);
+            opacity: 0;
+            filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0));
+          }
+          50% {
+            transform: scale(1.4) translateY(6px);
+            opacity: 1;
+            filter: drop-shadow(0 0 25px #FBBF24) drop-shadow(0 0 15px #EF4444);
+          }
+          75% {
+            transform: scale(0.92) translateY(-2px);
+          }
+          100% {
+            transform: scale(1.15) translateY(0);
+            opacity: 1;
+            filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9));
+          }
+        }
+        @keyframes sparkleSpin {
+          0% { transform: scale(0.85) rotate(0deg); opacity: 0.5; }
+          50% { transform: scale(1.15) rotate(180deg); opacity: 1; }
+          100% { transform: scale(0.85) rotate(360deg); opacity: 0.5; }
+        }
+        @keyframes bannerSlideDown {
+          0% { transform: translate(-50%, -24px); opacity: 0; }
+          100% { transform: translate(-50%, 0); opacity: 1; }
         }
       `}</style>
     </div>

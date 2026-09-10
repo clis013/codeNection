@@ -121,6 +121,10 @@ interface AppContextType {
   confirmAllExtractedDrafts: (drafts: any[]) => void;
   clarifyNicoleMessage: (messageId: string) => void;
   confirmNicoleStressDump: (messageId?: string) => void;
+  chatSource: 'default' | 'treehole';
+  setChatSource: (source: 'default' | 'treehole') => void;
+  newAppleWorkloadId: string | null;
+  setNewAppleWorkloadId: (id: string | null) => void;
 
   // Calendar & Schedule State
   busyEvents: FixedBusyEvent[];
@@ -667,6 +671,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isColourReflectionOpen, setIsColourReflectionOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<AiDumpChatMessage[]>(initialChatMessages);
   const [clarifiedWorkloadIds, setClarifiedWorkloadIds] = useState<string[]>([]);
+  const [chatSource, setChatSource] = useState<'default' | 'treehole'>('default');
+  const [newAppleWorkloadId, setNewAppleWorkloadId] = useState<string | null>(null);
 
   // ─── Date-anchored derivations ──────────────────────────────────────────────
 
@@ -886,7 +892,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createNicoleExtractionMessage = (customText?: string): AiDumpChatMessage => ({
     id: `msg-${Date.now() + 1}`,
     sender: 'ai',
-    text: customText || "I've analyzed your thoughts, Nicole. You're carrying a heavy load right after an exhausting week. Here is the structured extraction of your workload demands and stress context:",
+    text: customText || "We heard you, Nicole! We've listened to everything you shared and identified the workloads to record for you. Here is the identified workload list for you to review or update:",
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     isNicoleDemoExtraction: true,
     nicoleClarified: false,
@@ -997,23 +1003,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       text.trim() === NICOLE_NARRATIVE.trim();
 
     if (isNicoleDemo) {
-      if (!todayCheckIn) {
-        setTimeout(() => {
-          const aiReply: AiDumpChatMessage = {
-            id: `msg-${Date.now() + 1}`,
-            sender: 'ai',
-            text: "I heard you Nicole. Seems like you're carrying a heavy load right after an exhausting week. I suggest you to fill in this daily check in to help me analyze your stress level and current status!",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isNicoleCheckInPrompt: true
-          };
-          setChatMessages(prev => [...prev, aiReply]);
-        }, 500);
-        setChatMessages(prev => [...prev, userMsg]);
-        return;
-      }
-
       setTimeout(() => {
-        const aiReply = createNicoleExtractionMessage();
+        const aiReply = createNicoleExtractionMessage(
+          "We heard you, Nicole! We've listened to everything you shared and identified the workloads to record for you. Here is the identified workload list:"
+        );
         setChatMessages(prev => [...prev, aiReply]);
       }, 500);
       setChatMessages(prev => [...prev, userMsg]);
@@ -1169,6 +1162,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return updated;
     });
+
+    setNewAppleWorkloadId('tech-carnival-sponsorship');
 
     setChatMessages(prev => {
       const updated = prev.map(msg => {
@@ -1371,7 +1366,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCustomSchedules,
       capacityProfile,
       derivedWorkloadFacts,
-      analysisResult
+      analysisResult,
+      chatSource,
+      setChatSource,
+      newAppleWorkloadId,
+      setNewAppleWorkloadId
     }}>
       {children}
     </AppContext.Provider>
