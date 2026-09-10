@@ -452,6 +452,91 @@ export const HomeView: React.FC = () => {
       })()}
 
       {/* ========================================================================= */}
+      {/* INTERACTIVE SPACE: TREE (GARDEN SANCTUARY)                                */}
+      {/* ========================================================================= */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(220, 252, 231, 0.95) 0%, rgba(254, 240, 138, 0.7) 50%, rgba(254, 215, 170, 0.55) 100%)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: '26px',
+        padding: '16px 18px',
+        border: '1.5px solid rgba(255, 255, 255, 0.95)',
+        boxShadow: '0 8px 28px rgba(34, 197, 94, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #BBF7D0 0%, #86EFAC 100%)',
+            border: '1.5px solid #FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.2)',
+            flexShrink: 0
+          }}>
+            🌳
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#14532D', margin: 0 }}>
+                Interactive Tree Space
+              </h3>
+              <span style={{
+                fontSize: '9.5px',
+                fontWeight: 800,
+                backgroundColor: '#DCFCE7',
+                color: '#15803D',
+                padding: '2px 7px',
+                borderRadius: '8px',
+                border: '1px solid #86EFAC'
+              }}>
+                GARDEN
+              </span>
+            </div>
+            <p style={{ fontSize: '11.5px', color: '#166534', margin: '2px 0 0 0', lineHeight: 1.35 }}>
+              Sunny sky • Workload apples • Tree hole chat
+            </p>
+          </div>
+        </div>
+
+        {/* Required Button "Tree" */}
+        <button
+          id="btn-nav-tree"
+          type="button"
+          onClick={() => setActiveTab('tree')}
+          style={{
+            backgroundColor: '#166534',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '16px',
+            padding: '10px 18px',
+            fontSize: '13.5px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 14px rgba(22, 101, 52, 0.28)',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap',
+            flexShrink: 0
+          }}
+        >
+          <span>Tree</span>
+          <ArrowRight size={15} strokeWidth={2.6} />
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
       {/* SECTION 3: RECOVERY FEATURES (ORIGINAL DESIGN WITH COVER PAGE CARDS)      */}
       {/* ========================================================================= */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -467,7 +552,25 @@ export const HomeView: React.FC = () => {
           }}>
             Recover Pathways <ArrowRight size={16} color={Colors.textMuted} />
           </h3>
-
+          <button
+            type="button"
+            onClick={() => setActiveTab('tree')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#15803D',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 6px'
+            }}
+          >
+            <span>🌳 Tree Space</span>
+            <ArrowRight size={13} strokeWidth={2.5} />
+          </button>
         </div>
 
         {/* Two side by side COVER PAGE cards */}

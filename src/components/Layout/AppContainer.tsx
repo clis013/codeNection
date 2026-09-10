@@ -7,6 +7,7 @@ import { StressWorkloadMapView } from '../../views/StressWorkloadMapView';
 import { AiDumpChatView } from '../../views/AiDumpChatView';
 import { WorkloadDetailsView } from '../../views/WorkloadDetailsView';
 import { BalanceView } from '../../views/BalanceView';
+import { TreeView } from '../../views/TreeView';
 
 import { DailyCheckInModal } from '../CheckIn/DailyCheckInModal';
 import { WorkloadDetailModal } from '../Workload/WorkloadDetailModal';
@@ -33,6 +34,8 @@ export const AppContainer: React.FC = () => {
         return <WorkloadDetailsView />;
       case 'balance':
         return <BalanceView />;
+      case 'tree':
+        return <TreeView />;
       default:
         return <HomeView />;
     }
@@ -82,7 +85,7 @@ export const AppContainer: React.FC = () => {
             boxShadow: isDesktopFrame ? '0 2px 8px rgba(187, 247, 208, 0.35)' : 'none',
           }}
         >
-          <Smartphone size={14} /> Mobile Frame
+          <Smartphone size={14} /> iPhone 16 (393×852)
         </button>
         <button
           onClick={() => setIsDesktopFrame(false)}
@@ -107,12 +110,12 @@ export const AppContainer: React.FC = () => {
       {/* Main App Container Shell (Fixed identical dimensions across all views) */}
       <div id="app-shell" style={{
         width: '100%',
-        maxWidth: isDesktopFrame ? '430px' : '100%',
-        height: isDesktopFrame ? '880px' : '100vh',
-        maxHeight: isDesktopFrame ? '880px' : '100vh',
+        maxWidth: isDesktopFrame ? '393px' : '100%',
+        height: isDesktopFrame ? '852px' : '100vh',
+        maxHeight: isDesktopFrame ? '852px' : '100vh',
         backgroundColor: '#F7F8FE',
         backgroundImage: 'radial-gradient(circle at 10% 12%, rgba(221, 214, 254, 0.45) 0%, transparent 45%), radial-gradient(circle at 90% 18%, rgba(186, 230, 253, 0.42) 0%, transparent 45%), radial-gradient(circle at 80% 75%, rgba(254, 215, 170, 0.3) 0%, transparent 45%), radial-gradient(circle at 15% 85%, rgba(252, 231, 243, 0.35) 0%, transparent 48%)',
-        borderRadius: isDesktopFrame ? '40px' : '0px',
+        borderRadius: isDesktopFrame ? '44px' : '0px',
         overflow: 'hidden',
         boxShadow: isDesktopFrame ? '0 24px 70px rgba(139, 92, 246, 0.15), 0 0 0 10px rgba(255, 255, 255, 0.85)' : 'none',
         display: 'flex',
@@ -120,15 +123,15 @@ export const AppContainer: React.FC = () => {
         position: 'relative',
         border: isDesktopFrame ? '1.5px solid rgba(255, 255, 255, 0.95)' : 'none',
       }}>
-        <AppHeader />
+        {activeTab !== 'tree' && <AppHeader />}
         
         {/* Scrollable Main View Area with scroll padding for fixed floating navbar */}
         <div className="hide-scrollbar" style={{
           flex: 1,
-          overflowY: 'auto',
+          overflowY: activeTab === 'tree' ? 'hidden' : 'auto',
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: '86px',
+          paddingBottom: activeTab === 'tree' ? '0' : '86px',
         }}>
           {renderActiveView()}
         </div>

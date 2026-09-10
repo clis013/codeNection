@@ -25,7 +25,7 @@ import { calculateCandidateWindows, deriveTimeResourceFacts } from '../services/
 import { NICOLE_FIXED_BUSY_EVENTS, NICOLE_PROTECTED_TIME, NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
 export { NICOLE_FIXED_BUSY_EVENTS, NICOLE_PROTECTED_TIME, NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
 
-export type NavTab = 'home' | 'map' | 'chat' | 'workloads' | 'balance';
+export type NavTab = 'home' | 'map' | 'chat' | 'workloads' | 'balance' | 'tree';
 
 // Analysis Provider boundary is now handled inside AppProvider via mockAnalysisProvider.
 

@@ -91,7 +91,7 @@ export const AiRebalanceModal: React.FC<AiRebalanceModalProps> = ({ isOpen, onCl
         backgroundColor: '#FFFFFF',
         borderRadius: '32px',
         width: '100%',
-        maxWidth: '430px',
+        maxWidth: '393px',
         maxHeight: '92vh',
         overflowY: 'auto',
         padding: '24px 20px',

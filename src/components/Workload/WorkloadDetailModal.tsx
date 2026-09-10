@@ -108,7 +108,7 @@ export const WorkloadDetailModal: React.FC = () => {
         backgroundColor: '#FFFFFF',
         borderRadius: '24px',
         width: '100%',
-        maxWidth: '430px',
+        maxWidth: '393px',
         maxHeight: '88vh',
         overflowY: 'auto',
         padding: '20px',
