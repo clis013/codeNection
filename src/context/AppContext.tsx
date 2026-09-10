@@ -121,13 +121,20 @@ interface AppContextType {
   confirmAllExtractedDrafts: (drafts: any[]) => void;
   clarifyNicoleMessage: (messageId: string) => void;
   confirmNicoleStressDump: (messageId?: string) => void;
-  chatSource: 'default' | 'treehole';
-  setChatSource: (source: 'default' | 'treehole') => void;
+  chatSource: 'default' | 'treehole' | 'gardener';
+  setChatSource: (source: 'default' | 'treehole' | 'gardener') => void;
   newAppleWorkloadId: string | null;
   setNewAppleWorkloadId: (id: string | null) => void;
   gardenerHasQuestion: boolean;
   setGardenerHasQuestion: (hasQuestion: boolean) => void;
   sendGardenerQuestionToChat: () => void;
+  sendSquirrelInsightToChat: () => void;
+  isTreeBent: boolean;
+  setIsTreeBent: (bent: boolean) => void;
+  hasRemindedCheckInToday: boolean;
+  markCheckInRemindedToday: () => void;
+  harvestedAppleIds: string[];
+  harvestApple: (workloadId: string) => void;
 
   // Calendar & Schedule State
   busyEvents: FixedBusyEvent[];
@@ -281,7 +288,7 @@ const initialWorkloads: WorkloadItem[] = [
       {
         id: 'fcg-st-1',
         title: 'Review test topics',
-        completed: false
+        completed: true
       },
       {
         id: 'fcg-st-2',
@@ -674,9 +681,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isColourReflectionOpen, setIsColourReflectionOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<AiDumpChatMessage[]>(initialChatMessages);
   const [clarifiedWorkloadIds, setClarifiedWorkloadIds] = useState<string[]>([]);
-  const [chatSource, setChatSource] = useState<'default' | 'treehole'>('default');
+  const [chatSource, setChatSource] = useState<'default' | 'treehole' | 'gardener'>('default');
   const [newAppleWorkloadId, setNewAppleWorkloadId] = useState<string | null>(null);
   const [gardenerHasQuestion, setGardenerHasQuestion] = useState(false);
+  const [isTreeBent, setIsTreeBent] = useState(false);
+  const [harvestedAppleIds, setHarvestedAppleIds] = useState<string[]>([]);
+  const harvestApple = (workloadId: string) => {
+    setHarvestedAppleIds(prev => prev.includes(workloadId) ? prev : [...prev, workloadId]);
+  };
 
   // ─── Date-anchored derivations ──────────────────────────────────────────────
 
@@ -684,6 +696,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Today's check-in — only matches local calendar date, never a previous day's record
   const todayCheckIn = checkIns.find(c => c.date === TODAY) || null;
+
+  // Track if check-in reminder has been shown today (do not duplicate reminder if already reminded today)
+  const [lastCheckInReminderDate, setLastCheckInReminderDate] = useState<string | null>(null);
+  const hasRemindedCheckInToday = lastCheckInReminderDate === TODAY;
+  const markCheckInRemindedToday = () => setLastCheckInReminderDate(TODAY);
 
   // Prior records: all with date strictly before today, sorted newest-first
   const allPriorCheckIns = checkIns
@@ -790,6 +807,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       nasaTlx: newItem.nasaTlx
     };
     setWorkloads(prev => [item, ...prev]);
+    setIsTreeBent(true);
+    setGardenerHasQuestion(true);
+    setNewAppleWorkloadId(item.id);
   };
 
   const updateWorkload = (updatedItem: WorkloadItem) => {
@@ -965,6 +985,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     // Replace any existing check-in for the same date (one per day)
     setCheckIns(prev => [...prev.filter(c => c.date !== checkIn.date), checkIn]);
+    setLastCheckInReminderDate(TODAY);
 
     // Update message text when check-in is completed from chat
     setChatMessages(prev => {
@@ -1227,6 +1248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setNewAppleWorkloadId('tech-carnival-sponsorship');
     setGardenerHasQuestion(true);
+    setIsTreeBent(true);
 
     setChatMessages(prev => {
       const updated = prev.map(msg => {
@@ -1362,24 +1384,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (todayCheckIn.pssScore && todayCheckIn.pssScore >= 14)
     ));
 
+    const isBent = isTreeBent || workloads.length > 4 || workloads.some(w => w.id === 'tech-carnival-sponsorship');
+
     // Gardener question should be like user asking the question:
     // If there is no daily check in record, only ask about tree condition
     // Otherwise ask about weather and tree condition
     let questionText = '';
     if (!hasTodayCheckIn) {
-      if (effectiveStatus === 'Overloaded') {
+      if (effectiveStatus === 'Overloaded' && isBent) {
+        questionText = 'Why is my tree bending with yellow leaves and broken branches?';
+      } else if (effectiveStatus === 'Overloaded') {
         questionText = 'Why does my tree have yellow leaves and broken branches?';
+      } else if (isBent) {
+        questionText = 'Why is my tree bending under the weight of my workload?';
       } else if (effectiveStatus === 'Strained') {
         questionText = 'Why does my tree have yellow leaves?';
       } else {
         questionText = 'Why does my tree look like this?';
       }
     } else {
-      if (effectiveStatus === 'Overloaded') {
+      if (effectiveStatus === 'Overloaded' && isBent) {
+        if (isUserStressed) {
+          questionText = 'Why is my tree bending with yellow leaves and broken branches, and why is it raining?';
+        } else {
+          questionText = 'Why is my tree bending with yellow leaves and broken branches even though the weather is clear?';
+        }
+      } else if (effectiveStatus === 'Overloaded') {
         if (isUserStressed) {
           questionText = 'Why does my tree have yellow leaves and broken branches, and why is it raining?';
         } else {
           questionText = 'Why does my tree have yellow leaves and broken branches even though the weather is clear?';
+        }
+      } else if (isBent) {
+        if (isUserStressed) {
+          questionText = 'Why is my tree bending under the workload, and why is it raining?';
+        } else {
+          questionText = 'Why is my tree bending under the workload even though the weather is clear?';
         }
       } else if (effectiveStatus === 'Strained') {
         if (isUserStressed) {
@@ -1408,18 +1448,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `msg-ai-analysis-${Date.now() + 1}`,
       sender: 'ai',
       text: !hasTodayCheckIn
-        ? "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
-        : "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:",
+        ? (isBent
+          ? "Nicole, your tree is bending and showing strain from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
+          : "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!")
+        : (isBent
+          ? "Nicole, your tree is bending under your heavy recorded workload! Your tree condition and weather directly mirror your current mental capacity and daily stress level:"
+          : "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isOverloadNotice: true,
       isNicoleAnalysisPlan: true,
       isGardenerExplanation: true
     };
 
-    setChatMessages(prev => [...prev, userQuestionMsg]);
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, aiAnalysisReplyMsg]);
-    }, 450);
+    setChatMessages(prev => {
+      // Remove any existing gardener question or analysis/insight cards to prevent duplicate cards
+      const cleaned = prev.filter(m =>
+        !m.isGardenerQuestion &&
+        !m.isGardenerExplanation &&
+        !m.isSquirrelInsight &&
+        !(m.isOverloadNotice && m.isNicoleAnalysisPlan)
+      );
+      return [...cleaned, userQuestionMsg, aiAnalysisReplyMsg];
+    });
+    setLastCheckInReminderDate(TODAY);
+  };
+
+  const sendSquirrelInsightToChat = () => {
+    setChatSource('treehole');
+
+    const isBent = isTreeBent || workloads.length > 4 || workloads.some(w => w.id === 'tech-carnival-sponsorship');
+
+    const squirrelInsightMsg: AiDumpChatMessage = {
+      id: `msg-squirrel-insight-${Date.now()}`,
+      sender: 'ai',
+      text: !todayCheckIn
+        ? (isBent
+          ? "Nicole, your tree is bending and showing strain from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
+          : "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!")
+        : "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isOverloadNotice: true,
+      isNicoleAnalysisPlan: true,
+      isSquirrelInsight: true
+    };
+
+    setChatMessages(prev => {
+      // Clean up any existing gardener questions or duplicate insight cards so only 1 insight card is ever shown!
+      const cleaned = prev.filter(m =>
+        !m.isGardenerQuestion &&
+        !m.isGardenerExplanation &&
+        !m.isSquirrelInsight &&
+        !(m.isOverloadNotice && m.isNicoleAnalysisPlan)
+      );
+      return [...cleaned, squirrelInsightMsg];
+    });
+    setLastCheckInReminderDate(TODAY);
   };
 
   // ─── Provider ────────────────────────────────────────────────────────────────
@@ -1501,7 +1584,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setNewAppleWorkloadId,
       gardenerHasQuestion,
       setGardenerHasQuestion,
-      sendGardenerQuestionToChat
+      sendGardenerQuestionToChat,
+      sendSquirrelInsightToChat,
+      isTreeBent,
+      setIsTreeBent,
+      hasRemindedCheckInToday,
+      markCheckInRemindedToday,
+      harvestedAppleIds,
+      harvestApple
     }}>
       {children}
     </AppContext.Provider>

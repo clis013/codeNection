@@ -270,6 +270,7 @@ export interface AiDumpChatMessage {
   };
   isGardenerQuestion?: boolean;
   isGardenerExplanation?: boolean;
+  isSquirrelInsight?: boolean;
   isWorkloadAreaResult?: boolean;
   workloadAreaDetails?: {
     dominantArea: string;

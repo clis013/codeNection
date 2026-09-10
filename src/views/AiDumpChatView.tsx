@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import {
@@ -48,6 +48,7 @@ const AiAnalysisNextPlanCard: React.FC<{
   onGoToAnalysis?: () => void;
   onGoToBalance?: () => void;
 }> = ({
+  isOverloaded,
   onTreeHole,
   onColourReflection,
   onGoToAnalysis,
@@ -64,23 +65,46 @@ const AiAnalysisNextPlanCard: React.FC<{
       setCheckInSource
     } = useApp();
 
-    const status = capacityProfile.analysisResult.demandResourceStatus;
-    const isMan = status === 'Manageable';
-    const isOver = status === 'Overloaded';
-    const isStrain = status === 'Strained';
-    const isPending = !todayCheckIn || status === 'InsufficientData';
+    const activeWorkloadsList = workloads.filter(w => w.status !== 'Completed');
+    const totalWorkloadHours = Number(activeWorkloadsList.reduce((acc, w) => acc + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+    const availableHours = capacityProfile.candidateTimeHours !== null ? Number(capacityProfile.candidateTimeHours.toFixed(1)) : 19;
 
-    // 1. Stress Level
-    const stressCategory = todayCheckIn ? todayCheckIn.category : null;
-    const stressDisplay = stressCategory ?? '--';
+    const isPending = !todayCheckIn;
+
+    const rawStatus = capacityProfile.analysisResult.demandResourceStatus;
+    let effectiveStatus: 'Manageable' | 'Strained' | 'Overloaded' | 'Pending';
+    if (isPending) {
+      effectiveStatus = 'Pending';
+    } else if (rawStatus && rawStatus !== 'InsufficientData') {
+      effectiveStatus = rawStatus as 'Manageable' | 'Strained' | 'Overloaded';
+    } else {
+      if (totalWorkloadHours > availableHours + 5 || totalWorkloadHours >= 24) {
+        effectiveStatus = 'Overloaded';
+      } else if (totalWorkloadHours > availableHours - 4 || totalWorkloadHours >= 15) {
+        effectiveStatus = 'Strained';
+      } else {
+        effectiveStatus = 'Manageable';
+      }
+    }
+
+    if (!isPending && isOverloaded) {
+      effectiveStatus = 'Overloaded';
+    }
+
+    const isOver = !isPending && effectiveStatus === 'Overloaded';
+    const isStrain = !isPending && effectiveStatus === 'Strained';
+    const isMan = !isPending && effectiveStatus === 'Manageable';
+
+    // 1. Stress Level (only populated after checkin)
+    const stressDisplay = todayCheckIn ? todayCheckIn.category : '--';
     const stressColor = !todayCheckIn ? '#94A3B8'
-      : (stressCategory === 'Very High' || stressCategory === 'High')
+      : (stressDisplay === 'Very High' || stressDisplay === 'High')
         ? '#DC2626'
-        : stressCategory === 'Elevated'
+        : stressDisplay === 'Elevated'
           ? '#D97706'
           : '#15803D';
 
-    // 2. Energy
+    // 2. Energy (only populated after checkin)
     const energyNum = todayCheckIn?.energyLevel ?? null;
     const energyDisplay = energyNum === null
       ? '--'
@@ -90,15 +114,12 @@ const AiAnalysisNextPlanCard: React.FC<{
         : energyNum === 3 ? '#D97706'
           : '#15803D';
 
-    // 3. Time Load (active remaining hours vs available candidate time hours)
-    const activeWorkloadsList = workloads.filter(w => w.status !== 'Completed');
-    const totalWorkloadHours = Number(activeWorkloadsList.reduce((acc, w) => acc + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
-    const availableHours = capacityProfile.candidateTimeHours !== null ? Number(capacityProfile.candidateTimeHours.toFixed(1)) : 19;
-    const timeLoadDisplay = `${totalWorkloadHours}h / ${availableHours}h`;
+    // 3. Time Load (active remaining hours vs available weekly reference hours e.g. 86h)
+    const timeLoadDisplay = `${totalWorkloadHours}h / 86h`;
 
-    // Theme configuration matching Homepage Section 2
+    // Theme configuration matching Pictures 1, 2, and 3
     const theme = isPending ? {
-      outerBg: 'linear-gradient(180deg, #e2e8f0ff 0%, #f1f5f9ff 60%, #F8FAFC 100%)',
+      outerBg: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 60%, #FFFFFF 100%)',
       outerBorder: '1.5px solid #E2E8F0',
       shadow: '0 8px 30px rgba(100, 116, 139, 0.05)',
       headerColor: '#475569',
@@ -112,11 +133,11 @@ const AiAnalysisNextPlanCard: React.FC<{
       heroTitle: 'Daily check-in pending',
       heroSubtitle: "Complete today's check-in to compare your personal resources with your recorded workload.",
       timeLoadColor: '#334155',
-      btnColor: '#334155'
+      btnColor: '#7C3AED'
     } : isMan ? {
-      outerBg: 'linear-gradient(180deg, #bbf7d0ff 0%, #dcfce7ff 60%, #F8FAFC 100%)',
-      outerBorder: '1.5px solid #DCFCE7',
-      shadow: '0 8px 30px rgba(220, 252, 231, 0.15)',
+      outerBg: 'linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 60%, #FFFFFF 100%)',
+      outerBorder: '1.5px solid #86EFAC',
+      shadow: '0 8px 30px rgba(34, 197, 94, 0.08)',
       headerColor: '#15803D',
       badgeText: 'Manageable',
       badgeBorder: '#86EFAC',
@@ -130,9 +151,9 @@ const AiAnalysisNextPlanCard: React.FC<{
       timeLoadColor: '#15803D',
       btnColor: '#15803D'
     } : isStrain ? {
-      outerBg: 'linear-gradient(180deg, #fde68aff 0%, #fef3c7ff 60%, #F8FAFC 100%)',
+      outerBg: 'linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 60%, #FFFFFF 100%)',
       outerBorder: '1.5px solid #FDE68A',
-      shadow: '0 8px 30px rgba(217, 119, 6, 0.05)',
+      shadow: '0 8px 30px rgba(217, 119, 6, 0.06)',
       headerColor: '#B45309',
       badgeText: 'Strained',
       badgeBorder: '#FDE68A',
@@ -146,22 +167,22 @@ const AiAnalysisNextPlanCard: React.FC<{
       timeLoadColor: '#D97706',
       btnColor: '#B45309'
     } : {
-      // Overloaded
-      outerBg: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
-      outerBorder: '1.5px solid #FECDD3',
-      shadow: '0 8px 30px rgba(220, 38, 38, 0.05)',
-      headerColor: '#B91C1C',
+      // Overloaded (Exact Match to Picture 1, 2, 3)
+      outerBg: 'linear-gradient(180deg, #FDF2F4 0%, #FFF1F3 60%, #FFFFFF 100%)',
+      outerBorder: '1.5px solid #FDA4AF',
+      shadow: '0 8px 30px rgba(225, 29, 72, 0.08)',
+      headerColor: '#BE123C',
       badgeText: 'Overloaded',
-      badgeBorder: '#FECDD3',
-      badgeColor: '#B91C1C',
-      heroIconBg: '#FEE2E2',
+      badgeBorder: '#FDA4AF',
+      badgeColor: '#BE123C',
+      heroIconBg: '#FFE4E6',
       heroIconBorder: '1px solid #FECDD3',
-      heroIconColor: '#DC2626',
+      heroIconColor: '#E11D48',
       HeroIcon: AlertTriangle,
       heroTitle: 'Workload is overloaded',
       heroSubtitle: 'Your current demands appear difficult to manage with the resources and time available right now.',
       timeLoadColor: '#DC2626',
-      btnColor: '#B91C1C'
+      btnColor: '#BE123C'
     };
 
     const analysisMismatch = capacityProfile.analysisResult.mismatch;
@@ -172,18 +193,20 @@ const AiAnalysisNextPlanCard: React.FC<{
     const { HeroIcon } = theme;
 
     return (
-      <div style={{
-        background: theme.outerBg,
-        borderRadius: '24px',
-        padding: '16px',
-        border: theme.outerBorder,
-        boxShadow: `${theme.shadow}, inset 0 1px 2px rgba(255, 255, 255, 0.9)`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+        {/* Main Daily State & Load Insight + Recovery Card Box */}
+        <div style={{
+          background: theme.outerBg,
+          borderRadius: '24px',
+          padding: '16px',
+          border: theme.outerBorder,
+          boxShadow: `${theme.shadow}, inset 0 1px 2px rgba(255, 255, 255, 0.9)`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
         {/* Top Header: Sparkle + Title & Status Badge Pill (Homepage Style) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -314,103 +337,391 @@ const AiAnalysisNextPlanCard: React.FC<{
         {/* Divider Line matching Homepage */}
         <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0 0 0' }} />
 
-        {/* Button to analysis page: Understand My Load (or Daily Check in if check-in is pending) */}
-        <button
-          type="button"
-          id={isPending ? "chat-card-daily-checkin-btn" : "chat-card-understand-load-btn"}
-          onClick={() => {
-            if (isPending) {
+        {/* Daily Check-in Button when Pending */}
+        {isPending && (
+          <button
+            type="button"
+            id="chat-card-daily-checkin-btn"
+            onClick={() => {
               setCheckInSource('chat');
               setIsCheckInOpen(true);
-            } else if (onGoToAnalysis) {
-              onGoToAnalysis();
-            } else {
-              setActiveTab('map');
-            }
-          }}
-          style={{
-            width: '100%',
-            boxSizing: 'border-box',
-            border: isPending ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
-            backgroundColor: isPending ? '#7C3AED' : '#FFFFFF',
-            color: isPending ? '#FFFFFF' : theme.btnColor,
-            padding: '11px 16px',
-            borderRadius: '14px',
-            fontSize: '13px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxShadow: isPending ? '0 4px 14px rgba(124, 58, 237, 0.28)' : '0 2px 6px rgba(0, 0, 0, 0.02)',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span>{isPending ? 'Daily Check in' : 'Understand My Load'}</span>
-          <ArrowRight size={15} strokeWidth={2.4} color={isPending ? '#FFFFFF' : theme.btnColor} />
-        </button>
+            }}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              border: 'none',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
+              color: '#FFFFFF',
+              padding: '13px 18px',
+              borderRadius: '16px',
+              fontSize: '13.5px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 6px 20px rgba(124, 58, 237, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 26px rgba(124, 58, 237, 0.45)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(124, 58, 237, 0.35)';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ClipboardList size={18} color="#FFFFFF" strokeWidth={2.4} />
+              <span style={{ fontSize: '14px', fontWeight: 800 }}>Daily Check in</span>
+            </div>
+            <div style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <ArrowRight size={15} strokeWidth={2.8} color="#FFFFFF" />
+            </div>
+          </button>
+        )}
 
-        {/* Recovery Recommendation (ONLY IF OVERLOADED) */}
-        {isOver && (
+        {/* "Understand My Load" as a word at side (not a chunky button) */}
+        {!isPending && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '2px 0 2px 0' }}>
+            <span
+              id="chat-card-understand-load-btn"
+              onClick={() => {
+                if (onGoToAnalysis) {
+                  onGoToAnalysis();
+                } else {
+                  setActiveTab('map');
+                }
+              }}
+              style={{
+                fontSize: '12px',
+                fontWeight: 800,
+                color: isOver ? '#BE123C' : theme.btnColor,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '8px',
+                transition: 'all 0.15s ease',
+                userSelect: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.75';
+                e.currentTarget.style.transform = 'translateX(2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateX(0px)';
+              }}
+            >
+              <span>Understand My Load</span>
+              <ArrowRight size={13} strokeWidth={2.6} />
+            </span>
+          </div>
+        )}
+
+        {/* Recovery Recommendation (Advanced, modern card) */}
+        {!isPending && isOver && (
           <div style={{
-            backgroundColor: '#FFF7ED',
-            borderRadius: '16px',
-            padding: '12px 14px',
-            border: '1.2px solid #FED7AA',
+            background: 'linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #FFFBEB 100%)',
+            borderRadius: '20px',
+            padding: '14px 16px',
+            border: '1.5px solid #FDBA74',
+            boxShadow: '0 8px 24px rgba(249, 115, 22, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px'
+            gap: '10px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C2410C', fontWeight: 800, fontSize: '12px' }}>
-              <Coffee size={14} color="#EA580C" />
-              <span>Recovery Recommendation</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '9px',
+                  background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(234, 88, 12, 0.3)'
+                }}>
+                  <Coffee size={15} color="#FFFFFF" strokeWidth={2.4} />
+                </div>
+                <span style={{ color: '#9A3412', fontWeight: 900, fontSize: '13px', letterSpacing: '-0.2px' }}>
+                  Recovery Recommendation
+                </span>
+              </div>
+              <span style={{
+                background: '#FFEDD5',
+                color: '#C2410C',
+                padding: '3px 8px',
+                borderRadius: '999px',
+                fontSize: '10.5px',
+                fontWeight: 800,
+                border: '1px solid #FED7AA'
+              }}>
+                ⏱ 15–20 mins
+              </span>
             </div>
-            <p style={{ margin: 0, fontSize: '11.5px', color: '#9A3412', lineHeight: 1.45 }}>
-              Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery!
+
+            <p style={{ margin: 0, fontSize: '11.5px', color: '#9A3412', lineHeight: 1.5, fontWeight: 500 }}>
+              Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery to protect your wellbeing and restore tree energy!
             </p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Advanced Button 1: Tree Hole Vent */}
               <button
                 type="button"
+                id="recovery-tree-hole-btn"
                 onClick={onTreeHole ? onTreeHole : () => setIsTreeHoleOpen(true)}
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1.2px solid #86EFAC',
-                  color: '#166534',
-                  borderRadius: '10px',
-                  padding: '5px 10px',
-                  fontSize: '11px',
-                  fontWeight: 800,
+                  flex: 1,
+                  minWidth: '130px',
+                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)',
+                  border: '1.5px solid #86EFAC',
+                  borderRadius: '14px',
+                  padding: '9px 12px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  boxShadow: '0 1px 4px rgba(34, 197, 94, 0.1)'
+                  gap: '10px',
+                  boxShadow: '0 4px 12px rgba(22, 101, 52, 0.08), inset 0 1px 1px #FFF',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(22, 101, 52, 0.16)';
+                  e.currentTarget.style.borderColor = '#4ADE80';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(22, 101, 52, 0.08)';
+                  e.currentTarget.style.borderColor = '#86EFAC';
                 }}
               >
-                <Feather size={12} /> Tree Hole Vent
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  border: '1px solid #86EFAC'
+                }}>
+                  <Feather size={16} color="#166534" strokeWidth={2.4} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#166534', lineHeight: 1.2 }}>
+                    Tree Hole Vent
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#15803D', fontWeight: 600, opacity: 0.85 }}>
+                    Shout &amp; release
+                  </span>
+                </div>
               </button>
+
+              {/* Advanced Button 2: Colour Reflection */}
               <button
                 type="button"
+                id="recovery-colour-reflection-btn"
                 onClick={onColourReflection ? onColourReflection : () => setIsColourReflectionOpen(true)}
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1.2px solid #DDD6FE',
-                  color: '#6B21A8',
-                  borderRadius: '10px',
-                  padding: '5px 10px',
-                  fontSize: '11px',
-                  fontWeight: 800,
+                  flex: 1,
+                  minWidth: '130px',
+                  background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF5FF 100%)',
+                  border: '1.5px solid #DDD6FE',
+                  borderRadius: '14px',
+                  padding: '9px 12px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  boxShadow: '0 1px 4px rgba(124, 58, 237, 0.1)'
+                  gap: '10px',
+                  boxShadow: '0 4px 12px rgba(107, 33, 168, 0.08), inset 0 1px 1px #FFF',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(107, 33, 168, 0.16)';
+                  e.currentTarget.style.borderColor = '#C084FC';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 168, 0.08)';
+                  e.currentTarget.style.borderColor = '#DDD6FE';
                 }}
               >
-                <Palette size={12} /> Colour Reflection
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  border: '1px solid #DDD6FE'
+                }}>
+                  <Palette size={16} color="#6B21A8" strokeWidth={2.4} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#6B21A8', lineHeight: 1.2 }}>
+                    Colour Reflection
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#7E22CE', fontWeight: 600, opacity: 0.85 }}>
+                    Visual grounding
+                  </span>
+                </div>
               </button>
             </div>
+          </div>
+        )}
+
+        </div>
+
+        {/* Playful & Engaging Balance Alternative Option Card */}
+        {!isPending && isOver && (
+          <div
+            id="balance-alternative-option-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 253, 245, 0.95) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1.5px solid #34D399',
+              borderRadius: '22px',
+              padding: '13px 15px',
+              boxShadow: '0 10px 28px rgba(16, 185, 129, 0.18), 0 2px 8px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              position: 'relative',
+              overflow: 'hidden',
+              animation: 'fadeInUp 0.25s ease'
+            }}
+          >
+            {/* Ambient Corner Radial Glow */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-20px',
+                right: '-20px',
+                width: '90px',
+                height: '90px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(52, 211, 153, 0.35) 0%, rgba(52, 211, 153, 0) 70%)',
+                filter: 'blur(10px)',
+                pointerEvents: 'none'
+              }}
+            />
+
+            {/* Header: Squirrel avatar + Conversational Callout */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                  border: '1px solid #F59E0B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.2)'
+                }}>
+                  🐿️
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 900, color: '#065F46', letterSpacing: '-0.1px' }}>
+                    Prefer taking action over a break?
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#047857', fontWeight: 600 }}>
+                    Relieve tree weight directly in Balance
+                  </div>
+                </div>
+              </div>
+
+              <span style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#047857',
+                backgroundColor: '#D1FAE5',
+                border: '1px solid #6EE7B7',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                whiteSpace: 'nowrap'
+              }}>
+                <Scale size={11} strokeWidth={2.6} />
+                <span>Pathway 2</span>
+              </span>
+            </div>
+
+            {/* Action Button: Yes, I want to balance my tree first */}
+            <button
+              type="button"
+              id="recovery-go-to-balance-btn"
+              onClick={() => {
+                if (onGoToBalance) onGoToBalance();
+                else setActiveTab('balance');
+              }}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'linear-gradient(135deg, #059669 0%, #10B981 50%, #047857 100%)',
+                border: '1.5px solid rgba(255, 255, 255, 0.45)',
+                color: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '12px 16px',
+                fontSize: '13px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 6px 20px rgba(5, 150, 105, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                letterSpacing: '0.1px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)';
+                e.currentTarget.style.boxShadow = '0 10px 28px rgba(5, 150, 105, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0px) scale(1)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>🌳</span>
+                <span>Yes, I want to balance my tree first</span>
+              </div>
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ArrowRight size={15} strokeWidth={2.8} color="#FFFFFF" />
+              </div>
+            </button>
           </div>
         )}
       </div>
@@ -716,7 +1027,10 @@ export const AiDumpChatView: React.FC = () => {
     markChatWorkloadAdded,
     workloads,
     chatSource,
-    setChatSource
+    setChatSource,
+    isTreeBent,
+    hasRemindedCheckInToday,
+    markCheckInRemindedToday
   } = useApp();
 
   const [inputText, setInputText] = useState('');
@@ -757,6 +1071,20 @@ export const AiDumpChatView: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Identify latest gardener question message to scroll to when coming from gardener question
+  const latestGardenerMsgId = useMemo(() => {
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      const msg = chatMessages[i];
+      if (
+        msg.isGardenerQuestion ||
+        (msg.sender === 'user' && (msg.text?.startsWith('Why is my tree') || msg.text?.startsWith('Why does my tree')))
+      ) {
+        return msg.id;
+      }
+    }
+    return null;
+  }, [chatMessages]);
+
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -770,30 +1098,76 @@ export const AiDumpChatView: React.FC = () => {
     }
   };
 
-  // Immediate layout effect on mount
+  const scrollToGardenerQuestion = (behavior: ScrollBehavior = 'auto') => {
+    const gardenerEl = document.getElementById('gardener-question-msg');
+    if (gardenerEl && messagesContainerRef.current) {
+      const containerRect = messagesContainerRef.current.getBoundingClientRect();
+      const elRect = gardenerEl.getBoundingClientRect();
+      const offsetDiff = elRect.top - containerRect.top;
+      if (behavior === 'smooth') {
+        messagesContainerRef.current.scrollBy({ top: offsetDiff - 6, behavior: 'smooth' });
+      } else {
+        messagesContainerRef.current.scrollTop += (offsetDiff - 6);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // Immediate layout effect on mount / chatSource change
   useLayoutEffect(() => {
-    scrollToBottom('auto');
-  }, []);
+    if (chatSource === 'gardener') {
+      const scrolled = scrollToGardenerQuestion('auto');
+      if (!scrolled) scrollToBottom('auto');
+    } else {
+      scrollToBottom('auto');
+    }
+  }, [chatSource]);
 
-  // Multi-pass timeouts on mount to handle deferred layout, images, and card renders
+  // Multi-pass timeouts on mount and chatSource change to handle deferred layout, images, and cards
   useEffect(() => {
-    scrollToBottom('auto');
-    const t1 = setTimeout(() => scrollToBottom('auto'), 40);
-    const t2 = setTimeout(() => scrollToBottom('auto'), 150);
-    const t3 = setTimeout(() => scrollToBottom('smooth'), 350);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, []);
+    if (chatSource === 'gardener') {
+      scrollToGardenerQuestion('auto');
+      const t1 = setTimeout(() => scrollToGardenerQuestion('auto'), 40);
+      const t2 = setTimeout(() => scrollToGardenerQuestion('auto'), 120);
+      const t3 = setTimeout(() => scrollToGardenerQuestion('auto'), 250);
+      const t4 = setTimeout(() => scrollToGardenerQuestion('auto'), 450);
+      const t5 = setTimeout(() => scrollToGardenerQuestion('auto'), 700);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+        clearTimeout(t5);
+      };
+    } else {
+      scrollToBottom('auto');
+      const t1 = setTimeout(() => scrollToBottom('auto'), 40);
+      const t2 = setTimeout(() => scrollToBottom('auto'), 150);
+      const t3 = setTimeout(() => scrollToBottom('smooth'), 350);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [chatSource]);
 
-  // Smooth scroll to bottom whenever messages are added or updated
+  // Scroll whenever messages are added or updated
   useEffect(() => {
-    scrollToBottom('smooth');
-    const t = setTimeout(() => scrollToBottom('smooth'), 80);
-    return () => clearTimeout(t);
-  }, [chatMessages.length]);
+    if (chatSource === 'gardener') {
+      const t1 = setTimeout(() => scrollToGardenerQuestion('auto'), 30);
+      const t2 = setTimeout(() => scrollToGardenerQuestion('auto'), 120);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    } else {
+      scrollToBottom('smooth');
+      const t = setTimeout(() => scrollToBottom('smooth'), 80);
+      return () => clearTimeout(t);
+    }
+  }, [chatMessages.length, chatSource]);
 
   // Fast predict keywords & sentences
   const quickChips = [
@@ -910,6 +1284,7 @@ export const AiDumpChatView: React.FC = () => {
       ? "AAAARGH! I am so overwhelmed by these project deadlines and exam proofs! I need to scream into the tree hole!"
       : "I had a really bad day, assignment deadline stressing me out, but I also have a test coming in a few days. I can't sleep well and lost motivation...";
 
+    setChatSource('default');
     sendChatMessage(transcript, {
       isVoice: true,
       audioDuration: duration === '0:00' ? '0:06' : duration,
@@ -1096,12 +1471,14 @@ export const AiDumpChatView: React.FC = () => {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputText.trim()) {
+      setChatSource('default');
       sendChatMessage(inputText.trim());
       setInputText('');
     }
   };
 
   const handleChipClick = (text: string) => {
+    setChatSource('default');
     sendChatMessage(text);
   };
 
@@ -1131,7 +1508,7 @@ export const AiDumpChatView: React.FC = () => {
       boxSizing: 'border-box',
       gap: '8px',
       overflow: 'hidden',
-      backgroundImage: `url('/assets/tree_hole_bg.jpg')`,
+      backgroundImage: `url('/assets/background_treehole.png')`,
       backgroundSize: '100% 100%',
       backgroundPosition: 'center center',
       backgroundRepeat: 'no-repeat',
@@ -1155,32 +1532,30 @@ export const AiDumpChatView: React.FC = () => {
           <button
             type="button"
             id="back-to-tree-btn"
-            onClick={() => setActiveTab('tree')}
+            onClick={() => {
+              setChatSource('default');
+              setActiveTab('tree');
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '5px 10px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(254, 243, 199, 0.95)',
-              border: '1px solid #CD8954',
-              color: '#78350F',
-              fontSize: '11.5px',
+              gap: '8px',
+              padding: '4px 6px',
+              background: 'transparent',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              fontSize: '15px',
               fontWeight: 800,
               cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+              boxShadow: 'none',
               transition: 'all 0.15s ease'
             }}
             title="Return to Tree Home"
           >
-            <ArrowLeft size={13} />
-            <span>Tree 🌳</span>
+            <ArrowLeft size={16} strokeWidth={2.8} color="#FFFFFF" />
+            <span>Squirrel AI</span>
           </button>
-          <div>
-            <h2 className="serif-title" style={{ fontSize: '17px', fontWeight: 800, color: '#FEF3C7', letterSpacing: '-0.2px', margin: 0 }}>
-              Tree Hole
-            </h2>
-          </div>
         </div>
       </div>
 
@@ -1210,10 +1585,12 @@ export const AiDumpChatView: React.FC = () => {
         {chatMessages.map((msg) => {
           const isUser = msg.sender === 'user';
           const isPlaying = audioPlayingId === msg.id;
+          const isGardenerTarget = msg.id === latestGardenerMsgId;
 
           return (
             <div
               key={msg.id}
+              id={isGardenerTarget ? 'gardener-question-msg' : `chat-msg-${msg.id}`}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1376,23 +1753,71 @@ export const AiDumpChatView: React.FC = () => {
                 }}>
                   {/* Message Text with Squirrel AI intro message */}
                   {!isUser && msg.id === 'm1' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B45309', fontWeight: 800, fontSize: '13px' }}>
-                        <img src="/assets/squirrel.png" alt="Squirrel AI" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
-                        <span>Squirrel AI</span>
-                      </div>
-                      <div style={{ color: '#451A03', lineHeight: 1.5, fontSize: '13.5px' }}>
-                        {msg.text || "Hi Nicole! *Squeak!* Feel free to dump your stress, thoughts, or unrecorded tasks into this tree hole. I'll help you organize your workload and find balance for your tree."}
-                      </div>
-                    </div>
+                    (() => {
+                      const hasSubsequentInsightOrReminder = chatMessages.some(
+                        m => m.id !== 'm1' && (m.isOverloadNotice || m.isNicoleCheckInPrompt || m.isSquirrelInsight || m.isGardenerExplanation)
+                      );
+                      const shouldShowCheckInReminder = !todayCheckIn && !hasSubsequentInsightOrReminder;
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B45309', fontWeight: 800, fontSize: '13px' }}>
+                            <img src="/assets/squirrel.png" alt="Squirrel AI" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+                            <span>Squirrel AI</span>
+                          </div>
+                          <div style={{ color: '#451A03', lineHeight: 1.5, fontSize: '13.5px' }}>
+                            {shouldShowCheckInReminder
+                              ? "Hi Nicole! *Squeak!* You haven't completed your daily check-in yet today. Please complete your check-in first so I can assess your personal energy and stress levels before we find balance for your tree!"
+                              : (msg.text || "Hi Nicole! *Squeak!* Feel free to dump your stress, thoughts, or unrecorded tasks into this tree hole. I'll help you organize your workload and find balance for your tree.")}
+                          </div>
+                          {shouldShowCheckInReminder && (
+                            <button
+                              type="button"
+                              id="treehole-checkin-first-btn"
+                              onClick={() => {
+                                markCheckInRemindedToday();
+                                setCheckInSource('chat');
+                                setIsCheckInOpen(true);
+                              }}
+                              style={{
+                                marginTop: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '7px',
+                                background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '14px',
+                                padding: '10px 16px',
+                                fontSize: '13px',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
+                                transition: 'all 0.15s ease',
+                                alignSelf: 'flex-start'
+                              }}
+                            >
+                              <ClipboardList size={15} color="#FFFFFF" strokeWidth={2.4} />
+                              <span>Go to Check-in First</span>
+                              <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.4} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : msg.isNicoleDemoExtraction ? (
                     <div style={{ color: '#1E293B', fontSize: '13.5px', lineHeight: 1.45 }}>
                       {msg.text || "Nicole, I've identified your workload items from your stress dump. Please review and add them to your tree:"}
                     </div>
                   ) : msg.text ? (
                     <div style={{ whiteSpace: 'pre-line' }}>
-                      {msg.isGardenerExplanation && todayCheckIn
-                        ? "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
+                      {(msg.isGardenerExplanation || msg.isSquirrelInsight || (msg.isOverloadNotice && msg.isNicoleAnalysisPlan))
+                        ? (todayCheckIn
+                          ? "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
+                          : (isTreeBent
+                            ? "Nicole, your tree is bending and showing strain from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
+                            : "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"))
                         : msg.text}
                     </div>
                   ) : null}
@@ -1883,82 +2308,16 @@ export const AiDumpChatView: React.FC = () => {
         <div ref={messagesEndRef} style={{ height: '1px', flexShrink: 0, marginTop: '2px' }} />
       </div>
 
-      {/* QUICK PROMPT / SHORTCUT BUTTONS ROW (Above Type Section) */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        overflowX: 'auto',
-        padding: '6px 2px',
-        alignItems: 'center',
-        flexShrink: 0
-      }}>
-        {/* QUICK SHORTCUT BUTTON: "I want to fix my tree (balance)" */}
-        {chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) && (
-          <button
-            type="button"
-            id="fix-my-tree-quick-prompt-btn"
-            onClick={() => setActiveTab('balance')}
-            style={{
-              backgroundColor: '#ECFDF5',
-              backdropFilter: 'blur(10px)',
-              border: '1.5px solid #10B981',
-              borderRadius: '20px',
-              padding: '8px 18px',
-              fontSize: '13px',
-              fontWeight: 800,
-              color: '#065F46',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 3px 12px rgba(16, 185, 129, 0.22)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              transition: 'all 0.15s ease',
-              animation: 'fadeIn 0.25s ease'
-            }}
-            title="Navigate to Balance view to fix tree"
-          >
-            <span style={{ fontSize: '15px' }}>🌳</span>
-            <span>I want to fix my tree (balance)</span>
-          </button>
-        )}
-
-        {/* DEMO QUESTION QUICK CHIP: "What is my most workload area?" (Shown once user taps typing section) */}
-        {chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) && hasTappedTyping && (
-          <button
-            type="button"
-            id="quick-prompt-workload-area-btn"
-            onClick={() => {
-              sendChatMessage("What is my most workload area?");
-              setInputText('');
-            }}
-            style={{
-              backgroundColor: '#EFF6FF',
-              backdropFilter: 'blur(10px)',
-              border: '1.5px solid #93C5FD',
-              borderRadius: '20px',
-              padding: '8px 16px',
-              fontSize: '12.5px',
-              fontWeight: 800,
-              color: '#1D4ED8',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 3px 12px rgba(59, 130, 246, 0.18)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-              animation: 'fadeIn 0.25s ease'
-            }}
-            title="Ask AI what your heaviest workload area is"
-          >
-            <span style={{ fontSize: '14px' }}>📊</span>
-            <span>What is my most workload area?</span>
-          </button>
-        )}
-
-        {/* DEMO HELPER BUTTON (Hidden if demo already completed to keep focus on quick prompt) */}
-        {!chatMessages.some(m => m.nicoleConfirmed) && (
+      {/* DEMO HELPER CHIP (Only if demo narrative not yet confirmed) */}
+      {!chatMessages.some(m => m.nicoleConfirmed) && (
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          padding: '4px 2px',
+          alignItems: 'center',
+          flexShrink: 0
+        }}>
           <button
             type="button"
             onClick={() => setInputText(NICOLE_NARRATIVE)}
@@ -1984,8 +2343,8 @@ export const AiDumpChatView: React.FC = () => {
             <Sparkles size={14} color="#EA580C" />
             <span>Try Nicole's Demo</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ACTIVE VOICE RECORDING PANEL */}
       {isRecording ? (

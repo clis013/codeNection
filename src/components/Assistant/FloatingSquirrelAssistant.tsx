@@ -10,7 +10,6 @@ import {
   Scale,
   Calendar as CalendarIcon,
   ChevronRight,
-  ExternalLink,
   Bot
 } from 'lucide-react';
 
@@ -321,16 +320,19 @@ export const FloatingSquirrelAssistant: React.FC = () => {
         style={{
           position: 'absolute',
           bottom: '84px',
-          left: '12px',
+          right: '14px',
           zIndex: 110,
           display: 'flex',
+          flexDirection: 'row-reverse',
           alignItems: 'flex-end',
           pointerEvents: 'none', // Children will have pointerEvents auto
         }}
       >
         {/* Mascot Avatar Button */}
         <button
-          onClick={() => setIsOpen(prev => !prev)}
+          onClick={() => {
+            setIsOpen(prev => !prev);
+          }}
           title="Squirrel Assistant — Click to chat!"
           style={{
             pointerEvents: 'auto',
@@ -372,13 +374,107 @@ export const FloatingSquirrelAssistant: React.FC = () => {
           />
         </button>
 
+        {/* Persistent Floating Speech Bubble on Map Page: Asks "To balance the tree?" */}
+        {activeTab === 'map' && !isOpen && (
+          <div
+            id="map-squirrel-balance-bubble"
+            onClick={() => {
+              setActiveTab('balance');
+            }}
+            style={{
+              pointerEvents: 'auto',
+              position: 'absolute',
+              bottom: '72px',
+              right: '4px',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #FEF3C7 100%)',
+              border: '1.5px solid #F59E0B',
+              borderRadius: '16px',
+              padding: '6px 14px',
+              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.25)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              zIndex: 120,
+              animation: 'bounceSlight 2s infinite ease-in-out',
+              transition: 'transform 0.15s ease'
+            }}
+            title="Go to Balance page to balance your tree"
+          >
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E' }}>
+              To balance the tree?
+            </span>
+            <span style={{ fontSize: '13px' }}>🌳</span>
+            {/* Bubble Tail pointing down towards squirrel */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '-6px',
+                right: '20px',
+                width: 0,
+                height: 0,
+                borderLeft: '5px solid transparent',
+                borderRight: '5px solid transparent',
+                borderTop: '6px solid #F59E0B'
+              }}
+            />
+          </div>
+        )}
+
+        {/* Floating Speech Bubble on Workload or Balance Page: Asks "Any question?" */}
+        {(activeTab === 'workloads' || activeTab === 'balance') && !isOpen && (
+          <div
+            id="squirrel-any-question-bubble"
+            onClick={() => setIsOpen(true)}
+            style={{
+              pointerEvents: 'auto',
+              position: 'absolute',
+              bottom: '72px',
+              right: '4px',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%)',
+              border: '1.5px solid #FB923C',
+              borderRadius: '16px',
+              padding: '6px 14px',
+              boxShadow: '0 6px 20px rgba(251, 146, 60, 0.25)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              zIndex: 120,
+              animation: 'bounceSlight 2s infinite ease-in-out',
+              transition: 'transform 0.15s ease'
+            }}
+            title="Any question? Click to ask squirrel assistant!"
+          >
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#9A3412' }}>
+              Any question?
+            </span>
+            <span style={{ fontSize: '13px' }}>💬</span>
+            {/* Bubble Tail pointing down towards squirrel */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '-6px',
+                right: '20px',
+                width: 0,
+                height: 0,
+                borderLeft: '5px solid transparent',
+                borderRight: '5px solid transparent',
+                borderTop: '6px solid #FB923C'
+              }}
+            />
+          </div>
+        )}
+
         {/* Chat Balloon Card (Picture 1 style) */}
         {isOpen && (
           <div
             id="squirrel-chatbox-balloon"
             style={{
               pointerEvents: 'auto',
-              marginLeft: '8px',
+              marginRight: '8px',
               width: '286px',
               maxWidth: 'calc(100vw - 96px)',
               background: 'rgba(255, 255, 255, 0.96)',
@@ -395,18 +491,19 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               animation: 'fadeSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
-            {/* Speech Bubble Little Tail Nub Pointing to Squirrel */}
+            {/* Speech Bubble Little Tail Nub Pointing to Squirrel on right */}
             <div
               style={{
                 position: 'absolute',
                 bottom: '18px',
-                left: '-8px',
+                right: '-8px',
                 width: 0,
                 height: 0,
                 borderTop: '8px solid transparent',
                 borderBottom: '8px solid transparent',
-                borderRight: '8px solid rgba(255, 255, 255, 0.96)',
-                filter: 'drop-shadow(-2px 0 2px rgba(0, 0, 0, 0.04))',
+                borderLeft: '8px solid rgba(255, 255, 255, 0.96)',
+                borderRight: 'none',
+                filter: 'drop-shadow(2px 0 2px rgba(0, 0, 0, 0.04))',
               }}
             />
 
@@ -434,23 +531,6 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  title="Open full AI Stress Dump Chat"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '3px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    color: '#64748B',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ExternalLink size={13} />
-                </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   title="Close assistant"
