@@ -5,7 +5,7 @@ import {
   Send, Mic, Sparkles, Check, ArrowRight, ArrowLeft, Zap, Coffee, Clock,
   Play, Pause, Volume2, X, RotateCcw, Feather, TreePine, AlertCircle,
   Square, CheckCircle2, Edit3, Heart, Palette, Scale, BarChart2, Plus, AlertTriangle,
-  ClipboardList
+  ClipboardList, ShieldCheck
 } from 'lucide-react';
 import { TreeHoleAnimationView } from '../components/Recovery/TreeHoleAnimationView';
 import { NICOLE_NARRATIVE, TECH_CARNIVAL_SPONSORSHIP_ITEM } from '../demo/nicoleDemo';
@@ -34,7 +34,7 @@ export const isLoadOverloaded = (
   return activeHours > 20;
 };
 
-// Reusable AI Analysis & Next Step Plan Card (suggests recovery pathway + next step plan)
+// Reusable AI Analysis Card (displays Homepage Section 2 Daily State & Load Insight + Recovery Recommendation if overloaded)
 const AiAnalysisNextPlanCard: React.FC<{
   taskTitle?: string;
   taskHours?: number;
@@ -43,211 +43,376 @@ const AiAnalysisNextPlanCard: React.FC<{
   deficit?: number;
   isOverloaded?: boolean;
   isNicoleAnalysisPlan?: boolean;
-  onTreeHole: () => void;
-  onColourReflection: () => void;
-  onGoToAnalysis: () => void;
-  onGoToBalance: () => void;
+  onTreeHole?: () => void;
+  onColourReflection?: () => void;
+  onGoToAnalysis?: () => void;
+  onGoToBalance?: () => void;
 }> = ({
-  taskTitle,
-  taskHours,
-  totalWorkloadHours = 20,
-  availableHours,
-  deficit,
-  isOverloaded = false,
-  isNicoleAnalysisPlan = false,
   onTreeHole,
   onColourReflection,
   onGoToAnalysis,
   onGoToBalance,
 }) => {
+    const {
+      capacityProfile,
+      todayCheckIn,
+      workloads,
+      setActiveTab,
+      setIsTreeHoleOpen,
+      setIsColourReflectionOpen,
+      setIsCheckInOpen,
+      setCheckInSource
+    } = useApp();
+
+    const status = capacityProfile.analysisResult.demandResourceStatus;
+    const isMan = status === 'Manageable';
+    const isOver = status === 'Overloaded';
+    const isStrain = status === 'Strained';
+    const isPending = !todayCheckIn || status === 'InsufficientData';
+
+    // 1. Stress Level
+    const stressCategory = todayCheckIn ? todayCheckIn.category : null;
+    const stressDisplay = stressCategory ?? '--';
+    const stressColor = !todayCheckIn ? '#94A3B8'
+      : (stressCategory === 'Very High' || stressCategory === 'High')
+        ? '#DC2626'
+        : stressCategory === 'Elevated'
+          ? '#D97706'
+          : '#15803D';
+
+    // 2. Energy
+    const energyNum = todayCheckIn?.energyLevel ?? null;
+    const energyDisplay = energyNum === null
+      ? '--'
+      : (energyNum <= 2 ? 'Low' : energyNum === 3 ? 'Moderate' : 'High');
+    const energyColor = energyNum === null ? '#94A3B8'
+      : energyNum <= 2 ? '#991B1B'
+        : energyNum === 3 ? '#D97706'
+          : '#15803D';
+
+    // 3. Time Load (active remaining hours vs available candidate time hours)
+    const activeWorkloadsList = workloads.filter(w => w.status !== 'Completed');
+    const totalWorkloadHours = Number(activeWorkloadsList.reduce((acc, w) => acc + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+    const availableHours = capacityProfile.candidateTimeHours !== null ? Number(capacityProfile.candidateTimeHours.toFixed(1)) : 19;
+    const timeLoadDisplay = `${totalWorkloadHours}h / ${availableHours}h`;
+
+    // Theme configuration matching Homepage Section 2
+    const theme = isPending ? {
+      outerBg: 'linear-gradient(180deg, #e2e8f0ff 0%, #f1f5f9ff 60%, #F8FAFC 100%)',
+      outerBorder: '1.5px solid #E2E8F0',
+      shadow: '0 8px 30px rgba(100, 116, 139, 0.05)',
+      headerColor: '#475569',
+      badgeText: 'Pending Check-in',
+      badgeBorder: '#CBD5E1',
+      badgeColor: '#475569',
+      heroIconBg: '#F1F5F9',
+      heroIconBorder: '1px solid #E2E8F0',
+      heroIconColor: '#64748B',
+      HeroIcon: Clock,
+      heroTitle: 'Daily check-in pending',
+      heroSubtitle: "Complete today's check-in to compare your personal resources with your recorded workload.",
+      timeLoadColor: '#334155',
+      btnColor: '#334155'
+    } : isMan ? {
+      outerBg: 'linear-gradient(180deg, #bbf7d0ff 0%, #dcfce7ff 60%, #F8FAFC 100%)',
+      outerBorder: '1.5px solid #DCFCE7',
+      shadow: '0 8px 30px rgba(220, 252, 231, 0.15)',
+      headerColor: '#15803D',
+      badgeText: 'Manageable',
+      badgeBorder: '#86EFAC',
+      badgeColor: '#15803D',
+      heroIconBg: '#DCFCE7',
+      heroIconBorder: '1px solid #86EFAC',
+      heroIconColor: '#15803D',
+      HeroIcon: ShieldCheck,
+      heroTitle: 'Workload is balanced',
+      heroSubtitle: 'Your current commitments appear manageable with the resources you have available.',
+      timeLoadColor: '#15803D',
+      btnColor: '#15803D'
+    } : isStrain ? {
+      outerBg: 'linear-gradient(180deg, #fde68aff 0%, #fef3c7ff 60%, #F8FAFC 100%)',
+      outerBorder: '1.5px solid #FDE68A',
+      shadow: '0 8px 30px rgba(217, 119, 6, 0.05)',
+      headerColor: '#B45309',
+      badgeText: 'Strained',
+      badgeBorder: '#FDE68A',
+      badgeColor: '#B45309',
+      heroIconBg: '#FEF3C7',
+      heroIconBorder: '1px solid #FDE68A',
+      heroIconColor: '#D97706',
+      HeroIcon: AlertTriangle,
+      heroTitle: 'Workload pressure is elevated',
+      heroSubtitle: 'Your current demands show meaningful pressure. Adjustments are recommended to make the plan manageable.',
+      timeLoadColor: '#D97706',
+      btnColor: '#B45309'
+    } : {
+      // Overloaded
+      outerBg: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
+      outerBorder: '1.5px solid #FECDD3',
+      shadow: '0 8px 30px rgba(220, 38, 38, 0.05)',
+      headerColor: '#B91C1C',
+      badgeText: 'Overloaded',
+      badgeBorder: '#FECDD3',
+      badgeColor: '#B91C1C',
+      heroIconBg: '#FEE2E2',
+      heroIconBorder: '1px solid #FECDD3',
+      heroIconColor: '#DC2626',
+      HeroIcon: AlertTriangle,
+      heroTitle: 'Workload is overloaded',
+      heroSubtitle: 'Your current demands appear difficult to manage with the resources and time available right now.',
+      timeLoadColor: '#DC2626',
+      btnColor: '#B91C1C'
+    };
+
+    const analysisMismatch = capacityProfile.analysisResult.mismatch;
+    const displaySubtitle = (analysisMismatch?.detected && analysisMismatch.insight)
+      ? analysisMismatch.insight
+      : theme.heroSubtitle;
+
+    const { HeroIcon } = theme;
+
     return (
       <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.98)',
-        borderRadius: '20px',
+        background: theme.outerBg,
+        borderRadius: '24px',
         padding: '16px',
-        border: isOverloaded ? '1.5px solid rgba(252, 165, 165, 0.95)' : '1.5px solid rgba(226, 232, 240, 0.95)',
+        border: theme.outerBorder,
+        boxShadow: `${theme.shadow}, inset 0 1px 2px rgba(255, 255, 255, 0.9)`,
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        boxShadow: isOverloaded ? '0 6px 22px rgba(220, 38, 38, 0.08)' : '0 6px 20px rgba(0, 0, 0, 0.05)',
         width: '100%',
         boxSizing: 'border-box'
       }}>
+        {/* Top Header: Sparkle + Title & Status Badge Pill (Homepage Style) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 800, color: Colors.textDark }}>
-            <Sparkles size={16} color={isOverloaded ? "#DC2626" : "#F97316"} />
-            <span>AI Analysis & Next Step Plan</span>
-          </div>
-          <span style={{
-            fontSize: '10.5px',
-            fontWeight: 800,
-            color: isOverloaded ? '#DC2626' : '#C2410C',
-            backgroundColor: isOverloaded ? '#FEE2E2' : '#FFF7ED',
-            padding: '3px 8px',
-            borderRadius: '10px',
-            border: isOverloaded ? '1px solid #FCA5A5' : '1px solid #FED7AA'
-          }}>
-            {isOverloaded ? 'Overloaded' : 'Strained'}
-          </span>
-        </div>
-
-        {/* Capacity & Workload Impact */}
-        <div style={{
-          backgroundColor: isOverloaded ? '#FEF2F2' : '#F8FAFC',
-          borderRadius: '16px',
-          padding: '12px 14px',
-          border: isOverloaded ? '1px solid #FEE2E2' : '1px solid #E2E8F0',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px'
-        }}>
-          <span style={{ fontSize: '11px', fontWeight: 800, color: isOverloaded ? '#991B1B' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            Workload &amp; Capacity Analysis
-          </span>
-          <p style={{ margin: 0, fontSize: '12.5px', color: isOverloaded ? '#7F1D1D' : '#334155', lineHeight: 1.5 }}>
-            {isNicoleAnalysisPlan ? (
-              <>Your total active commitments now is <strong>5 workloads (39h total)</strong>. In the next 3 days, you will have <strong>29h of urgent demands</strong> but only <strong>15.5h of available open time</strong>.</>
-            ) : taskTitle ? (
-              <>The task <strong>"{taskTitle}"</strong> {taskHours ? `(${taskHours}h)` : ''} is now active in your calendar. Your total required workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong> against <strong>{availableHours || 4.5}h</strong> available focus capacity.</>
-            ) : (
-              <>Your total active workload is approximately <strong>{totalWorkloadHours.toFixed(1)}h</strong> against <strong>{availableHours || 4.5}h</strong> available focus capacity.</>
-            )}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap', fontSize: '11.5px' }}>
-            <span style={{ backgroundColor: '#FEE2E2', color: '#991B1B', padding: '3px 8px', borderRadius: '8px', fontWeight: 700, border: '1px solid #FECDD3' }}>
-              Time Deficit: -{isNicoleAnalysisPlan ? '13.5' : (deficit ?? Math.max(0, totalWorkloadHours - (availableHours || 4.5)).toFixed(1))}h {isNicoleAnalysisPlan ? '(Next 3 Days)' : ''}
-            </span>
-            <span style={{
-              backgroundColor: isOverloaded ? '#FEE2E2' : '#FEF3C7',
-              color: isOverloaded ? '#991B1B' : '#92400E',
-              padding: '3px 8px',
-              borderRadius: '8px',
-              fontWeight: 700,
-              border: isOverloaded ? '1px solid #FECDD3' : '1px solid #FED7AA'
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '15px', lineHeight: 1 }}>✨</span>
+            <h3 style={{
+              fontSize: '12px',
+              fontWeight: 900,
+              color: theme.headerColor,
+              margin: 0,
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
             }}>
-              Cognitive Strain: {isOverloaded ? 'Critical' : 'Elevated'}
+              DAILY STATE &amp; LOAD INSIGHT
+            </h3>
+          </div>
+
+          <span style={{
+            fontSize: '11px',
+            color: theme.badgeColor,
+            fontWeight: 800,
+            backgroundColor: '#FFFFFF',
+            padding: '2px 10px',
+            borderRadius: '999px',
+            border: `1px solid ${theme.badgeBorder}`,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+          }}>
+            {theme.badgeText}
+          </span>
+        </div>
+
+        {/* Hero Insight Block */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <div style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '14px',
+            backgroundColor: theme.heroIconBg,
+            border: theme.heroIconBorder,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <HeroIcon size={20} color={theme.heroIconColor} strokeWidth={2.2} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+            <h4 style={{
+              fontSize: '15px',
+              fontWeight: 900,
+              color: '#0F172A',
+              margin: 0,
+              letterSpacing: '-0.2px'
+            }}>
+              {theme.heroTitle}
+            </h4>
+            <p style={{
+              fontSize: '12px',
+              color: '#475569',
+              margin: 0,
+              lineHeight: '1.4'
+            }}>
+              {displaySubtitle}
+            </p>
+          </div>
+        </div>
+
+        {/* 3 Metric Cards: STRESS LEVEL | ENERGY | TIME LOAD */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '8px 4px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3px',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+            border: '1px solid #F1F5F9'
+          }}>
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+              STRESS LEVEL
+            </span>
+            <span style={{ fontSize: '13.5px', fontWeight: 900, color: stressColor }}>
+              {stressDisplay}
+            </span>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '8px 4px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3px',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+            border: '1px solid #F1F5F9'
+          }}>
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+              ENERGY
+            </span>
+            <span style={{ fontSize: '13.5px', fontWeight: 900, color: energyColor }}>
+              {energyDisplay}
+            </span>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '8px 4px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3px',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+            border: '1px solid #F1F5F9'
+          }}>
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+              TIME LOAD
+            </span>
+            <span style={{ fontSize: '13.5px', fontWeight: 900, color: theme.timeLoadColor }}>
+              {timeLoadDisplay}
             </span>
           </div>
         </div>
 
-        {/* Recovery Recommendation */}
-        <div style={{
-          backgroundColor: '#FFF7ED',
-          borderRadius: '16px',
-          padding: '12px 14px',
-          border: '1.2px solid #FED7AA',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C2410C', fontWeight: 800, fontSize: '12.5px' }}>
-            <Coffee size={15} color="#EA580C" />
-            <span>Recovery Recommendation</span>
-          </div>
-          <p style={{ margin: 0, fontSize: '12px', color: '#9A3412', lineHeight: 1.45 }}>
-            {isOverloaded ? 'Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery!' : 'Cognitive load and deadline density are elevated. We recommend taking 15–20 minutes to recover before commencing deep work.'}
-          </p>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={onTreeHole}
-              style={{
-                backgroundColor: '#FFFFFF',
-                border: '1.2px solid #86EFAC',
-                color: '#166534',
-                borderRadius: '12px',
-                padding: '6px 12px',
-                fontSize: '11.5px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.1)'
-              }}
-            >
-              <Feather size={13} /> Tree Hole Vent
-            </button>
-            <button
-              type="button"
-              onClick={onColourReflection}
-              style={{
-                backgroundColor: '#FFFFFF',
-                border: '1.2px solid #DDD6FE',
-                color: '#6B21A8',
-                borderRadius: '12px',
-                padding: '6px 12px',
-                fontSize: '11.5px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                boxShadow: '0 2px 6px rgba(124, 58, 237, 0.1)'
-              }}
-            >
-              <Palette size={13} /> Colour Reflection
-            </button>
-          </div>
-        </div>
+        {/* Divider Line matching Homepage */}
+        <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0 0 0' }} />
 
-        {/* Next Action Selection */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B' }}>
-            Select Next Action:
-          </span>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={onGoToAnalysis}
-              style={{
-                background: '#F8FAFC',
-                border: '1.5px solid #E2E8F0',
-                borderRadius: '14px',
-                padding: '11px 12px',
-                color: Colors.textDark,
-                fontWeight: 800,
-                fontSize: '12.5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
-              }}
-              title="Analysis"
-            >
-              <BarChart2 size={16} color="#475569" strokeWidth={2.2} />
-              <span>Analysis</span>
-            </button>
+        {/* Button to analysis page: Understand My Load (or Daily Check in if check-in is pending) */}
+        <button
+          type="button"
+          id={isPending ? "chat-card-daily-checkin-btn" : "chat-card-understand-load-btn"}
+          onClick={() => {
+            if (isPending) {
+              setCheckInSource('chat');
+              setIsCheckInOpen(true);
+            } else if (onGoToAnalysis) {
+              onGoToAnalysis();
+            } else {
+              setActiveTab('map');
+            }
+          }}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            border: isPending ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+            backgroundColor: isPending ? '#7C3AED' : '#FFFFFF',
+            color: isPending ? '#FFFFFF' : theme.btnColor,
+            padding: '11px 16px',
+            borderRadius: '14px',
+            fontSize: '13px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: isPending ? '0 4px 14px rgba(124, 58, 237, 0.28)' : '0 2px 6px rgba(0, 0, 0, 0.02)',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <span>{isPending ? 'Daily Check in' : 'Understand My Load'}</span>
+          <ArrowRight size={15} strokeWidth={2.4} color={isPending ? '#FFFFFF' : theme.btnColor} />
+        </button>
 
-            <button
-              type="button"
-              onClick={onGoToBalance}
-              style={{
-                background: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
-                border: '1.5px solid #FDBA74',
-                borderRadius: '14px',
-                padding: '11px 12px',
-                color: '#9A3412',
-                fontWeight: 800,
-                fontSize: '12.5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.18)',
-                transition: 'all 0.15s ease'
-              }}
-              title="Balance"
-            >
-              <Scale size={15} color="#9A3412" />
-              <span>Balance</span>
-            </button>
+        {/* Recovery Recommendation (ONLY IF OVERLOADED) */}
+        {isOver && (
+          <div style={{
+            backgroundColor: '#FFF7ED',
+            borderRadius: '16px',
+            padding: '12px 14px',
+            border: '1.2px solid #FED7AA',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C2410C', fontWeight: 800, fontSize: '12px' }}>
+              <Coffee size={14} color="#EA580C" />
+              <span>Recovery Recommendation</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '11.5px', color: '#9A3412', lineHeight: 1.45 }}>
+              Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery!
+            </p>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={onTreeHole ? onTreeHole : () => setIsTreeHoleOpen(true)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1.2px solid #86EFAC',
+                  color: '#166534',
+                  borderRadius: '10px',
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 1px 4px rgba(34, 197, 94, 0.1)'
+                }}
+              >
+                <Feather size={12} /> Tree Hole Vent
+              </button>
+              <button
+                type="button"
+                onClick={onColourReflection ? onColourReflection : () => setIsColourReflectionOpen(true)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1.2px solid #DDD6FE',
+                  color: '#6B21A8',
+                  borderRadius: '10px',
+                  padding: '5px 10px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 1px 4px rgba(124, 58, 237, 0.1)'
+                }}
+              >
+                <Palette size={12} /> Colour Reflection
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -326,7 +491,7 @@ const NicoleDemoExtractionCard: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EA580C', fontWeight: 800, fontSize: '13.5px' }}>
           <Sparkles size={16} color="#EA580C" />
-          <span>Identified Workload Items to Record:</span>
+          <span>Identified Workload Items</span>
         </div>
         <span style={{
           fontSize: '10.5px',
@@ -345,7 +510,7 @@ const NicoleDemoExtractionCard: React.FC<{
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
-            Identified Workload (4) • Tap Check/Update to review
+            1 New Workload to Check · 3 Existing Mentioned
           </span>
         </div>
 
@@ -391,7 +556,8 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
+
             <button
               type="button"
               onClick={() => handleEditWorkload('tech-carnival-sponsorship')}
@@ -427,20 +593,20 @@ const NicoleDemoExtractionCard: React.FC<{
           </div>
         </div>
 
-        {/* 2. Web Programming Group Assignment (Existing Workload) */}
+        {/* Existing Workloads Consolidated in One Card */}
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '14px',
           padding: '12px 14px',
-          border: isItemClarified('web-programming-group') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+          border: '1.5px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: '10px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
-              {webProg?.title || 'Web Programming Group Assignment'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              Existing Recorded Workloads (3)
             </span>
             <span style={{
               fontSize: '9.5px',
@@ -451,213 +617,54 @@ const NicoleDemoExtractionCard: React.FC<{
               padding: '2px 7px',
               borderRadius: '6px',
               border: '1px solid #E2E8F0',
-              flexShrink: 0,
-              marginTop: '1px'
+              flexShrink: 0
             }}>
               EXISTING
             </span>
           </div>
 
-          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 800, color: getAreaColor(webProg?.area || 'Academic') }}>
-              {webProg?.area || 'Academic'}
-            </span>
-            <span>· Due 11 Sep, 23:59</span>
-            <span>· ⏱️ 12 hrs</span>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
-              Pre-filled
-            </span>
-          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+            {/* 1. Web Programming Group Assignment */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingBottom: '9px', borderBottom: '1px solid #F1F5F9' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: Colors.textDark, lineHeight: 1.35 }}>
+                {webProg?.title || 'Web Programming Group Assignment'}
+              </span>
+              <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 800, color: getAreaColor(webProg?.area || 'Academic') }}>
+                  {webProg?.area || 'Academic'}
+                </span>
+                <span>· Due 11 Sep, 23:59</span>
+                <span>· ⏱️ 12 hrs</span>
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
-            <button
-              type="button"
-              onClick={() => handleEditWorkload('web-programming-group')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9px',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                backgroundColor: isItemClarified('web-programming-group') ? '#F0FDF4' : '#F8FAFC',
-                border: isItemClarified('web-programming-group') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
-                color: isItemClarified('web-programming-group') ? '#166534' : '#334155',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-              title="Check or update Web Programming"
-            >
-              {isItemClarified('web-programming-group') ? (
-                <>
-                  <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Checked & Updated</span>
-                </>
-              ) : (
-                <>
-                  <Edit3 size={13} />
-                  <span>Check / Update</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+            {/* 2. OS Quiz */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingBottom: '9px', borderBottom: '1px solid #F1F5F9' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: Colors.textDark, lineHeight: 1.35 }}>
+                {osQuiz?.title || 'Operating System Quiz 1'}
+              </span>
+              <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 800, color: getAreaColor(osQuiz?.area || 'Academic') }}>
+                  {osQuiz?.area || 'Academic'}
+                </span>
+                <span>· Due 10 Sep, 08:00</span>
+                <span>· ⏱️ 5 hrs</span>
+              </div>
+            </div>
 
-        {/* 3. OS Quiz (Existing Workload) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '14px',
-          padding: '12px 14px',
-          border: isItemClarified('os-quiz-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
-              {osQuiz?.title || 'Operating System Quiz 1'}
-            </span>
-            <span style={{
-              fontSize: '9.5px',
-              fontWeight: 800,
-              letterSpacing: '0.5px',
-              backgroundColor: '#F1F5F9',
-              color: '#475569',
-              padding: '2px 7px',
-              borderRadius: '6px',
-              border: '1px solid #E2E8F0',
-              flexShrink: 0,
-              marginTop: '1px'
-            }}>
-              EXISTING
-            </span>
-          </div>
-
-          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 800, color: getAreaColor(osQuiz?.area || 'Academic') }}>
-              {osQuiz?.area || 'Academic'}
-            </span>
-            <span>· Due 10 Sep, 08:00</span>
-            <span>· ⏱️ 5 hrs</span>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
-              Pre-filled
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
-            <button
-              type="button"
-              onClick={() => handleEditWorkload('os-quiz-1')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9px',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                backgroundColor: isItemClarified('os-quiz-1') ? '#F0FDF4' : '#F8FAFC',
-                border: isItemClarified('os-quiz-1') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
-                color: isItemClarified('os-quiz-1') ? '#166534' : '#334155',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-              title="Check or update Operating System Quiz 1"
-            >
-              {isItemClarified('os-quiz-1') ? (
-                <>
-                  <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Checked & Updated</span>
-                </>
-              ) : (
-                <>
-                  <Edit3 size={13} />
-                  <span>Check / Update</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* 4. FCG Test (Existing Workload) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '14px',
-          padding: '12px 14px',
-          border: isItemClarified('fcg-test-1') ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-            <span style={{ fontSize: '13.5px', fontWeight: 800, color: Colors.textDark, lineHeight: 1.35 }}>
-              {fcgTest?.title || 'FCG Test'}
-            </span>
-            <span style={{
-              fontSize: '9.5px',
-              fontWeight: 800,
-              letterSpacing: '0.5px',
-              backgroundColor: '#F1F5F9',
-              color: '#475569',
-              padding: '2px 7px',
-              borderRadius: '6px',
-              border: '1px solid #E2E8F0',
-              flexShrink: 0,
-              marginTop: '1px'
-            }}>
-              EXISTING
-            </span>
-          </div>
-
-          <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 800, color: getAreaColor(fcgTest?.area || 'Academic') }}>
-              {fcgTest?.area || 'Academic'}
-            </span>
-            <span>· Due 14 Sep, 14:00</span>
-            <span>· ⏱️ 8 hrs</span>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
-              Pre-filled
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
-            <button
-              type="button"
-              onClick={() => handleEditWorkload('fcg-test-1')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9px',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                backgroundColor: isItemClarified('fcg-test-1') ? '#F0FDF4' : '#F8FAFC',
-                border: isItemClarified('fcg-test-1') ? '1.2px solid #86EFAC' : '1.2px solid #CBD5E1',
-                color: isItemClarified('fcg-test-1') ? '#166534' : '#334155',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-              title="Check or update FCG Test"
-            >
-              {isItemClarified('fcg-test-1') ? (
-                <>
-                  <Check size={14} strokeWidth={2.5} color="#166534" />
-                  <span>Checked & Updated</span>
-                </>
-              ) : (
-                <>
-                  <Edit3 size={13} />
-                  <span>Check / Update</span>
-                </>
-              )}
-            </button>
+            {/* 3. FCG Test */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: Colors.textDark, lineHeight: 1.35 }}>
+                {fcgTest?.title || 'FCG Test'}
+              </span>
+              <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 800, color: getAreaColor(fcgTest?.area || 'Academic') }}>
+                  {fcgTest?.area || 'Academic'}
+                </span>
+                <span>· Due 14 Sep, 14:00</span>
+                <span>· ⏱️ 8 hrs</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -744,6 +751,7 @@ export const AiDumpChatView: React.FC = () => {
   } = useApp();
 
   const [inputText, setInputText] = useState('');
+  const [hasTappedTyping, setHasTappedTyping] = useState(false);
 
   // Voice Recording & Tree Hole Shout Connection State (Requirement 3)
   const [isRecording, setIsRecording] = useState(false);
@@ -1189,7 +1197,9 @@ export const AiDumpChatView: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: Colors.textMuted }}>
-                {isUser ? (
+                {msg.sender === 'gardener' ? (
+                  <span style={{ color: '#15803D', fontWeight: 800 }}>👨‍🌾 Gardener Nicole</span>
+                ) : isUser ? (
                   <span>Nicole</span>
                 ) : (
                   <span>{chatSource === 'treehole' ? '🌳 Tree Hole' : 'MindFlow AI'}</span>
@@ -1280,6 +1290,38 @@ export const AiDumpChatView: React.FC = () => {
                     <span>"{msg.text}"</span>
                   </div>
                 </div>
+              ) : msg.sender === 'gardener' ? (
+                /* GARDENER QUESTION BUBBLE */
+                <div style={{
+                  maxWidth: '88%',
+                  background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  borderRadius: '22px 22px 22px 4px',
+                  border: '1.5px solid #F59E0B',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.15)',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      color: '#92400E',
+                      backgroundColor: '#FEF3C7',
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid #FDE68A'
+                    }}>
+                      👨‍🌾 Question for AI &amp; Nicole
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#1F2937', fontWeight: 700, lineHeight: 1.45 }}>
+                    "{msg.text}"
+                  </div>
+                </div>
               ) : (
                 /* TEXT BUBBLE */
                 <div style={{
@@ -1310,9 +1352,13 @@ export const AiDumpChatView: React.FC = () => {
                         "Dump your stress,... I am the quiet tree hole listening to you. Whatever thoughts, deadlines, or emotional weight you are carrying, speak or dump them freely into my hollow. I will hold your burdens, identify the workloads you need to record, and lighten your load."
                       </div>
                     </div>
-                  ) : (
-                    <div>{msg.text}</div>
-                  )}
+                  ) : !msg.isNicoleDemoExtraction && msg.text ? (
+                    <div style={{ whiteSpace: 'pre-line' }}>
+                      {msg.isGardenerExplanation && todayCheckIn
+                        ? "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
+                        : msg.text}
+                    </div>
+                  ) : null}
 
                   {/* NICOLE PRE-DUMP DAILY CHECK-IN PROMPT */}
                   {!isUser && msg.isNicoleCheckInPrompt && (
@@ -1536,6 +1582,121 @@ export const AiDumpChatView: React.FC = () => {
                     />
                   )}
 
+                  {/* WORKLOAD AREA ANALYSIS RESULT CARD */}
+                  {!isUser && msg.isWorkloadAreaResult && msg.workloadAreaDetails && (
+                    <div style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '14px 16px',
+                      border: '1.5px solid #BFDBFE',
+                      boxShadow: '0 4px 16px rgba(37, 99, 235, 0.08)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '15px' }}>📚</span>
+                          <span style={{ fontSize: '12.5px', fontWeight: 900, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                            HEAVIEST WORKLOAD AREA
+                          </span>
+                        </div>
+                        <span style={{
+                          backgroundColor: '#EFF6FF',
+                          color: '#1D4ED8',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid #DBEAFE'
+                        }}>
+                          {msg.workloadAreaDetails.dominantArea} ({msg.workloadAreaDetails.dominantPercent}%)
+                        </span>
+                      </div>
+
+                      {/* Distribution Bar */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{
+                          width: '100%',
+                          height: '10px',
+                          backgroundColor: '#F1F5F9',
+                          borderRadius: '999px',
+                          display: 'flex',
+                          overflow: 'hidden'
+                        }}>
+                          <div
+                            style={{
+                              width: `${msg.workloadAreaDetails.dominantPercent}%`,
+                              backgroundColor: '#2563EB'
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: `${100 - msg.workloadAreaDetails.dominantPercent}%`,
+                              backgroundColor: '#EA580C'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', color: '#64748B', fontWeight: 700 }}>
+                          <span style={{ color: '#2563EB' }}>● Academic: {msg.workloadAreaDetails.dominantHours}h</span>
+                          <span style={{ color: '#EA580C' }}>● Extracurricular: {msg.workloadAreaDetails.otherAreas[0]?.hours ?? 14}h</span>
+                        </div>
+                      </div>
+
+                      {/* Tasks in Dominant Area */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569' }}>
+                          Active Academic Commitments ({msg.workloadAreaDetails.dominantHours}h):
+                        </span>
+                        {msg.workloadAreaDetails.tasksInDominantArea.map((task, tIdx) => (
+                          <div
+                            key={tIdx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              backgroundColor: '#F8FAFC',
+                              padding: '6px 10px',
+                              borderRadius: '10px',
+                              fontSize: '11.5px',
+                              border: '1px solid #E2E8F0'
+                            }}
+                          >
+                            <span style={{ fontWeight: 600, color: '#1E293B' }}>{task.title}</span>
+                            <span style={{ fontWeight: 800, color: '#2563EB' }}>{task.hours}h</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Action shortcut to balance */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('balance')}
+                        style={{
+                          backgroundColor: '#ECFDF5',
+                          border: '1.2px solid #6EE7B7',
+                          color: '#065F46',
+                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          fontSize: '11.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 1px 4px rgba(16, 185, 129, 0.1)',
+                          marginTop: '2px'
+                        }}
+                      >
+                        <span>🌳 Go to Balance to Fix Tree</span>
+                        <ArrowRight size={13} strokeWidth={2.4} />
+                      </button>
+                    </div>
+                  )}
+
                   {/* NICOLE CANONICAL DEMO EXTRACTION CARD */}
                   {!isUser && msg.isNicoleDemoExtraction && (
                     <NicoleDemoExtractionCard
@@ -1684,38 +1845,107 @@ export const AiDumpChatView: React.FC = () => {
         })}
       </div>
 
-      {/* DEMO HELPER CHIP ROW */}
+      {/* QUICK PROMPT / SHORTCUT BUTTONS ROW (Above Type Section) */}
       <div style={{
         display: 'flex',
         gap: '8px',
         overflowX: 'auto',
         padding: '6px 2px',
+        alignItems: 'center'
       }}>
-        <button
-          type="button"
-          onClick={() => setInputText(NICOLE_NARRATIVE)}
-          style={{
-            backgroundColor: '#FFF7ED',
-            backdropFilter: 'blur(10px)',
-            border: '1.5px solid #FDBA74',
-            borderRadius: '18px',
-            padding: '7px 16px',
-            fontSize: '12.5px',
-            fontWeight: 800,
-            color: '#9A3412',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 2px 10px rgba(234, 88, 12, 0.12)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            transition: 'all 0.15s ease'
-          }}
-          title="Populate input with Nicole's canonical narrative"
-        >
-          <Sparkles size={14} color="#EA580C" />
-          <span>Try Nicole's Demo</span>
-        </button>
+        {/* QUICK SHORTCUT BUTTON: "I want to fix my tree (balance)" */}
+        {chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) && (
+          <button
+            type="button"
+            id="fix-my-tree-quick-prompt-btn"
+            onClick={() => setActiveTab('balance')}
+            style={{
+              backgroundColor: '#ECFDF5',
+              backdropFilter: 'blur(10px)',
+              border: '1.5px solid #10B981',
+              borderRadius: '20px',
+              padding: '8px 18px',
+              fontSize: '13px',
+              fontWeight: 800,
+              color: '#065F46',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 3px 12px rgba(16, 185, 129, 0.22)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              transition: 'all 0.15s ease',
+              animation: 'fadeIn 0.25s ease'
+            }}
+            title="Navigate to Balance view to fix tree"
+          >
+            <span style={{ fontSize: '15px' }}>🌳</span>
+            <span>I want to fix my tree (balance)</span>
+          </button>
+        )}
+
+        {/* DEMO QUESTION QUICK CHIP: "What is my most workload area?" (Shown once user taps typing section) */}
+        {chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) && hasTappedTyping && (
+          <button
+            type="button"
+            id="quick-prompt-workload-area-btn"
+            onClick={() => {
+              sendChatMessage("What is my most workload area?");
+              setInputText('');
+            }}
+            style={{
+              backgroundColor: '#EFF6FF',
+              backdropFilter: 'blur(10px)',
+              border: '1.5px solid #93C5FD',
+              borderRadius: '20px',
+              padding: '8px 16px',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              color: '#1D4ED8',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 3px 12px rgba(59, 130, 246, 0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease',
+              animation: 'fadeIn 0.25s ease'
+            }}
+            title="Ask AI what your heaviest workload area is"
+          >
+            <span style={{ fontSize: '14px' }}>📊</span>
+            <span>What is my most workload area?</span>
+          </button>
+        )}
+
+        {/* DEMO HELPER BUTTON (Hidden if demo already completed to keep focus on quick prompt) */}
+        {!chatMessages.some(m => m.nicoleConfirmed) && (
+          <button
+            type="button"
+            onClick={() => setInputText(NICOLE_NARRATIVE)}
+            style={{
+              backgroundColor: '#FFF7ED',
+              backdropFilter: 'blur(10px)',
+              border: '1.5px solid #FDBA74',
+              borderRadius: '18px',
+              padding: '7px 16px',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              color: '#9A3412',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 10px rgba(234, 88, 12, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease'
+            }}
+            title="Populate input with Nicole's canonical narrative"
+          >
+            <Sparkles size={14} color="#EA580C" />
+            <span>Try Nicole's Demo</span>
+          </button>
+        )}
       </div>
 
       {/* ACTIVE VOICE RECORDING PANEL */}
@@ -1843,6 +2073,15 @@ export const AiDumpChatView: React.FC = () => {
         /* STANDARD BOTTOM TYPING BAR */
         <form
           onSubmit={handleSend}
+          onClick={() => {
+            const hasSeenDailyStatus = chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan));
+            if (hasSeenDailyStatus) {
+              setHasTappedTyping(true);
+              if (!inputText.trim()) {
+                setInputText("What is my most workload area?");
+              }
+            }
+          }}
           style={{
             display: 'flex',
             gap: '8px',
@@ -1860,6 +2099,24 @@ export const AiDumpChatView: React.FC = () => {
           <textarea
             placeholder="Dump thoughts, or tap mic for voice message..."
             value={inputText}
+            onFocus={() => {
+              const hasSeenDailyStatus = chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan));
+              if (hasSeenDailyStatus) {
+                setHasTappedTyping(true);
+                if (!inputText.trim()) {
+                  setInputText("What is my most workload area?");
+                }
+              }
+            }}
+            onClick={() => {
+              const hasSeenDailyStatus = chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan));
+              if (hasSeenDailyStatus) {
+                setHasTappedTyping(true);
+                if (!inputText.trim()) {
+                  setInputText("What is my most workload area?");
+                }
+              }
+            }}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {

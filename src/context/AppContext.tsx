@@ -125,6 +125,9 @@ interface AppContextType {
   setChatSource: (source: 'default' | 'treehole') => void;
   newAppleWorkloadId: string | null;
   setNewAppleWorkloadId: (id: string | null) => void;
+  gardenerHasQuestion: boolean;
+  setGardenerHasQuestion: (hasQuestion: boolean) => void;
+  sendGardenerQuestionToChat: () => void;
 
   // Calendar & Schedule State
   busyEvents: FixedBusyEvent[];
@@ -673,6 +676,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [clarifiedWorkloadIds, setClarifiedWorkloadIds] = useState<string[]>([]);
   const [chatSource, setChatSource] = useState<'default' | 'treehole'>('default');
   const [newAppleWorkloadId, setNewAppleWorkloadId] = useState<string | null>(null);
+  const [gardenerHasQuestion, setGardenerHasQuestion] = useState(false);
 
   // ─── Date-anchored derivations ──────────────────────────────────────────────
 
@@ -892,7 +896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createNicoleExtractionMessage = (customText?: string): AiDumpChatMessage => ({
     id: `msg-${Date.now() + 1}`,
     sender: 'ai',
-    text: customText || "We heard you, Nicole! We've listened to everything you shared and identified the workloads to record for you. Here is the identified workload list for you to review or update:",
+    text: customText ?? '',
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     isNicoleDemoExtraction: true,
     nicoleClarified: false,
@@ -962,18 +966,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Replace any existing check-in for the same date (one per day)
     setCheckIns(prev => [...prev.filter(c => c.date !== checkIn.date), checkIn]);
 
-    // If user previously dumped stress and received Nicole's check-in prompt without the extraction,
-    // automatically append the structured extraction now that daily check-in is complete
+    // Update message text when check-in is completed from chat
     setChatMessages(prev => {
-      const hasPrompt = prev.some(m => m.isNicoleCheckInPrompt);
-      const hasExtraction = prev.some(m => m.isNicoleDemoExtraction);
+      const updated = prev.map(m => {
+        if (m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) {
+          return {
+            ...m,
+            text: "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
+          };
+        }
+        return m;
+      });
+
+      const hasPrompt = updated.some(m => m.isNicoleCheckInPrompt);
+      const hasExtraction = updated.some(m => m.isNicoleDemoExtraction);
       if (hasPrompt && !hasExtraction) {
         const extractionReply = createNicoleExtractionMessage(
           "Thank you for completing your daily check-in, Nicole! Now I can analyze your stress level alongside your commitments. Here is the structured extraction of your workload demands and stress context:"
         );
-        return [...prev, extractionReply];
+        return [...updated, extractionReply];
       }
-      return prev;
+      return updated;
     });
   };
 
@@ -1004,9 +1017,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isNicoleDemo) {
       setTimeout(() => {
-        const aiReply = createNicoleExtractionMessage(
-          "We heard you, Nicole! We've listened to everything you shared and identified the workloads to record for you. Here is the identified workload list:"
-        );
+        const aiReply = createNicoleExtractionMessage('');
         setChatMessages(prev => [...prev, aiReply]);
       }, 500);
       setChatMessages(prev => [...prev, userMsg]);
@@ -1027,6 +1038,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         setChatMessages(prev => [...prev, aiReply]);
       }, 500);
+      setChatMessages(prev => [...prev, userMsg]);
+      return;
+    }
+
+    // Workload Area Question Detection (e.g. "What is my most workload area?")
+    const isWorkloadAreaQuestion =
+      text.toLowerCase().includes('most workload') ||
+      text.toLowerCase().includes('workload area') ||
+      text.toLowerCase().includes('heaviest') ||
+      (text.toLowerCase().includes('area') && text.toLowerCase().includes('workload')) ||
+      text.toLowerCase().includes('dominant area') ||
+      text.toLowerCase().includes('busiest area');
+
+    if (isWorkloadAreaQuestion) {
+      setTimeout(() => {
+        const activeList = workloads.filter(w => w.status !== 'Completed');
+        const academicTasks = activeList.filter(w => (w.area as string)?.toLowerCase() === 'academic');
+        const academicHours = Number(academicTasks.reduce((s, w) => s + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+        const totalWorkloadHours = Number(activeList.reduce((s, w) => s + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+        const academicPercent = totalWorkloadHours > 0 ? Math.round((academicHours / totalWorkloadHours) * 100) : 65;
+
+        const otherTasks = activeList.filter(w => (w.area as string)?.toLowerCase() !== 'academic');
+        const otherHours = Number(otherTasks.reduce((s, w) => s + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0).toFixed(1));
+        const otherPercent = Math.max(0, 100 - academicPercent);
+
+        const aiReply: AiDumpChatMessage = {
+          id: `msg-area-${Date.now() + 1}`,
+          sender: 'ai',
+          text: `Nicole, your heaviest workload area by far is **Academic**, taking up **${academicHours} hours (~${academicPercent}%)** of your total ${totalWorkloadHours} hours of active commitments.\n\nHere is your full breakdown:`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isWorkloadAreaResult: true,
+          workloadAreaDetails: {
+            dominantArea: 'Academic',
+            dominantHours: academicHours,
+            dominantPercent: academicPercent,
+            totalHours: totalWorkloadHours,
+            tasksInDominantArea: academicTasks.map(t => ({
+              title: t.title,
+              hours: t.remainingTimeHours ?? t.estimatedHours ?? 0
+            })),
+            otherAreas: [
+              {
+                area: 'Extracurricular / Social',
+                hours: otherHours,
+                percent: otherPercent
+              }
+            ]
+          }
+        };
+        setChatMessages(prev => [...prev, aiReply]);
+      }, 450);
       setChatMessages(prev => [...prev, userMsg]);
       return;
     }
@@ -1164,6 +1226,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     setNewAppleWorkloadId('tech-carnival-sponsorship');
+    setGardenerHasQuestion(true);
 
     setChatMessages(prev => {
       const updated = prev.map(msg => {
@@ -1172,25 +1235,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return msg;
       });
-
-      // Avoid adding duplicate analysis follow-up message if already present
-      const alreadyHasAnalysis = updated.some(m => m.isNicoleAnalysisPlan || m.text?.includes('provide you some analysis'));
-      if (!alreadyHasAnalysis) {
-        updated.push({
-          id: `msg-${Date.now()}-nicole-analysis`,
-          sender: 'ai',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: "Alright, now I will provide you some analysis according to your current status.",
-          isOverloadNotice: true,
-          isNicoleAnalysisPlan: true,
-          overloadSummary: {
-            totalHours: 39,
-            availableHours: 15.5,
-            deficit: 13.5,
-            taskTitle: "Tech Carnival Sponsorship & Web Programming"
-          }
-        });
-      }
       return updated;
     });
   };
@@ -1294,6 +1338,90 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dailyStatus: analysisResult.demandResourceStatus
   };
 
+  const sendGardenerQuestionToChat = () => {
+    const hasTodayCheckIn = todayCheckIn !== null;
+    const activeWorkloads = workloads.filter(w => w.status !== 'Completed');
+    const totalHours = activeWorkloads.reduce((sum, w) => sum + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0);
+    const candidateHours = capacityProfile.candidateTimeHours ?? 19;
+
+    let effectiveStatus: 'Manageable' | 'Strained' | 'Overloaded';
+    if (analysisResult.demandResourceStatus && analysisResult.demandResourceStatus !== 'InsufficientData') {
+      effectiveStatus = analysisResult.demandResourceStatus as 'Manageable' | 'Strained' | 'Overloaded';
+    } else if (totalHours > candidateHours + 5 || totalHours >= 24) {
+      effectiveStatus = 'Overloaded';
+    } else if (totalHours > candidateHours - 4 || totalHours >= 15) {
+      effectiveStatus = 'Strained';
+    } else {
+      effectiveStatus = 'Manageable';
+    }
+
+    const isUserStressed = !!(todayCheckIn && (
+      todayCheckIn.category === 'High' ||
+      todayCheckIn.category === 'Very High' ||
+      todayCheckIn.category === 'Elevated' ||
+      (todayCheckIn.pssScore && todayCheckIn.pssScore >= 14)
+    ));
+
+    // Gardener question should be like user asking the question:
+    // If there is no daily check in record, only ask about tree condition
+    // Otherwise ask about weather and tree condition
+    let questionText = '';
+    if (!hasTodayCheckIn) {
+      if (effectiveStatus === 'Overloaded') {
+        questionText = 'Why does my tree have yellow leaves and broken branches?';
+      } else if (effectiveStatus === 'Strained') {
+        questionText = 'Why does my tree have yellow leaves?';
+      } else {
+        questionText = 'Why does my tree look like this?';
+      }
+    } else {
+      if (effectiveStatus === 'Overloaded') {
+        if (isUserStressed) {
+          questionText = 'Why does my tree have yellow leaves and broken branches, and why is it raining?';
+        } else {
+          questionText = 'Why does my tree have yellow leaves and broken branches even though the weather is clear?';
+        }
+      } else if (effectiveStatus === 'Strained') {
+        if (isUserStressed) {
+          questionText = 'Why does my tree have yellow leaves, and why is it raining?';
+        } else {
+          questionText = 'Why does my tree have yellow leaves even though the weather is clear?';
+        }
+      } else {
+        if (isUserStressed) {
+          questionText = 'Why is the weather raining on my tree?';
+        } else {
+          questionText = 'How is the weather and tree condition looking?';
+        }
+      }
+    }
+
+    const userQuestionMsg: AiDumpChatMessage = {
+      id: `msg-user-tree-${Date.now()}`,
+      sender: 'user',
+      text: questionText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isGardenerQuestion: true
+    };
+
+    const aiAnalysisReplyMsg: AiDumpChatMessage = {
+      id: `msg-ai-analysis-${Date.now() + 1}`,
+      sender: 'ai',
+      text: !hasTodayCheckIn
+        ? "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
+        : "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isOverloadNotice: true,
+      isNicoleAnalysisPlan: true,
+      isGardenerExplanation: true
+    };
+
+    setChatMessages(prev => [...prev, userQuestionMsg]);
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, aiAnalysisReplyMsg]);
+    }, 450);
+  };
+
   // ─── Provider ────────────────────────────────────────────────────────────────
 
   return (
@@ -1370,7 +1498,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       chatSource,
       setChatSource,
       newAppleWorkloadId,
-      setNewAppleWorkloadId
+      setNewAppleWorkloadId,
+      gardenerHasQuestion,
+      setGardenerHasQuestion,
+      sendGardenerQuestionToChat
     }}>
       {children}
     </AppContext.Provider>

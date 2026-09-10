@@ -215,7 +215,7 @@ export interface CapacityProfile {
 
 export interface AiDumpChatMessage {
   id: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'ai' | 'gardener';
   text: string;
   timestamp: string;
   extractedWorkloadDrafts?: Array<{
@@ -267,5 +267,16 @@ export interface AiDumpChatMessage {
     additionalDemand: string;
     currentFeeling: string;
     recentContext: string;
+  };
+  isGardenerQuestion?: boolean;
+  isGardenerExplanation?: boolean;
+  isWorkloadAreaResult?: boolean;
+  workloadAreaDetails?: {
+    dominantArea: string;
+    dominantHours: number;
+    dominantPercent: number;
+    totalHours: number;
+    tasksInDominantArea: Array<{ title: string; hours: number }>;
+    otherAreas: Array<{ area: string; hours: number; percent: number }>;
   };
 }

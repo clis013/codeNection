@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { WorkloadItem } from '../types/workload';
-import { ArrowLeft, Wind, MessageSquare, CheckSquare, Sparkles } from 'lucide-react';
+import { ArrowLeft, Wind, MessageSquare, CheckSquare, Sparkles, ClipboardCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface FallingLeaf {
@@ -37,7 +37,15 @@ export const TreeView: React.FC = () => {
     setIsWorkloadDetailOpen,
     setChatSource,
     newAppleWorkloadId,
-    setNewAppleWorkloadId
+    setNewAppleWorkloadId,
+    gardenerHasQuestion,
+    setGardenerHasQuestion,
+    sendGardenerQuestionToChat,
+    todayCheckIn,
+    baselineStressAverage,
+    capacityProfile,
+    setIsCheckInOpen,
+    setCheckInSource
   } = useApp();
 
   const [isTreeShaking, setIsTreeShaking] = useState(false);
@@ -87,6 +95,129 @@ export const TreeView: React.FC = () => {
 
   // Active workloads represent apples on the tree
   const activeWorkloads = workloads.filter(w => w.status !== 'Completed');
+
+  // Check if a new workload was added or tree is overloaded: causes the tree to tilt slightly to show it needs balance
+  const isTreeUnbalanced = workloads.some(w => w.id === 'tech-carnival-sponsorship' || w.title.toLowerCase().includes('sponsorship')) ||
+    activeWorkloads.length >= 4 ||
+    capacityProfile.analysisResult.demandResourceStatus === 'Overloaded';
+
+  // ─── Weather logic ────────────────────────────────────────────────────────
+  // if got daily check in result, follow today stress level. If no, follow baseline stress level
+  // sunny day (normal background) = not stressed today (background.png)
+  // cloudy day = stress (background_cloudy.png)
+  // rainy day = high stress level (background_rainy.png)
+  const weatherInfo = (() => {
+    if (todayCheckIn) {
+      const cat = todayCheckIn.category;
+      const score = todayCheckIn.pssScore ?? 0;
+      if (cat === 'Very High' || cat === 'High' || score >= 14) {
+        return {
+          bg: '/assets/background_rainy.png',
+          type: 'rainy',
+          label: 'Rainy',
+          stressLabel: 'High Stress',
+          icon: '🌧️',
+          color: '#1E40AF'
+        };
+      }
+      if (cat === 'Elevated' || cat === 'Moderate' || score >= 11) {
+        return {
+          bg: '/assets/background_cloudy.png',
+          type: 'cloudy',
+          label: 'Cloudy',
+          stressLabel: 'Elevated Stress',
+          icon: '⛅',
+          color: '#B45309'
+        };
+      }
+      return {
+        bg: '/assets/background.png',
+        type: 'sunny',
+        label: 'Sunny',
+        stressLabel: 'Not Stressed',
+        icon: '☀️',
+        color: '#15803D'
+      };
+    } else {
+      // Follow baseline stress level
+      const baseStress = baselineStressAverage ?? 10.4;
+      if (baseStress >= 14) {
+        return {
+          bg: '/assets/background_rainy.png',
+          type: 'rainy',
+          label: 'Rainy',
+          stressLabel: 'High Stress (Baseline)',
+          icon: '🌧️',
+          color: '#1E40AF'
+        };
+      }
+      if (baseStress >= 11) {
+        return {
+          bg: '/assets/background_cloudy.png',
+          type: 'cloudy',
+          label: 'Cloudy',
+          stressLabel: 'Elevated Stress (Baseline)',
+          icon: '⛅',
+          color: '#B45309'
+        };
+      }
+      return {
+        bg: '/assets/background.png',
+        type: 'sunny',
+        label: 'Sunny',
+        stressLabel: 'Not Stressed (Baseline)',
+        icon: '☀️',
+        color: '#15803D'
+      };
+    }
+  })();
+
+  // ─── Tree Condition logic ──────────────────────────────────────────────────
+  // manageable = normal tree (tree.png)
+  // strained = tree with yellow leaves (strain_tree.png)
+  // overloaded = tree with yellow leaves and broken branches (overloaded_tree.png)
+  const treeInfo = (() => {
+    const status = capacityProfile.analysisResult.demandResourceStatus;
+    let effectiveStatus: 'Manageable' | 'Strained' | 'Overloaded';
+
+    if (status && status !== 'InsufficientData') {
+      effectiveStatus = status as 'Manageable' | 'Strained' | 'Overloaded';
+    } else {
+      // If no check-in yet, evaluate active workload volume against available candidate time
+      const totalHours = activeWorkloads.reduce((sum, w) => sum + (w.remainingTimeHours ?? w.estimatedHours ?? 0), 0);
+      const available = capacityProfile.candidateTimeHours ?? 19;
+      if (totalHours > available + 5 || totalHours >= 24) {
+        effectiveStatus = 'Overloaded';
+      } else if (totalHours > available - 4 || totalHours >= 15) {
+        effectiveStatus = 'Strained';
+      } else {
+        effectiveStatus = 'Manageable';
+      }
+    }
+
+    if (effectiveStatus === 'Overloaded') {
+      return {
+        src: '/assets/overloaded_tree.png',
+        status: 'Overloaded',
+        label: 'Yellow Leaves & Broken Branches',
+        color: '#DC2626'
+      };
+    }
+    if (effectiveStatus === 'Strained') {
+      return {
+        src: '/assets/strain_tree.png',
+        status: 'Strained',
+        label: 'Yellow Leaves',
+        color: '#D97706'
+      };
+    }
+    return {
+      src: '/assets/tree.png',
+      status: 'Manageable',
+      label: 'Healthy Canopy',
+      color: '#166534'
+    };
+  })();
 
   // Trigger tree shake & falling leaves
   const handleShakeTree = () => {
@@ -149,13 +280,12 @@ export const TreeView: React.FC = () => {
     setActiveTab('chat');
   };
 
-  // Clicking Gardener links to AI chat
+  // Clicking Gardener links to AI chat and asks question about tree health
   const handleGardenerClick = () => {
     setChatSource('treehole');
-    setSpeechMessage("👨‍🌾 Gardener Nicole: Need to talk? Let's dump your stress in the Tree Hole chat!");
-    setTimeout(() => {
-      setActiveTab('chat');
-    }, 450);
+    sendGardenerQuestionToChat();
+    setGardenerHasQuestion(false);
+    setActiveTab('chat');
   };
 
   // Clicking Squirrel links to AI chat
@@ -176,13 +306,36 @@ export const TreeView: React.FC = () => {
         minHeight: '852px',
         maxHeight: '852px',
         overflow: 'hidden',
-        backgroundImage: 'url(/assets/background.png)',
+        backgroundImage: `url(${weatherInfo.bg})`,
         backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         fontFamily: "'Outfit', -apple-system, sans-serif"
       }}
     >
+      {/* Atmospheric Rain Drops Effect for Rainy Weather */}
+      {weatherInfo.type === 'rainy' && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 15, overflow: 'hidden' }}>
+          {Array.from({ length: 28 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                top: `-${Math.random() * 20}%`,
+                left: `${(i / 28) * 100 + (Math.random() * 3 - 1.5)}%`,
+                width: '1.5px',
+                height: `${Math.floor(Math.random() * 22 + 28)}px`,
+                backgroundColor: 'rgba(255, 255, 255, 0.42)',
+                borderRadius: '1px',
+                transform: 'rotate(14deg)',
+                animation: `rainFall ${0.65 + (i % 5) * 0.12}s linear infinite`,
+                animationDelay: `${(i * 0.11) % 1.5}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. TOP HEADER CONTROLS (MATCHING USER'S REFERENCE IMAGE)                 */}
       {/* ========================================================================= */}
@@ -219,7 +372,39 @@ export const TreeView: React.FC = () => {
         <span>Home</span>
       </button>
 
-      {/* Top-Right: 3 Translucent Circular Buttons (As seen in reference photo) */}
+      {/* Top Center: Weather & Tree Condition Pill Indicator */}
+      <div
+        id="tree-weather-status-pill"
+        style={{
+          position: 'absolute',
+          top: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 45,
+          backgroundColor: 'rgba(255, 255, 255, 0.82)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          border: '1.5px solid rgba(255, 255, 255, 0.95)',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '11.5px',
+          fontWeight: 800,
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none'
+        }}
+        title={`Weather: ${weatherInfo.label} (${weatherInfo.stressLabel}) · Tree: ${treeInfo.status}`}
+      >
+        <span>{weatherInfo.icon}</span>
+        <span style={{ color: weatherInfo.color }}>{weatherInfo.label}</span>
+        <span style={{ color: '#CBD5E1' }}>•</span>
+        <span style={{ color: treeInfo.color }}>{treeInfo.status}</span>
+      </div>
+
+      {/* Top-Right: Action Buttons Cluster (Daily Check-in + Shake + Chat + Workloads) */}
       <div
         style={{
           position: 'absolute',
@@ -228,10 +413,115 @@ export const TreeView: React.FC = () => {
           zIndex: 50,
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          gap: '10px',
+          alignItems: 'flex-end'
         }}
       >
-        {/* Button 1: Shake Tree action (leaves flutter down) */}
+        {/* Button 1: Daily Check-in (Prominently highlighted/shining if check-in is pending) */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {/* Obvious glowing callout pill if daily check-in is pending */}
+          {!todayCheckIn && (
+            <div
+              style={{
+                position: 'absolute',
+                right: '48px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: 'rgba(254, 243, 199, 0.96)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1.2px solid #F59E0B',
+                color: '#92400E',
+                padding: '3px 9px',
+                borderRadius: '12px',
+                fontSize: '10px',
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 10px rgba(245, 158, 11, 0.35)',
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                animation: 'pulseHint 1.8s ease-in-out infinite alternate'
+              }}
+            >
+              <span>Daily Check-in</span>
+              <Sparkles size={10} color="#D97706" />
+            </div>
+          )}
+
+          <button
+            type="button"
+            id="tree-daily-checkin-btn"
+            onClick={() => {
+              setCheckInSource('tree');
+              setIsCheckInOpen(true);
+            }}
+            title={todayCheckIn ? "Daily Check-in Completed (Tap to view or edit snapshot)" : "Daily Check-in Pending — Tap to check in today!"}
+            style={{
+              position: 'relative',
+              width: !todayCheckIn ? '40px' : '38px',
+              height: !todayCheckIn ? '40px' : '38px',
+              borderRadius: '50%',
+              background: !todayCheckIn
+                ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)'
+                : 'rgba(255, 255, 255, 0.65)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: !todayCheckIn
+                ? '2px solid #F59E0B'
+                : '1.5px solid rgba(134, 239, 172, 0.95)',
+              boxShadow: !todayCheckIn
+                ? '0 0 16px rgba(245, 158, 11, 0.95), 0 0 28px rgba(249, 115, 22, 0.55)'
+                : '0 4px 12px rgba(0, 0, 0, 0.08)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: !todayCheckIn ? 'checkInGlow 1.8s ease-in-out infinite alternate' : 'none',
+              transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
+          >
+            <ClipboardCheck
+              size={!todayCheckIn ? 20 : 18}
+              color={!todayCheckIn ? '#D97706' : '#166534'}
+              strokeWidth={!todayCheckIn ? 2.6 : 2.4}
+            />
+
+            {/* Notification badge dot */}
+            {!todayCheckIn ? (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-3px',
+                  right: '-3px',
+                  width: '11px',
+                  height: '11px',
+                  borderRadius: '50%',
+                  backgroundColor: '#EF4444',
+                  border: '2px solid #FFFFFF',
+                  boxShadow: '0 0 6px #EF4444',
+                  animation: 'pulseDot 1.4s ease-in-out infinite'
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#22C55E',
+                  border: '1.5px solid #FFFFFF'
+                }}
+              />
+            )}
+          </button>
+        </div>
+
+        {/* Button 2: Shake Tree action (leaves flutter down) */}
         <button
           type="button"
           id="shake-tree-btn"
@@ -258,7 +548,7 @@ export const TreeView: React.FC = () => {
           <Wind size={18} color="#166534" strokeWidth={2.4} />
         </button>
 
-        {/* Button 2: AI Dump Chat shortcut */}
+        {/* Button 3: AI Dump Chat shortcut */}
         <button
           type="button"
           onClick={() => {
@@ -287,7 +577,7 @@ export const TreeView: React.FC = () => {
           <MessageSquare size={17} color="#166534" strokeWidth={2.4} />
         </button>
 
-        {/* Button 3: Workloads shortcut */}
+        {/* Button 4: Workloads shortcut */}
         <button
           type="button"
           onClick={() => setActiveTab('workloads')}
@@ -409,288 +699,299 @@ export const TreeView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. THE TREE (tree.png) & INTERACTIVE OVERLAYS                             */}
+      {/* 2. INTERACTIVE TREE STAGE (Tree Trunk, Canopy, Hole, & Apples)             */}
+      {/* After adding new workload, tree tilts slightly to show it needs balance    */}
       {/* ========================================================================= */}
-
-      {/* Tree Graphic Wrapper (centered, branches up, trunk base on grass) */}
       <div
-        id="tree-wrapper"
+        id="tree-interactive-stage"
         style={{
           position: 'absolute',
-          top: '85px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '335px',
-          height: '650px',
-          zIndex: 10,
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          transformOrigin: '196.5px 735px',
           animation: isTreeShaking
-            ? 'treeShake 0.4s ease infinite alternate'
-            : 'treeBreeze 6s ease-in-out infinite alternate',
-          transformOrigin: 'bottom center',
-          pointerEvents: 'none'
+            ? (isTreeUnbalanced ? 'treeShakeTilted 0.4s ease infinite alternate' : 'treeShake 0.4s ease infinite alternate')
+            : (isTreeUnbalanced ? 'treeBreezeTilted 6s ease-in-out infinite alternate' : 'treeBreeze 6s ease-in-out infinite alternate'),
+          pointerEvents: 'none',
+          zIndex: 15
         }}
       >
-        <img
-          src="/assets/tree.png"
-          alt="Apple Tree"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            display: 'block',
-            pointerEvents: 'none',
-            userSelect: 'none'
-          }}
-        />
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 3. TREE HOLE (Clickable in the middle of trunk -> AI Dump Stress)         */}
-      {/* ========================================================================= */}
-      <div
-        id="clickable-tree-hole"
-        onClick={handleTreeHoleClick}
-        onMouseEnter={() => setIsHoleHovered(true)}
-        onMouseLeave={() => setIsHoleHovered(false)}
-        title="Tree Hole: Click to dump stress in AI Chat"
-        style={{
-          position: 'absolute',
-          top: '575px',
-          left: '50%',
-          transform: `translateX(-50%) scale(${isHoleHovered ? 1.15 : 1})`,
-          width: '34px',
-          height: '56px',
-          cursor: 'pointer',
-          zIndex: 25,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        }}
-      >
-        {/* Outer Knothole Rim Matching Reference Photo */}
+        {/* Tree Graphic Wrapper (centered, branches up, trunk base on grass) */}
         <div
+          id="tree-wrapper"
           style={{
-            width: '26px',
-            height: '50px',
-            borderRadius: '50%',
-            backgroundColor: '#4A1E0B',
-            border: isHoleHovered
-              ? '2px solid #FDE047'
-              : '1.8px solid #371607',
-            boxShadow: isHoleHovered
-              ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 12px #1C0A00'
-              : 'inset 0 4px 10px #1C0A00, 0 2px 6px rgba(0,0,0,0.3)',
+            position: 'absolute',
+            top: '85px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '335px',
+            height: '650px',
+            pointerEvents: 'none'
+          }}
+        >
+          <img
+            src={treeInfo.src}
+            alt={`Apple Tree (${treeInfo.status})`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block',
+              pointerEvents: 'none',
+              userSelect: 'none'
+            }}
+          />
+        </div>
+
+        {/* 3. TREE HOLE (Clickable in the middle of trunk -> AI Dump Stress) */}
+        {/* Shifted to left: calc(50% - 13px) to align precisely with visual trunk center */}
+        <div
+          id="clickable-tree-hole"
+          onClick={handleTreeHoleClick}
+          onMouseEnter={() => setIsHoleHovered(true)}
+          onMouseLeave={() => setIsHoleHovered(false)}
+          title="Tree Hole: Click to dump stress in AI Chat"
+          style={{
+            position: 'absolute',
+            top: '575px',
+            left: 'calc(50% - 13px)',
+            transform: `translateX(-50%) scale(${isHoleHovered ? 1.15 : 1})`,
+            width: '34px',
+            height: '56px',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            zIndex: 25,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'all 0.18s ease'
+            transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)'
           }}
         >
-          {/* Inner Mystical Amber Ember Core */}
+          {/* Outer Knothole Rim Matching Reference Photo */}
           <div
             style={{
-              width: '10px',
-              height: '14px',
+              width: '26px',
+              height: '50px',
               borderRadius: '50%',
-              backgroundColor: '#FDE047',
-              opacity: isHoleHovered ? 0.95 : 0.45,
-              filter: 'blur(2px)',
-              animation: 'glowPulse 2s ease-in-out infinite alternate'
-            }}
-          />
-          <span
-            style={{
-              position: 'absolute',
-              fontSize: '9px',
-              opacity: isHoleHovered ? 1 : 0.7,
-              animation: 'leafFloat 2.4s ease-in-out infinite'
-            }}
-          >
-            🍃
-          </span>
-        </div>
-
-        {/* Tree Hole Hover Tooltip Callout */}
-        {isHoleHovered && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '-28px',
-              whiteSpace: 'nowrap',
-              backgroundColor: '#166534',
-              color: '#FFFFFF',
-              border: '1px solid #4ADE80',
-              borderRadius: '12px',
-              padding: '3px 10px',
-              fontSize: '10.5px',
-              fontWeight: 800,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-              pointerEvents: 'none',
-              animation: 'fadeInUp 0.15s ease'
-            }}
-          >
-            🕳️ Tap to dump stress in AI Chat
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 4. APPLES (apple.png.png overlapping tree.png -> Workload Page)           */}
-      {/* ========================================================================= */}
-      {activeWorkloads.map((workload, idx) => {
-        const coord = APPLE_COORDINATES[idx % APPLE_COORDINATES.length];
-        const isPicked = pickedAppleId === workload.id;
-        const isHovered = hoveredApple?.workload.id === workload.id;
-        const isNewApple = (animatingAppleId === workload.id) || (newAppleWorkloadId === workload.id);
-
-        return (
-          <div
-            key={workload.id}
-            id={`apple-workload-${workload.id}`}
-            onClick={() => handleAppleClick(workload)}
-            onMouseEnter={() =>
-              setHoveredApple({ workload, x: coord.x, y: coord.y })
-            }
-            onMouseLeave={() => setHoveredApple(null)}
-            title={`Apple: ${workload.title} (${workload.remainingTimeHours ?? workload.estimatedHours}h) - Click to view in Workload page`}
-            style={{
-              position: 'absolute',
-              left: `${coord.x}px`,
-              top: `${coord.y}px`,
-              transform: 'translate(-50%, -50%)',
-              cursor: 'pointer',
-              zIndex: 30,
+              backgroundColor: '#4A1E0B',
+              border: isHoleHovered
+                ? '2px solid #FDE047'
+                : '1.8px solid #371607',
+              boxShadow: isHoleHovered
+                ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 12px #1C0A00'
+                : 'inset 0 4px 10px #1C0A00, 0 2px 6px rgba(0,0,0,0.3)',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'all 0.18s ease'
             }}
           >
-            {/* New Apple Bloomed Badge */}
-            {isNewApple && (
-              <div
-                style={{
-                  marginBottom: '2px',
-                  backgroundColor: '#DC2626',
-                  color: '#FFFFFF',
-                  padding: '2px 7px',
-                  borderRadius: '10px',
-                  fontSize: '9.5px',
-                  fontWeight: 900,
-                  boxShadow: '0 3px 10px rgba(220, 38, 38, 0.45)',
-                  animation: 'fadeInUp 0.3s ease',
-                  letterSpacing: '0.3px',
-                  whiteSpace: 'nowrap',
-                  zIndex: 35
-                }}
-              >
-                ✨ +1 New Apple!
-              </div>
-            )}
-
-            {/* Apple Image using assets/apple.png.png */}
+            {/* Inner Mystical Amber Ember Core */}
             <div
               style={{
-                position: 'relative',
-                width: '42px',
-                height: '46px',
-                transform: `rotate(${coord.rotate}deg) scale(${
-                  isPicked ? 1.4 : isHovered ? 1.22 : isNewApple ? 1.15 : 1
-                })`,
-                transformOrigin: 'top center',
-                animation: isNewApple
-                  ? 'newAppleBloom 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
-                  : isTreeShaking
-                  ? 'appleShake 0.3s ease infinite alternate'
-                  : 'appleSway 4s ease-in-out infinite alternate',
-                animationDelay: isNewApple ? '0s' : `${idx * 0.45}s`,
-                transition: 'transform 0.15s ease'
+                width: '10px',
+                height: '14px',
+                borderRadius: '50%',
+                backgroundColor: '#FDE047',
+                opacity: isHoleHovered ? 0.95 : 0.45,
+                filter: 'blur(2px)',
+                animation: 'glowPulse 2s ease-in-out infinite alternate'
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                fontSize: '9px',
+                opacity: isHoleHovered ? 1 : 0.7,
+                animation: 'leafFloat 2.4s ease-in-out infinite'
               }}
             >
-              {/* Golden Glow Halo for Newly Bloomed Apple */}
+              🍃
+            </span>
+          </div>
+
+          {/* Tree Hole Hover Tooltip Callout */}
+          {isHoleHovered && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '-28px',
+                whiteSpace: 'nowrap',
+                backgroundColor: '#166534',
+                color: '#FFFFFF',
+                border: '1px solid #4ADE80',
+                borderRadius: '12px',
+                padding: '3px 10px',
+                fontSize: '10.5px',
+                fontWeight: 800,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                pointerEvents: 'none',
+                animation: 'fadeInUp 0.15s ease'
+              }}
+            >
+              🕳️ Tap to dump stress in AI Chat
+            </div>
+          )}
+        </div>
+
+        {/* 4. APPLES (apple.png.png overlapping tree.png -> Workload Page) */}
+        {activeWorkloads.map((workload, idx) => {
+          const coord = APPLE_COORDINATES[idx % APPLE_COORDINATES.length];
+          const isPicked = pickedAppleId === workload.id;
+          const isHovered = hoveredApple?.workload.id === workload.id;
+          const isNewApple = (animatingAppleId === workload.id) || (newAppleWorkloadId === workload.id);
+
+          return (
+            <div
+              key={workload.id}
+              id={`apple-workload-${workload.id}`}
+              onClick={() => handleAppleClick(workload)}
+              onMouseEnter={() =>
+                setHoveredApple({ workload, x: coord.x, y: coord.y })
+              }
+              onMouseLeave={() => setHoveredApple(null)}
+              title={`Apple: ${workload.title} (${workload.remainingTimeHours ?? workload.estimatedHours}h) - Click to view in Workload page`}
+              style={{
+                position: 'absolute',
+                left: `${coord.x}px`,
+                top: `${coord.y}px`,
+                transform: 'translate(-50%, -50%)',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                zIndex: 30,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
+              {/* New Apple Bloomed Badge */}
               {isNewApple && (
                 <div
                   style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    left: '-8px',
-                    right: '-8px',
-                    bottom: '-8px',
-                    borderRadius: '50%',
-                    border: '2px dashed #F59E0B',
-                    animation: 'sparkleSpin 3.5s linear infinite',
-                    pointerEvents: 'none',
-                    boxShadow: '0 0 16px rgba(245, 158, 11, 0.65)'
+                    marginBottom: '2px',
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    padding: '2px 7px',
+                    borderRadius: '10px',
+                    fontSize: '9.5px',
+                    fontWeight: 900,
+                    boxShadow: '0 3px 10px rgba(220, 38, 38, 0.45)',
+                    animation: 'fadeInUp 0.3s ease',
+                    letterSpacing: '0.3px',
+                    whiteSpace: 'nowrap',
+                    zIndex: 35
                   }}
-                />
+                >
+                  ✨ +1 New Apple!
+                </div>
               )}
 
-              <img
-                src="/assets/apple.png.png"
-                alt="Workload Apple"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  display: 'block',
-                  filter: isNewApple
-                    ? 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9))'
-                    : isHovered
-                    ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0,0,0,0.25))'
-                    : 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))'
-                }}
-              />
-
-              {/* Hours Pill Tag Centered on Apple */}
+              {/* Apple Image using assets/apple.png.png */}
               <div
                 style={{
-                  position: 'absolute',
-                  top: '55%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: 'rgba(0, 0, 0, 0.45)',
-                  backdropFilter: 'blur(2px)',
-                  borderRadius: '6px',
-                  padding: '1px 4px',
-                  fontSize: '9.5px',
-                  fontWeight: 900,
-                  color: '#FFFFFF',
-                  lineHeight: 1,
+                  position: 'relative',
+                  width: '42px',
+                  height: '46px',
+                  transform: `rotate(${coord.rotate}deg) scale(${
+                    isPicked ? 1.4 : isHovered ? 1.22 : isNewApple ? 1.15 : 1
+                  })`,
+                  transformOrigin: 'top center',
+                  animation: isNewApple
+                    ? 'newAppleBloom 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+                    : isTreeShaking
+                    ? 'appleShake 0.3s ease infinite alternate'
+                    : 'appleSway 4s ease-in-out infinite alternate',
+                  animationDelay: isNewApple ? '0s' : `${idx * 0.45}s`,
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                {/* Golden Glow Halo for Newly Bloomed Apple */}
+                {isNewApple && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      left: '-8px',
+                      right: '-8px',
+                      bottom: '-8px',
+                      borderRadius: '50%',
+                      border: '2px dashed #F59E0B',
+                      animation: 'sparkleSpin 3.5s linear infinite',
+                      pointerEvents: 'none',
+                      boxShadow: '0 0 16px rgba(245, 158, 11, 0.65)'
+                    }}
+                  />
+                )}
+
+                <img
+                  src="/assets/apple.png.png"
+                  alt="Workload Apple"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    filter: isNewApple
+                      ? 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9))'
+                      : isHovered
+                      ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0,0,0,0.25))'
+                      : 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))'
+                  }}
+                />
+
+                {/* Hours Pill Tag Centered on Apple */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '55%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                    backdropFilter: 'blur(2px)',
+                    borderRadius: '6px',
+                    padding: '1px 4px',
+                    fontSize: '9.5px',
+                    fontWeight: 900,
+                    color: '#FFFFFF',
+                    lineHeight: 1,
+                    pointerEvents: 'none'
+                  }}
+                >
+                  {workload.remainingTimeHours ?? workload.estimatedHours}h
+                </div>
+              </div>
+
+              {/* Workload Title Pill */}
+              <div
+                style={{
+                  marginTop: '2px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                  backdropFilter: 'blur(6px)',
+                  padding: '1px 6px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(220, 38, 38, 0.35)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                  maxWidth: '68px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  color: '#991B1B',
                   pointerEvents: 'none'
                 }}
               >
-                {workload.remainingTimeHours ?? workload.estimatedHours}h
+                {workload.title}
               </div>
             </div>
-
-            {/* Workload Title Pill */}
-            <div
-              style={{
-                marginTop: '2px',
-                backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                backdropFilter: 'blur(6px)',
-                padding: '1px 6px',
-                borderRadius: '8px',
-                border: '1px solid rgba(220, 38, 38, 0.35)',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                maxWidth: '68px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontSize: '9px',
-                fontWeight: 800,
-                color: '#991B1B',
-                pointerEvents: 'none'
-              }}
-            >
-              {workload.title}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {/* Hovered Apple Tooltip Card */}
       {hoveredApple && (
@@ -812,8 +1113,74 @@ export const TreeView: React.FC = () => {
           }}
         />
 
+        {/* Animated Question Mark to Notice & Click */}
+        {gardenerHasQuestion && (
+          <div
+            id="gardener-question-badge"
+            style={{
+              position: 'absolute',
+              top: '-36px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 35,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              animation: 'questionBounce 1.6s ease-in-out infinite alternate',
+              cursor: 'pointer'
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#DC2626',
+                color: '#FFFFFF',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                fontWeight: 900,
+                boxShadow: '0 0 16px rgba(220, 38, 38, 0.85), 0 4px 10px rgba(0,0,0,0.25)',
+                border: '2.5px solid #FFFFFF'
+              }}
+            >
+              ❓
+            </div>
+            {/* Pointer triangle tail */}
+            <div
+              style={{
+                width: 0,
+                height: 0,
+                borderLeft: '5px solid transparent',
+                borderRight: '5px solid transparent',
+                borderTop: '6px solid #DC2626',
+                marginTop: '-1px'
+              }}
+            />
+            {/* Label callout */}
+            <span
+              style={{
+                marginTop: '2px',
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                border: '1px solid #F59E0B',
+                borderRadius: '8px',
+                padding: '1px 6px',
+                fontSize: '9.5px',
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.12)'
+              }}
+            >
+              Tap to ask question!
+            </span>
+          </div>
+        )}
+
         {/* Floating Callout on hover */}
-        {isGardenerHovered && (
+        {isGardenerHovered && !gardenerHasQuestion && (
           <div
             style={{
               position: 'absolute',
@@ -928,13 +1295,49 @@ export const TreeView: React.FC = () => {
       {/* Keyframe Animations */}
       <style>{`
         @keyframes treeBreeze {
-          0% { transform: translateX(-50%) rotate(-0.5deg); }
-          100% { transform: translateX(-50%) rotate(0.6deg); }
+          0% { transform: rotate(-0.6deg); }
+          100% { transform: rotate(0.6deg); }
+        }
+        @keyframes treeBreezeTilted {
+          0% { transform: rotate(2.8deg); }
+          100% { transform: rotate(4.2deg); }
         }
         @keyframes treeShake {
-          0% { transform: translateX(-50%) rotate(-2.2deg) scale(1.02); }
-          50% { transform: translateX(-50%) rotate(2.2deg) scale(1.02); }
-          100% { transform: translateX(-50%) rotate(-1.5deg) scale(1.01); }
+          0% { transform: rotate(-2.2deg) scale(1.02); }
+          50% { transform: rotate(2.2deg) scale(1.02); }
+          100% { transform: rotate(-1.5deg) scale(1.01); }
+        }
+        @keyframes treeShakeTilted {
+          0% { transform: rotate(1.2deg) scale(1.02); }
+          50% { transform: rotate(5.4deg) scale(1.02); }
+          100% { transform: rotate(2.0deg) scale(1.01); }
+        }
+        @keyframes checkInGlow {
+          0% {
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 0 20px rgba(249, 115, 22, 0.35);
+            transform: scale(1);
+            border-color: #F59E0B;
+          }
+          50% {
+            box-shadow: 0 0 22px rgba(245, 158, 11, 1), 0 0 35px rgba(249, 115, 22, 0.75), inset 0 0 8px #FDE68A;
+            transform: scale(1.08);
+            border-color: #D97706;
+          }
+          100% {
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 0 20px rgba(249, 115, 22, 0.35);
+            transform: scale(1);
+            border-color: #F59E0B;
+          }
+        }
+        @keyframes pulseDot {
+          0% { transform: scale(0.85); opacity: 0.8; }
+          50% { transform: scale(1.25); opacity: 1; }
+          100% { transform: scale(0.85); opacity: 0.8; }
+        }
+        @keyframes pulseHint {
+          0% { transform: translateY(-50%) translateX(0px); opacity: 0.9; }
+          50% { transform: translateY(-50%) translateX(-3px); opacity: 1; }
+          100% { transform: translateY(-50%) translateX(0px); opacity: 0.9; }
         }
         @keyframes appleSway {
           0% { transform: rotate(-5deg); }
@@ -999,6 +1402,17 @@ export const TreeView: React.FC = () => {
         @keyframes bannerSlideDown {
           0% { transform: translate(-50%, -24px); opacity: 0; }
           100% { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes questionBounce {
+          0% { transform: translateX(-50%) translateY(0) scale(1); }
+          50% { transform: translateX(-50%) translateY(-9px) scale(1.1); }
+          100% { transform: translateX(-50%) translateY(0) scale(1); }
+        }
+        @keyframes rainFall {
+          0% { transform: translate(30px, -40px) rotate(14deg); opacity: 0; }
+          15% { opacity: 0.65; }
+          85% { opacity: 0.65; }
+          100% { transform: translate(-150px, 880px) rotate(14deg); opacity: 0; }
         }
       `}</style>
     </div>
