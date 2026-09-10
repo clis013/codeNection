@@ -26,7 +26,7 @@ export const AppContainer: React.FC = () => {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeView />;
+        return <TreeView />;
       case 'map':
         return <StressWorkloadMapView />;
       case 'chat':
@@ -38,7 +38,7 @@ export const AppContainer: React.FC = () => {
       case 'tree':
         return <TreeView />;
       default:
-        return <HomeView />;
+        return <TreeView />;
     }
   };
 
@@ -124,21 +124,21 @@ export const AppContainer: React.FC = () => {
         position: 'relative',
         border: isDesktopFrame ? '1.5px solid rgba(255, 255, 255, 0.95)' : 'none',
       }}>
-        {activeTab !== 'tree' && <AppHeader />}
+        {activeTab !== 'tree' && activeTab !== 'home' && activeTab !== 'chat' && <AppHeader />}
         
         {/* Scrollable Main View Area with scroll padding for fixed floating navbar */}
         <div className="hide-scrollbar" style={{
           flex: 1,
-          overflowY: activeTab === 'tree' ? 'hidden' : 'auto',
+          overflowY: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? 'hidden' : 'auto',
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: activeTab === 'tree' ? '0' : '86px',
+          paddingBottom: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? '0' : '86px',
         }}>
           {renderActiveView()}
         </div>
 
         {/* Floating Squirrel Mascot Assistant */}
-        {activeTab !== 'tree' && activeTab !== 'chat' && (
+        {activeTab !== 'tree' && activeTab !== 'home' && activeTab !== 'chat' && (
           <FloatingSquirrelAssistant />
         )}
 

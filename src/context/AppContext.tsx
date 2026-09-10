@@ -83,8 +83,8 @@ interface AppContextType {
   checkIns: DailyCheckIn[];
   isCheckInOpen: boolean;
   setIsCheckInOpen: (open: boolean) => void;
-  checkInSource: 'home' | 'chat';
-  setCheckInSource: (source: 'home' | 'chat') => void;
+  checkInSource: 'home' | 'chat' | 'tree';
+  setCheckInSource: (source: 'home' | 'chat' | 'tree') => void;
   saveCheckIn: (checkIn: Omit<DailyCheckIn, 'id'>) => void;
   todayCheckIn: DailyCheckIn | null;
   isRetestRequested: boolean;
@@ -513,7 +513,7 @@ const initialChatMessages: AiDumpChatMessage[] = [
   {
     id: 'm1',
     sender: 'ai',
-    text: "Hello Nicole! How are you feeling right now? If you're carrying a lot in your mind or feeling stressed, feel free to dump your thoughts or voice here. I'll help you organize your tasks, detect stress drivers, and find balance.",
+    text: "Hi Nicole! *Squeak!* Feel free to dump your stress, thoughts, or unrecorded tasks into this tree hole. I'll help you organize your workload and find balance for your tree.",
     timestamp: 'Just now'
   }
 ];
@@ -668,7 +668,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(initialCheckIns);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
-  const [checkInSource, setCheckInSource] = useState<'home' | 'chat'>('home');
+  const [checkInSource, setCheckInSource] = useState<'home' | 'chat' | 'tree'>('home');
   const [isRetestRequested, setIsRetestRequested] = useState(false);
   const [isTreeHoleOpen, setIsTreeHoleOpen] = useState(false);
   const [isColourReflectionOpen, setIsColourReflectionOpen] = useState(false);

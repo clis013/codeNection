@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import {
@@ -476,44 +476,14 @@ const NicoleDemoExtractionCard: React.FC<{
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, rgba(255, 248, 241, 0.98) 0%, rgba(255, 241, 242, 0.8) 50%, rgba(245, 243, 255, 0.92) 100%)',
-      borderRadius: '20px',
-      border: '1.5px solid rgba(251, 146, 60, 0.7)',
-      padding: '16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '14px',
+      gap: '8px',
       width: '100%',
-      boxSizing: 'border-box',
-      boxShadow: '0 4px 18px rgba(251, 146, 60, 0.08)'
+      boxSizing: 'border-box'
     }}>
-      {/* CARD HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EA580C', fontWeight: 800, fontSize: '13.5px' }}>
-          <Sparkles size={16} color="#EA580C" />
-          <span>Identified Workload Items</span>
-        </div>
-        <span style={{
-          fontSize: '10.5px',
-          color: '#166534',
-          fontWeight: 700,
-          backgroundColor: '#DCFCE7',
-          padding: '3px 8px',
-          borderRadius: '10px',
-          border: '1px solid #86EFAC'
-        }}>
-          ✨ Pre-filled by AI
-        </span>
-      </div>
-
-      {/* 4 EXTRACTED WORKLOAD ITEMS - All pre-filled by default for user to check/update */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
-            1 New Workload to Check · 3 Existing Mentioned
-          </span>
-        </div>
-
+      {/* 4 EXTRACTED WORKLOAD ITEMS - Only the workloads themselves as cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {/* 1. Tech Carnival Sponsorship (New Workload) */}
         <div style={{
           backgroundColor: '#FFFFFF',
@@ -678,7 +648,6 @@ const NicoleDemoExtractionCard: React.FC<{
             onClick={() => {
               onConfirm();
               setNewAppleWorkloadId('tech-carnival-sponsorship');
-              setActiveTab('tree');
             }}
             style={{
               backgroundColor: '#166534',
@@ -698,7 +667,7 @@ const NicoleDemoExtractionCard: React.FC<{
             }}
           >
             <Plus size={17} strokeWidth={2.8} />
-            <span>Add Workload (Add to Tree 🌳)</span>
+            <span>Add Workload 🌳</span>
           </button>
         </div>
       )}
@@ -711,7 +680,7 @@ const NicoleDemoExtractionCard: React.FC<{
           borderRadius: '14px',
           padding: '10px 16px',
           fontWeight: 800,
-          fontSize: '12.5px',
+          fontSize: '13px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -719,7 +688,7 @@ const NicoleDemoExtractionCard: React.FC<{
           marginTop: '2px'
         }}>
           <CheckCircle2 size={16} color="#166534" />
-          <span>Workloads Added</span>
+          <span>Done</span>
         </div>
       )}
     </div>
@@ -783,6 +752,48 @@ export const AiDumpChatView: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const timerIntervalRef = useRef<any>(null);
+
+  // Auto-scroll to bottom refs for Chat View
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch (e) {
+        messagesEndRef.current.scrollIntoView(false);
+      }
+    }
+  };
+
+  // Immediate layout effect on mount
+  useLayoutEffect(() => {
+    scrollToBottom('auto');
+  }, []);
+
+  // Multi-pass timeouts on mount to handle deferred layout, images, and card renders
+  useEffect(() => {
+    scrollToBottom('auto');
+    const t1 = setTimeout(() => scrollToBottom('auto'), 40);
+    const t2 = setTimeout(() => scrollToBottom('auto'), 150);
+    const t3 = setTimeout(() => scrollToBottom('smooth'), 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
+  // Smooth scroll to bottom whenever messages are added or updated
+  useEffect(() => {
+    scrollToBottom('smooth');
+    const t = setTimeout(() => scrollToBottom('smooth'), 80);
+    return () => clearTimeout(t);
+  }, [chatMessages.length]);
 
   // Fast predict keywords & sentences
   const quickChips = [
@@ -1114,50 +1125,61 @@ export const AiDumpChatView: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      minHeight: '700px',
+      maxHeight: '100%',
       position: 'relative',
-      padding: '10px 18px 16px 18px',
-      gap: '10px',
+      padding: '12px 14px 86px 14px',
+      boxSizing: 'border-box',
+      gap: '8px',
+      overflow: 'hidden',
+      backgroundImage: `url('/assets/tree_hole_bg.jpg')`,
+      backgroundSize: '100% 100%',
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      color: '#FFFFFF'
     }}>
 
       {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {chatSource === 'treehole' && (
-            <button
-              type="button"
-              id="back-to-tree-btn"
-              onClick={() => setActiveTab('tree')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                borderRadius: '12px',
-                backgroundColor: '#F0FDF4',
-                border: '1.2px solid #86EFAC',
-                color: '#166534',
-                fontSize: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s ease'
-              }}
-              title="Return to Tree"
-            >
-              <ArrowLeft size={14} />
-              <span>Tree 🌳</span>
-            </button>
-          )}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '6px 12px',
+        backgroundColor: 'rgba(35, 18, 10, 0.72)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(205, 137, 84, 0.35)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            id="back-to-tree-btn"
+            onClick={() => setActiveTab('tree')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '5px 10px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(254, 243, 199, 0.95)',
+              border: '1px solid #CD8954',
+              color: '#78350F',
+              fontSize: '11.5px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+              transition: 'all 0.15s ease'
+            }}
+            title="Return to Tree Home"
+          >
+            <ArrowLeft size={13} />
+            <span>Tree 🌳</span>
+          </button>
           <div>
-            <h2 className="serif-title" style={{ fontSize: '22px', fontWeight: 600, color: Colors.textDark, letterSpacing: '-0.4px', margin: 0 }}>
-              {chatSource === 'treehole' ? '🌳 Tree Hole Sanctuary' : 'AI Stress Dump'}
+            <h2 className="serif-title" style={{ fontSize: '17px', fontWeight: 800, color: '#FEF3C7', letterSpacing: '-0.2px', margin: 0 }}>
+              Tree Hole
             </h2>
-            <p className="aesthetic-caption" style={{ marginTop: '2px', margin: 0 }}>
-              {chatSource === 'treehole'
-                ? 'Dump your stress into the hollow. I am here listening.'
-                : 'Dump thoughts via text or voice. AI extracts load and guides next steps.'}
-            </p>
           </div>
         </div>
       </div>
@@ -1172,15 +1194,19 @@ export const AiDumpChatView: React.FC = () => {
       )}
 
       {/* CHAT MESSAGES SCROLL AREA */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px',
-        overflowY: 'auto',
-        padding: '6px 4px',
-        maxHeight: '480px',
-      }}>
+      <div
+        ref={messagesContainerRef}
+        className="hide-scrollbar"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          overflowY: 'auto',
+          padding: '6px 4px',
+        }}
+      >
         {chatMessages.map((msg) => {
           const isUser = msg.sender === 'user';
           const isPlaying = audioPlayingId === msg.id;
@@ -1196,15 +1222,21 @@ export const AiDumpChatView: React.FC = () => {
                 animation: 'fadeIn 0.25s ease',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: Colors.textMuted }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: '#FEF3C7' }}>
                 {msg.sender === 'gardener' ? (
-                  <span style={{ color: '#15803D', fontWeight: 800 }}>👨‍🌾 Gardener Nicole</span>
+                  <span style={{ color: '#86EFAC', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <img src="/assets/gardener.png" alt="Gardener" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                    Gardener Nicole
+                  </span>
                 ) : isUser ? (
-                  <span>Nicole</span>
+                  <span style={{ color: '#FDE68A', fontWeight: 700 }}>Nicole</span>
                 ) : (
-                  <span>{chatSource === 'treehole' ? '🌳 Tree Hole' : 'MindFlow AI'}</span>
+                  <span style={{ color: '#FED7AA', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <img src="/assets/squirrel.png" alt="Squirrel" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                    Squirrel AI
+                  </span>
                 )}
-                <span>• {msg.timestamp}</span>
+                <span style={{ color: 'rgba(254, 243, 199, 0.75)' }}>• {msg.timestamp}</span>
               </div>
 
               {/* VOICE MESSAGE BUBBLE */}
@@ -1342,17 +1374,22 @@ export const AiDumpChatView: React.FC = () => {
                   flexDirection: 'column',
                   gap: '12px'
                 }}>
-                  {/* Message Text with Tree Hole intro message customization */}
-                  {!isUser && msg.id === 'm1' && chatSource === 'treehole' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', fontWeight: 800, fontSize: '12px' }}>
-                        <span>🍃 Tree Hole Whisper</span>
+                  {/* Message Text with Squirrel AI intro message */}
+                  {!isUser && msg.id === 'm1' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B45309', fontWeight: 800, fontSize: '13px' }}>
+                        <img src="/assets/squirrel.png" alt="Squirrel AI" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+                        <span>Squirrel AI</span>
                       </div>
-                      <div style={{ color: '#14532D', fontStyle: 'italic', fontWeight: 500, lineHeight: 1.5 }}>
-                        "Dump your stress,... I am the quiet tree hole listening to you. Whatever thoughts, deadlines, or emotional weight you are carrying, speak or dump them freely into my hollow. I will hold your burdens, identify the workloads you need to record, and lighten your load."
+                      <div style={{ color: '#451A03', lineHeight: 1.5, fontSize: '13.5px' }}>
+                        {msg.text || "Hi Nicole! *Squeak!* Feel free to dump your stress, thoughts, or unrecorded tasks into this tree hole. I'll help you organize your workload and find balance for your tree."}
                       </div>
                     </div>
-                  ) : !msg.isNicoleDemoExtraction && msg.text ? (
+                  ) : msg.isNicoleDemoExtraction ? (
+                    <div style={{ color: '#1E293B', fontSize: '13.5px', lineHeight: 1.45 }}>
+                      {msg.text || "Nicole, I've identified your workload items from your stress dump. Please review and add them to your tree:"}
+                    </div>
+                  ) : msg.text ? (
                     <div style={{ whiteSpace: 'pre-line' }}>
                       {msg.isGardenerExplanation && todayCheckIn
                         ? "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
@@ -1843,6 +1880,7 @@ export const AiDumpChatView: React.FC = () => {
             </div>
           );
         })}
+        <div ref={messagesEndRef} style={{ height: '1px', flexShrink: 0, marginTop: '2px' }} />
       </div>
 
       {/* QUICK PROMPT / SHORTCUT BUTTONS ROW (Above Type Section) */}
@@ -1851,7 +1889,8 @@ export const AiDumpChatView: React.FC = () => {
         gap: '8px',
         overflowX: 'auto',
         padding: '6px 2px',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexShrink: 0
       }}>
         {/* QUICK SHORTCUT BUTTON: "I want to fix my tree (balance)" */}
         {chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) && (
@@ -1958,7 +1997,8 @@ export const AiDumpChatView: React.FC = () => {
           border: '1.5px solid rgba(196, 181, 253, 0.8)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          gap: '10px',
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2086,18 +2126,18 @@ export const AiDumpChatView: React.FC = () => {
             display: 'flex',
             gap: '8px',
             alignItems: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.88)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderRadius: inputText.includes('\n') ? '20px' : '30px',
-            padding: '6px 8px 6px 16px',
-            border: '1.5px solid rgba(255, 255, 255, 0.95)',
-            boxShadow: Colors.shadowGlass,
+            backgroundColor: '#FFFFFF',
+            borderRadius: inputText.includes('\n') ? '20px' : '32px',
+            padding: '5px 8px 5px 16px',
+            border: '3px solid #FED7AA',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
             transition: 'border-radius 0.2s ease',
+            zIndex: 10,
+            flexShrink: 0
           }}
         >
           <textarea
-            placeholder="Dump thoughts, or tap mic for voice message..."
+            placeholder="type..."
             value={inputText}
             onFocus={() => {
               const hasSeenDailyStatus = chatMessages.some(m => m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan));
@@ -2130,58 +2170,60 @@ export const AiDumpChatView: React.FC = () => {
               border: 'none',
               outline: 'none',
               backgroundColor: 'transparent',
-              fontSize: '13.5px',
-              color: Colors.textDark,
+              fontSize: '14px',
+              color: '#1E293B',
               padding: '8px 0',
               resize: 'none',
               fontFamily: 'inherit',
-              lineHeight: '1.45',
-              maxHeight: '100px',
+              lineHeight: '1.4',
+              maxHeight: '80px',
               overflowY: 'auto'
             }}
           />
 
+          {/* Warm Orange Mic Button (Image 2 style) */}
           <button
             type="button"
             onClick={startRecording}
             style={{
-              backgroundColor: 'rgba(243, 238, 253, 0.95)',
-              color: '#7C3AED',
-              border: '1.5px solid rgba(196, 181, 253, 0.8)',
+              background: 'radial-gradient(circle, #FED7AA 0%, #FFEDD5 80%)',
+              color: '#EA580C',
+              border: '1.2px solid rgba(251, 146, 60, 0.4)',
               borderRadius: '50%',
-              width: '40px',
-              height: '40px',
+              width: '38px',
+              height: '38px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               flexShrink: 0,
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15)',
+              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.25)',
               transition: 'all 0.15s ease'
             }}
             title="Record Voice Message (Shout triggers falling leaves animation)"
           >
-            <Mic size={19} />
+            <Mic size={18} />
           </button>
 
+          {/* Cyan/Blue Send Button (Image 2 style) */}
           <button
             type="submit"
             disabled={!inputText.trim()}
             style={{
               background: inputText.trim()
-                ? 'linear-gradient(135deg, #DCFCE7 0%, #FEF9C3 100%)'
-                : 'rgba(203, 213, 225, 0.6)',
-              color: inputText.trim() ? '#166534' : '#FFFFFF',
-              border: inputText.trim() ? '1.2px solid rgba(187, 247, 208, 0.9)' : 'none',
+                ? 'radial-gradient(circle, #BAE6FD 0%, #E0F2FE 80%)'
+                : 'rgba(226, 232, 240, 0.8)',
+              color: inputText.trim() ? '#0284C7' : '#94A3B8',
+              border: inputText.trim() ? '1.2px solid rgba(56, 189, 248, 0.5)' : 'none',
               borderRadius: '50%',
-              width: '40px',
-              height: '40px',
+              width: '38px',
+              height: '38px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: inputText.trim() ? 'pointer' : 'default',
               flexShrink: 0,
-              boxShadow: inputText.trim() ? '0 2px 8px rgba(187, 247, 208, 0.35)' : 'none',
+              boxShadow: inputText.trim() ? '0 2px 8px rgba(2, 132, 199, 0.3)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
@@ -2701,6 +2743,10 @@ export const AiDumpChatView: React.FC = () => {
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(1.2); }
+        }
+        @keyframes gentleFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
       `}</style>
     </div>

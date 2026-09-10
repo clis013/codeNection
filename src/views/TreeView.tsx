@@ -96,11 +96,6 @@ export const TreeView: React.FC = () => {
   // Active workloads represent apples on the tree
   const activeWorkloads = workloads.filter(w => w.status !== 'Completed');
 
-  // Check if a new workload was added or tree is overloaded: causes the tree to tilt slightly to show it needs balance
-  const isTreeUnbalanced = workloads.some(w => w.id === 'tech-carnival-sponsorship' || w.title.toLowerCase().includes('sponsorship')) ||
-    activeWorkloads.length >= 4 ||
-    capacityProfile.analysisResult.demandResourceStatus === 'Overloaded';
-
   // ─── Weather logic ────────────────────────────────────────────────────────
   // if got daily check in result, follow today stress level. If no, follow baseline stress level
   // sunny day (normal background) = not stressed today (background.png)
@@ -120,7 +115,7 @@ export const TreeView: React.FC = () => {
           color: '#1E40AF'
         };
       }
-      if (cat === 'Elevated' || cat === 'Moderate' || score >= 11) {
+      if (cat === 'Elevated' || (cat as string) === 'Moderate' || score >= 11) {
         return {
           bg: '/assets/background_cloudy.png',
           type: 'cloudy',
@@ -340,37 +335,7 @@ export const TreeView: React.FC = () => {
       {/* 1. TOP HEADER CONTROLS (MATCHING USER'S REFERENCE IMAGE)                 */}
       {/* ========================================================================= */}
 
-      {/* Top-Left: Back to Home Button */}
-      <button
-        type="button"
-        id="tree-back-home-btn"
-        onClick={() => setActiveTab('home')}
-        style={{
-          position: 'absolute',
-          top: '24px',
-          left: '18px',
-          zIndex: 50,
-          border: '1.5px solid rgba(255, 255, 255, 0.85)',
-          background: 'rgba(255, 255, 255, 0.72)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          color: '#166534',
-          padding: '6px 14px',
-          borderRadius: '20px',
-          cursor: 'pointer',
-          fontWeight: 800,
-          fontSize: '12.5px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          boxShadow: '0 4px 14px rgba(34, 197, 94, 0.12)',
-          transition: 'all 0.15s ease'
-        }}
-        title="Return to Homepage"
-      >
-        <ArrowLeft size={16} strokeWidth={2.5} />
-        <span>Home</span>
-      </button>
+
 
       {/* Top Center: Weather & Tree Condition Pill Indicator */}
       <div
@@ -417,36 +382,123 @@ export const TreeView: React.FC = () => {
           alignItems: 'flex-end'
         }}
       >
-        {/* Button 1: Daily Check-in (Prominently highlighted/shining if check-in is pending) */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        {/* Button 1: Shake Tree action (leaves flutter down) */}
+        <button
+          type="button"
+          id="shake-tree-btn"
+          onClick={handleShakeTree}
+          title="Shake the tree to release tension"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.55)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1.5px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            color: '#166534',
+            transition: 'transform 0.15s ease'
+          }}
+        >
+          <Wind size={18} color="#166534" strokeWidth={2.4} />
+        </button>
+
+        {/* Button 2: AI Dump Chat shortcut */}
+        <button
+          type="button"
+          onClick={() => {
+            setChatSource('treehole');
+            setActiveTab('chat');
+          }}
+          title="AI Dump Stress Chat"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.55)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1.5px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            color: '#166534',
+            transition: 'transform 0.15s ease'
+          }}
+        >
+          <MessageSquare size={17} color="#166534" strokeWidth={2.4} />
+        </button>
+
+        {/* Button 3: Workloads shortcut */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('workloads')}
+          title="View Workloads"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.55)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1.5px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            color: '#166534',
+            transition: 'transform 0.15s ease'
+          }}
+        >
+          <CheckSquare size={17} color="#166534" strokeWidth={2.4} />
+        </button>
+
+        {/* ── Daily Check-in Button (Positioned at the lowest of action buttons cluster) ── */}
+        <div
+          id="tree-daily-checkin-wrapper"
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
           {/* Obvious glowing callout pill if daily check-in is pending */}
           {!todayCheckIn && (
             <div
               style={{
-                position: 'absolute',
-                right: '48px',
-                top: '50%',
-                transform: 'translateY(-50%)',
                 backgroundColor: 'rgba(254, 243, 199, 0.96)',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
                 border: '1.2px solid #F59E0B',
                 color: '#92400E',
-                padding: '3px 9px',
+                padding: '4px 10px',
                 borderRadius: '12px',
-                fontSize: '10px',
+                fontSize: '11px',
                 fontWeight: 800,
                 whiteSpace: 'nowrap',
                 boxShadow: '0 2px 10px rgba(245, 158, 11, 0.35)',
                 pointerEvents: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px',
+                gap: '4px',
+                lineHeight: 1,
                 animation: 'pulseHint 1.8s ease-in-out infinite alternate'
               }}
             >
               <span>Daily Check-in</span>
-              <Sparkles size={10} color="#D97706" />
+              <Sparkles size={11} color="#D97706" />
             </div>
           )}
 
@@ -460,8 +512,8 @@ export const TreeView: React.FC = () => {
             title={todayCheckIn ? "Daily Check-in Completed (Tap to view or edit snapshot)" : "Daily Check-in Pending — Tap to check in today!"}
             style={{
               position: 'relative',
-              width: !todayCheckIn ? '40px' : '38px',
-              height: !todayCheckIn ? '40px' : '38px',
+              width: !todayCheckIn ? '42px' : '38px',
+              height: !todayCheckIn ? '42px' : '38px',
               borderRadius: '50%',
               background: !todayCheckIn
                 ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)'
@@ -483,7 +535,7 @@ export const TreeView: React.FC = () => {
             }}
           >
             <ClipboardCheck
-              size={!todayCheckIn ? 20 : 18}
+              size={!todayCheckIn ? 21 : 18}
               color={!todayCheckIn ? '#D97706' : '#166534'}
               strokeWidth={!todayCheckIn ? 2.6 : 2.4}
             />
@@ -520,88 +572,6 @@ export const TreeView: React.FC = () => {
             )}
           </button>
         </div>
-
-        {/* Button 2: Shake Tree action (leaves flutter down) */}
-        <button
-          type="button"
-          id="shake-tree-btn"
-          onClick={handleShakeTree}
-          title="Shake the tree to release tension"
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.55)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1.5px solid rgba(255, 255, 255, 0.85)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '16px',
-            color: '#166534',
-            transition: 'transform 0.15s ease'
-          }}
-        >
-          <Wind size={18} color="#166534" strokeWidth={2.4} />
-        </button>
-
-        {/* Button 3: AI Dump Chat shortcut */}
-        <button
-          type="button"
-          onClick={() => {
-            setChatSource('treehole');
-            setActiveTab('chat');
-          }}
-          title="AI Dump Stress Chat"
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.55)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1.5px solid rgba(255, 255, 255, 0.85)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '16px',
-            color: '#166534',
-            transition: 'transform 0.15s ease'
-          }}
-        >
-          <MessageSquare size={17} color="#166534" strokeWidth={2.4} />
-        </button>
-
-        {/* Button 4: Workloads shortcut */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('workloads')}
-          title="View Workloads"
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.55)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1.5px solid rgba(255, 255, 255, 0.85)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '16px',
-            color: '#166534',
-            transition: 'transform 0.15s ease'
-          }}
-        >
-          <CheckSquare size={17} color="#166534" strokeWidth={2.4} />
-        </button>
       </div>
 
       {/* Ephemeral Speech Bubble from Gardener or Squirrel */}
@@ -700,7 +670,6 @@ export const TreeView: React.FC = () => {
 
       {/* ========================================================================= */}
       {/* 2. INTERACTIVE TREE STAGE (Tree Trunk, Canopy, Hole, & Apples)             */}
-      {/* After adding new workload, tree tilts slightly to show it needs balance    */}
       {/* ========================================================================= */}
       <div
         id="tree-interactive-stage"
@@ -712,8 +681,8 @@ export const TreeView: React.FC = () => {
           height: '100%',
           transformOrigin: '196.5px 735px',
           animation: isTreeShaking
-            ? (isTreeUnbalanced ? 'treeShakeTilted 0.4s ease infinite alternate' : 'treeShake 0.4s ease infinite alternate')
-            : (isTreeUnbalanced ? 'treeBreezeTilted 6s ease-in-out infinite alternate' : 'treeBreeze 6s ease-in-out infinite alternate'),
+            ? 'treeShake 0.4s ease infinite alternate'
+            : 'treeBreeze 6s ease-in-out infinite alternate',
           pointerEvents: 'none',
           zIndex: 15
         }}
@@ -897,15 +866,14 @@ export const TreeView: React.FC = () => {
                   position: 'relative',
                   width: '42px',
                   height: '46px',
-                  transform: `rotate(${coord.rotate}deg) scale(${
-                    isPicked ? 1.4 : isHovered ? 1.22 : isNewApple ? 1.15 : 1
-                  })`,
+                  transform: `rotate(${coord.rotate}deg) scale(${isPicked ? 1.4 : isHovered ? 1.22 : isNewApple ? 1.15 : 1
+                    })`,
                   transformOrigin: 'top center',
                   animation: isNewApple
                     ? 'newAppleBloom 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
                     : isTreeShaking
-                    ? 'appleShake 0.3s ease infinite alternate'
-                    : 'appleSway 4s ease-in-out infinite alternate',
+                      ? 'appleShake 0.3s ease infinite alternate'
+                      : 'appleSway 4s ease-in-out infinite alternate',
                   animationDelay: isNewApple ? '0s' : `${idx * 0.45}s`,
                   transition: 'transform 0.15s ease'
                 }}
@@ -939,8 +907,8 @@ export const TreeView: React.FC = () => {
                     filter: isNewApple
                       ? 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9))'
                       : isHovered
-                      ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0,0,0,0.25))'
-                      : 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))'
+                        ? 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) drop-shadow(0 4px 8px rgba(0,0,0,0.25))'
+                        : 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))'
                   }}
                 />
 
@@ -1292,25 +1260,18 @@ export const TreeView: React.FC = () => {
         </div>
       ))}
 
+
+
       {/* Keyframe Animations */}
       <style>{`
         @keyframes treeBreeze {
           0% { transform: rotate(-0.6deg); }
           100% { transform: rotate(0.6deg); }
         }
-        @keyframes treeBreezeTilted {
-          0% { transform: rotate(2.8deg); }
-          100% { transform: rotate(4.2deg); }
-        }
         @keyframes treeShake {
           0% { transform: rotate(-2.2deg) scale(1.02); }
           50% { transform: rotate(2.2deg) scale(1.02); }
           100% { transform: rotate(-1.5deg) scale(1.01); }
-        }
-        @keyframes treeShakeTilted {
-          0% { transform: rotate(1.2deg) scale(1.02); }
-          50% { transform: rotate(5.4deg) scale(1.02); }
-          100% { transform: rotate(2.0deg) scale(1.01); }
         }
         @keyframes checkInGlow {
           0% {
@@ -1335,9 +1296,9 @@ export const TreeView: React.FC = () => {
           100% { transform: scale(0.85); opacity: 0.8; }
         }
         @keyframes pulseHint {
-          0% { transform: translateY(-50%) translateX(0px); opacity: 0.9; }
-          50% { transform: translateY(-50%) translateX(-3px); opacity: 1; }
-          100% { transform: translateY(-50%) translateX(0px); opacity: 0.9; }
+          0% { transform: translateX(0px); opacity: 0.92; }
+          50% { transform: translateX(-3px); opacity: 1; }
+          100% { transform: translateX(0px); opacity: 0.92; }
         }
         @keyframes appleSway {
           0% { transform: rotate(-5deg); }

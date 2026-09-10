@@ -44,6 +44,26 @@ export const FloatingSquirrelAssistant: React.FC = () => {
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const assistantRef = useRef<HTMLDivElement>(null);
+
+  // Close assistant when clicking or tapping outside of it
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (assistantRef.current && !assistantRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isOpen]);
 
   // Auto-scroll chat balloon to bottom when messages update
   useEffect(() => {
@@ -288,11 +308,16 @@ export const FloatingSquirrelAssistant: React.FC = () => {
     handleSendMessage(q);
   };
 
+  if (activeTab === 'chat' || activeTab === 'tree' || activeTab === 'home') {
+    return null;
+  }
+
   return (
     <>
       {/* Floating Squirrel Mascot Container */}
       <div
         id="floating-squirrel-assistant"
+        ref={assistantRef}
         style={{
           position: 'absolute',
           bottom: '84px',
@@ -345,31 +370,6 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               transition: 'transform 0.2s ease',
             }}
           />
-
-          {/* Acorn / Chat Indicator Pill when closed */}
-          {!isOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                backgroundColor: '#F97316',
-                color: '#FFFFFF',
-                borderRadius: '10px',
-                padding: '2px 5px',
-                fontSize: '9px',
-                fontWeight: 800,
-                boxShadow: '0 2px 6px rgba(249, 115, 22, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-                border: '1.5px solid #FFFFFF',
-                animation: 'bounceSlight 2s infinite ease-in-out',
-              }}
-            >
-              <span>AI</span>
-            </div>
-          )}
         </button>
 
         {/* Chat Balloon Card (Picture 1 style) */}
