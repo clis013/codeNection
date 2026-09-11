@@ -1262,38 +1262,6 @@ export const StressWorkloadMapView: React.FC = () => {
         </div>
       </div>
 
-
-
-      {/* ========================================================================= */}
-      {/* 7. BALANCE BUTTON (LINKED TO BALANCE PAGE)                                */}
-      {/* ========================================================================= */}
-      <button
-        type="button"
-        onClick={() => setActiveTab('balance')}
-        style={{
-          width: '100%',
-          height: '52px',
-          borderRadius: '20px',
-          border: '1.5px solid #FDBA74',
-          background: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
-          color: '#9A3412',
-          fontWeight: 800,
-          fontSize: '15px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          cursor: 'pointer',
-          boxShadow: '0 6px 20px rgba(234, 88, 12, 0.18)',
-          transition: 'all 0.15s ease',
-          letterSpacing: '-0.2px'
-        }}
-      >
-        <Scale size={18} />
-        <span>Balance Workload</span>
-        <ArrowRight size={16} />
-      </button>
-
     </div>
   );
 };

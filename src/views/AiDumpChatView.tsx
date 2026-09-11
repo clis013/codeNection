@@ -207,387 +207,377 @@ const AiAnalysisNextPlanCard: React.FC<{
           width: '100%',
           boxSizing: 'border-box'
         }}>
-        {/* Top Header: Sparkle + Title & Status Badge Pill (Homepage Style) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '15px', lineHeight: 1 }}>✨</span>
-            <h3 style={{
-              fontSize: '12px',
-              fontWeight: 900,
-              color: theme.headerColor,
-              margin: 0,
-              letterSpacing: '0.4px',
-              textTransform: 'uppercase'
-            }}>
-              DAILY STATE &amp; LOAD INSIGHT
-            </h3>
-          </div>
-
-          <span style={{
-            fontSize: '11px',
-            color: theme.badgeColor,
-            fontWeight: 800,
-            backgroundColor: '#FFFFFF',
-            padding: '2px 10px',
-            borderRadius: '999px',
-            border: `1px solid ${theme.badgeBorder}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
-          }}>
-            {theme.badgeText}
-          </span>
-        </div>
-
-        {/* Hero Insight Block */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '14px',
-            backgroundColor: theme.heroIconBg,
-            border: theme.heroIconBorder,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <HeroIcon size={20} color={theme.heroIconColor} strokeWidth={2.2} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-            <h4 style={{
-              fontSize: '15px',
-              fontWeight: 900,
-              color: '#0F172A',
-              margin: 0,
-              letterSpacing: '-0.2px'
-            }}>
-              {theme.heroTitle}
-            </h4>
-            <p style={{
-              fontSize: '12px',
-              color: '#475569',
-              margin: 0,
-              lineHeight: '1.4'
-            }}>
-              {displaySubtitle}
-            </p>
-          </div>
-        </div>
-
-        {/* 3 Metric Cards: STRESS LEVEL | ENERGY | TIME LOAD */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '14px',
-            padding: '8px 4px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
-            border: '1px solid #F1F5F9'
-          }}>
-            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-              STRESS LEVEL
-            </span>
-            <span style={{ fontSize: '13.5px', fontWeight: 900, color: stressColor }}>
-              {stressDisplay}
-            </span>
-          </div>
-
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '14px',
-            padding: '8px 4px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
-            border: '1px solid #F1F5F9'
-          }}>
-            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-              ENERGY
-            </span>
-            <span style={{ fontSize: '13.5px', fontWeight: 900, color: energyColor }}>
-              {energyDisplay}
-            </span>
-          </div>
-
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '14px',
-            padding: '8px 4px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
-            border: '1px solid #F1F5F9'
-          }}>
-            <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-              TIME LOAD
-            </span>
-            <span style={{ fontSize: '13.5px', fontWeight: 900, color: theme.timeLoadColor }}>
-              {timeLoadDisplay}
-            </span>
-          </div>
-        </div>
-
-        {/* Divider Line matching Homepage */}
-        <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0 0 0' }} />
-
-        {/* Daily Check-in Button when Pending */}
-        {isPending && (
-          <button
-            type="button"
-            id="chat-card-daily-checkin-btn"
-            onClick={() => {
-              setCheckInSource('chat');
-              setIsCheckInOpen(true);
-            }}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              border: 'none',
-              background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
-              color: '#FFFFFF',
-              padding: '13px 18px',
-              borderRadius: '16px',
-              fontSize: '13.5px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: '0 6px 20px rgba(124, 58, 237, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 26px rgba(124, 58, 237, 0.45)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(124, 58, 237, 0.35)';
-            }}
-          >
+          {/* Top Header: Sparkle + Title & Status Badge Pill (Homepage Style) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ClipboardList size={18} color="#FFFFFF" strokeWidth={2.4} />
-              <span style={{ fontSize: '14px', fontWeight: 800 }}>Daily Check in</span>
-            </div>
-            <div style={{
-              width: '26px',
-              height: '26px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <ArrowRight size={15} strokeWidth={2.8} color="#FFFFFF" />
-            </div>
-          </button>
-        )}
-
-        {/* "Understand My Load" as a word at side (not a chunky button) */}
-        {!isPending && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '2px 0 2px 0' }}>
-            <span
-              id="chat-card-understand-load-btn"
-              onClick={() => {
-                if (onGoToAnalysis) {
-                  onGoToAnalysis();
-                } else {
-                  setActiveTab('map');
-                }
-              }}
-              style={{
+              <span style={{ fontSize: '15px', lineHeight: 1 }}>✨</span>
+              <h3 style={{
                 fontSize: '12px',
-                fontWeight: 800,
-                color: isOver ? '#BE123C' : theme.btnColor,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                borderRadius: '8px',
-                transition: 'all 0.15s ease',
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.75';
-                e.currentTarget.style.transform = 'translateX(2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'translateX(0px)';
-              }}
-            >
-              <span>Understand My Load</span>
-              <ArrowRight size={13} strokeWidth={2.6} />
+                fontWeight: 900,
+                color: theme.headerColor,
+                margin: 0,
+                letterSpacing: '0.4px',
+                textTransform: 'uppercase'
+              }}>
+                DAILY INSIGHT
+              </h3>
+            </div>
+
+            <span style={{
+              fontSize: '11px',
+              color: theme.badgeColor,
+              fontWeight: 800,
+              backgroundColor: '#FFFFFF',
+              padding: '2px 10px',
+              borderRadius: '999px',
+              border: `1px solid ${theme.badgeBorder}`,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+            }}>
+              {theme.badgeText}
             </span>
           </div>
-        )}
 
-        {/* Recovery Recommendation (Advanced, modern card) */}
-        {!isPending && isOver && (
-          <div style={{
-            background: 'linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #FFFBEB 100%)',
-            borderRadius: '20px',
-            padding: '14px 16px',
-            border: '1.5px solid #FDBA74',
-            boxShadow: '0 8px 24px rgba(249, 115, 22, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '9px',
-                  background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(234, 88, 12, 0.3)'
-                }}>
-                  <Coffee size={15} color="#FFFFFF" strokeWidth={2.4} />
-                </div>
-                <span style={{ color: '#9A3412', fontWeight: 900, fontSize: '13px', letterSpacing: '-0.2px' }}>
-                  Recovery Recommendation
-                </span>
-              </div>
-              <span style={{
-                background: '#FFEDD5',
-                color: '#C2410C',
-                padding: '3px 8px',
-                borderRadius: '999px',
-                fontSize: '10.5px',
-                fontWeight: 800,
-                border: '1px solid #FED7AA'
+          {/* Hero Insight Block */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '14px',
+              backgroundColor: theme.heroIconBg,
+              border: theme.heroIconBorder,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <HeroIcon size={20} color={theme.heroIconColor} strokeWidth={2.2} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+              <h4 style={{
+                fontSize: '15px',
+                fontWeight: 900,
+                color: '#0F172A',
+                margin: 0,
+                letterSpacing: '-0.2px'
               }}>
-                ⏱ 15–20 mins
+                {theme.heroTitle}
+              </h4>
+              <p style={{
+                fontSize: '12px',
+                color: '#475569',
+                margin: 0,
+                lineHeight: '1.4'
+              }}>
+                {displaySubtitle}
+              </p>
+            </div>
+          </div>
+
+          {/* 3 Metric Cards: STRESS LEVEL | ENERGY | TIME LOAD */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '14px',
+              padding: '8px 4px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+              border: '1px solid #F1F5F9'
+            }}>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                STRESS LEVEL
+              </span>
+              <span style={{ fontSize: '13.5px', fontWeight: 900, color: stressColor }}>
+                {stressDisplay}
               </span>
             </div>
 
-            <p style={{ margin: 0, fontSize: '11.5px', color: '#9A3412', lineHeight: 1.5, fontWeight: 500 }}>
-              Your cognitive load and deadline density are in an overloaded state. We strongly recommend taking 15–20 minutes for recovery to protect your wellbeing and restore tree energy!
-            </p>
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '14px',
+              padding: '8px 4px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+              border: '1px solid #F1F5F9'
+            }}>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                ENERGY
+              </span>
+              <span style={{ fontSize: '13.5px', fontWeight: 900, color: energyColor }}>
+                {energyDisplay}
+              </span>
+            </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {/* Advanced Button 1: Tree Hole Vent */}
-              <button
-                type="button"
-                id="recovery-tree-hole-btn"
-                onClick={onTreeHole ? onTreeHole : () => setIsTreeHoleOpen(true)}
-                style={{
-                  flex: 1,
-                  minWidth: '130px',
-                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)',
-                  border: '1.5px solid #86EFAC',
-                  borderRadius: '14px',
-                  padding: '9px 12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 4px 12px rgba(22, 101, 52, 0.08), inset 0 1px 1px #FFF',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(22, 101, 52, 0.16)';
-                  e.currentTarget.style.borderColor = '#4ADE80';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(22, 101, 52, 0.08)';
-                  e.currentTarget.style.borderColor = '#86EFAC';
-                }}
-              >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  border: '1px solid #86EFAC'
-                }}>
-                  <Feather size={16} color="#166534" strokeWidth={2.4} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#166534', lineHeight: 1.2 }}>
-                    Tree Hole Vent
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#15803D', fontWeight: 600, opacity: 0.85 }}>
-                    Shout &amp; release
-                  </span>
-                </div>
-              </button>
-
-              {/* Advanced Button 2: Colour Reflection */}
-              <button
-                type="button"
-                id="recovery-colour-reflection-btn"
-                onClick={onColourReflection ? onColourReflection : () => setIsColourReflectionOpen(true)}
-                style={{
-                  flex: 1,
-                  minWidth: '130px',
-                  background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF5FF 100%)',
-                  border: '1.5px solid #DDD6FE',
-                  borderRadius: '14px',
-                  padding: '9px 12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 4px 12px rgba(107, 33, 168, 0.08), inset 0 1px 1px #FFF',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(107, 33, 168, 0.16)';
-                  e.currentTarget.style.borderColor = '#C084FC';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 168, 0.08)';
-                  e.currentTarget.style.borderColor = '#DDD6FE';
-                }}
-              >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  border: '1px solid #DDD6FE'
-                }}>
-                  <Palette size={16} color="#6B21A8" strokeWidth={2.4} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#6B21A8', lineHeight: 1.2 }}>
-                    Colour Reflection
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#7E22CE', fontWeight: 600, opacity: 0.85 }}>
-                    Visual grounding
-                  </span>
-                </div>
-              </button>
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '14px',
+              padding: '8px 4px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)',
+              border: '1px solid #F1F5F9'
+            }}>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                TIME LOAD
+              </span>
+              <span style={{ fontSize: '13.5px', fontWeight: 900, color: theme.timeLoadColor }}>
+                {timeLoadDisplay}
+              </span>
             </div>
           </div>
-        )}
+
+          {/* Divider Line matching Homepage */}
+          <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0 0 0' }} />
+
+          {/* Daily Check-in Button when Pending */}
+          {isPending && (
+            <button
+              type="button"
+              id="chat-card-daily-checkin-btn"
+              onClick={() => {
+                setCheckInSource('chat');
+                setIsCheckInOpen(true);
+              }}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                border: 'none',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
+                color: '#FFFFFF',
+                padding: '13px 18px',
+                borderRadius: '16px',
+                fontSize: '13.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 6px 20px rgba(124, 58, 237, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 26px rgba(124, 58, 237, 0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(124, 58, 237, 0.35)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ClipboardList size={18} color="#FFFFFF" strokeWidth={2.4} />
+                <span style={{ fontSize: '14px', fontWeight: 800 }}>Daily Check in</span>
+              </div>
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ArrowRight size={15} strokeWidth={2.8} color="#FFFFFF" />
+              </div>
+            </button>
+          )}
+
+          {/* "Understand My Load" as a word at side (not a chunky button) */}
+          {!isPending && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <span
+                id="chat-card-understand-load-btn"
+                onClick={() => {
+                  if (onGoToAnalysis) {
+                    onGoToAnalysis();
+                  } else {
+                    setActiveTab('map');
+                  }
+                }}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  color: isOver ? '#BE123C' : theme.btnColor,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease',
+                  userSelect: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.75';
+                  e.currentTarget.style.transform = 'translateX(2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'translateX(0px)';
+                }}
+              >
+                <span>Understand My Load</span>
+                <ArrowRight size={13} strokeWidth={2.6} />
+              </span>
+            </div>
+          )}
+
+          {/* Recovery Recommendation (Advanced, modern card) */}
+          {!isPending && isOver && (
+            <div style={{
+              background: 'linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #FFFBEB 100%)',
+              borderRadius: '20px',
+              padding: '14px 16px',
+              border: '1.5px solid #FDBA74',
+              boxShadow: '0 8px 24px rgba(249, 115, 22, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '9px',
+                    background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.3)'
+                  }}>
+                    <Coffee size={15} color="#FFFFFF" strokeWidth={2.4} />
+                  </div>
+                  <span style={{ color: '#9A3412', fontWeight: 900, fontSize: '13px', letterSpacing: '-0.2px' }}>
+                    Recovery Recommendation
+                  </span>
+                </div>
+
+              </div>
+
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#9A3412', lineHeight: 1.5, fontWeight: 500 }}>
+                Take 15-20 min to restore energy!
+              </p>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {/* Advanced Button 1: Tree Hole Vent */}
+                <button
+                  type="button"
+                  id="recovery-tree-hole-btn"
+                  onClick={onTreeHole ? onTreeHole : () => setIsTreeHoleOpen(true)}
+                  style={{
+                    flex: 1,
+                    minWidth: '130px',
+                    background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)',
+                    border: '1.5px solid #86EFAC',
+                    borderRadius: '14px',
+                    padding: '9px 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    boxShadow: '0 4px 12px rgba(22, 101, 52, 0.08), inset 0 1px 1px #FFF',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(22, 101, 52, 0.16)';
+                    e.currentTarget.style.borderColor = '#4ADE80';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(22, 101, 52, 0.08)';
+                    e.currentTarget.style.borderColor = '#86EFAC';
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    border: '1px solid #86EFAC'
+                  }}>
+                    <Feather size={16} color="#166534" strokeWidth={2.4} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#166534', lineHeight: 1.2 }}>
+                      Tree Hole Vent
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#15803D', fontWeight: 600, opacity: 0.85 }}>
+                      Shout &amp; release
+                    </span>
+                  </div>
+                </button>
+
+                {/* Advanced Button 2: Colour Reflection */}
+                <button
+                  type="button"
+                  id="recovery-colour-reflection-btn"
+                  onClick={onColourReflection ? onColourReflection : () => setIsColourReflectionOpen(true)}
+                  style={{
+                    flex: 1,
+                    minWidth: '130px',
+                    background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF5FF 100%)',
+                    border: '1.5px solid #DDD6FE',
+                    borderRadius: '14px',
+                    padding: '9px 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    boxShadow: '0 4px 12px rgba(107, 33, 168, 0.08), inset 0 1px 1px #FFF',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(107, 33, 168, 0.16)';
+                    e.currentTarget.style.borderColor = '#C084FC';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 168, 0.08)';
+                    e.currentTarget.style.borderColor = '#DDD6FE';
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    border: '1px solid #DDD6FE'
+                  }}>
+                    <Palette size={16} color="#6B21A8" strokeWidth={2.4} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#6B21A8', lineHeight: 1.2 }}>
+                      Colour Reflection
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#7E22CE', fontWeight: 600, opacity: 0.85 }}>
+                      Visual grounding
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -645,30 +635,15 @@ const AiAnalysisNextPlanCard: React.FC<{
                 </div>
                 <div>
                   <div style={{ fontSize: '12.5px', fontWeight: 900, color: '#065F46', letterSpacing: '-0.1px' }}>
-                    Prefer taking action over a break?
+                    Prefer taking action ?
                   </div>
                   <div style={{ fontSize: '10px', color: '#047857', fontWeight: 600 }}>
-                    Relieve tree weight directly in Balance
+                    Relieve tree weight directly in Balance !
                   </div>
                 </div>
               </div>
 
-              <span style={{
-                fontSize: '10px',
-                fontWeight: 800,
-                color: '#047857',
-                backgroundColor: '#D1FAE5',
-                border: '1px solid #6EE7B7',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px',
-                whiteSpace: 'nowrap'
-              }}>
-                <Scale size={11} strokeWidth={2.6} />
-                <span>Pathway 2</span>
-              </span>
+
             </div>
 
             {/* Action Button: Yes, I want to balance my tree first */}
@@ -708,7 +683,7 @@ const AiAnalysisNextPlanCard: React.FC<{
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>🌳</span>
-                <span>Yes, I want to balance my tree first</span>
+                <span>Balance my tree</span>
               </div>
               <div style={{
                 width: '26px',
@@ -816,7 +791,7 @@ const NicoleDemoExtractionCard: React.FC<{
               letterSpacing: '0.5px',
               backgroundColor: '#FFF7ED',
               color: '#C2410C',
-              padding: '2px 7px',
+              padding: '1px 7px',
               borderRadius: '6px',
               border: '1px solid #FED7AA',
               flexShrink: 0,
@@ -832,9 +807,7 @@ const NicoleDemoExtractionCard: React.FC<{
             </span>
             <span>· Due 10 Sep, 18:00</span>
             <span>· ⏱️ 6 hrs</span>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
-              Pre-filled
-            </span>
+
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid #F8FAFC' }}>
@@ -871,6 +844,9 @@ const NicoleDemoExtractionCard: React.FC<{
                 </>
               )}
             </button>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '1px 5px', borderRadius: '6px' }}>
+              Pre-filled
+            </span>
           </div>
         </div>
 
@@ -895,7 +871,7 @@ const NicoleDemoExtractionCard: React.FC<{
               letterSpacing: '0.5px',
               backgroundColor: '#F1F5F9',
               color: '#475569',
-              padding: '2px 7px',
+              padding: '1px 7px',
               borderRadius: '6px',
               border: '1px solid #E2E8F0',
               flexShrink: 0
@@ -1280,9 +1256,7 @@ export const AiDumpChatView: React.FC = () => {
 
     const wave = [30, 45, 60, 85, 70, 95, 80, 60, 40, 50, 75, 90, 65, 40, 30];
 
-    const transcript = isShoutDetected
-      ? "AAAARGH! I am so overwhelmed by these project deadlines and exam proofs! I need to scream into the tree hole!"
-      : "I had a really bad day, assignment deadline stressing me out, but I also have a test coming in a few days. I can't sleep well and lost motivation...";
+    const transcript = NICOLE_NARRATIVE;
 
     setChatSource('default');
     sendChatMessage(transcript, {
@@ -1297,6 +1271,31 @@ export const AiDumpChatView: React.FC = () => {
       setShowTreeAnimation(false);
       setIsShoutDetected(false);
     }, 2500);
+  };
+
+  // Audio in stress dump chat triggers Nicole's demo text in typing section to send
+  const handleAudioButtonClick = () => {
+    setInputText(NICOLE_NARRATIVE);
+    setIsRecording(true);
+    setIsVoiceStopped(false);
+    setRecordSeconds(1);
+
+    setTimeout(() => {
+      handleStopMicrophone();
+      setIsRecording(false);
+      setIsVoiceStopped(false);
+      setInputText('');
+
+      const wave = [30, 45, 60, 85, 70, 95, 80, 60, 40, 50, 75, 90, 65, 40, 30];
+      setChatSource('default');
+      sendChatMessage(NICOLE_NARRATIVE, {
+        isVoice: true,
+        audioDuration: '0:07',
+        audioWave: wave,
+        isShoutVent: false,
+        decibelLevel: 58,
+      });
+    }, 1200);
   };
 
   const lastOverloadNotifiedRef = useRef<number>(0);
@@ -1554,7 +1553,7 @@ export const AiDumpChatView: React.FC = () => {
             title="Return to Tree Home"
           >
             <ArrowLeft size={16} strokeWidth={2.8} color="#FFFFFF" />
-            <span>Squirrel AI</span>
+            <span>Tree Hole</span>
           </button>
         </div>
       </div>
@@ -1799,7 +1798,7 @@ export const AiDumpChatView: React.FC = () => {
                               }}
                             >
                               <ClipboardList size={15} color="#FFFFFF" strokeWidth={2.4} />
-                              <span>Go to Check-in First</span>
+                              <span>Go to Check-in</span>
                               <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.4} />
                             </button>
                           )}
@@ -1816,8 +1815,8 @@ export const AiDumpChatView: React.FC = () => {
                         ? (todayCheckIn
                           ? "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
                           : (isTreeBent
-                            ? "Nicole, your tree is bending and showing strain from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
-                            : "Nicole, your tree is showing strain and broken branches from your heavy recorded workload, but your daily state and load insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"))
+                            ? "Nicole, your bending tree shows strain from your heavy recorded workload, but your daily insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"
+                            : "Nicole, your bending tree shows strain from your heavy recorded workload, but your daily insight are currently pending. Please complete today's check-in so we can evaluate your personal energy, stress level, and capacity!"))
                         : msg.text}
                     </div>
                   ) : null}
@@ -2305,6 +2304,29 @@ export const AiDumpChatView: React.FC = () => {
             </div>
           );
         })}
+        {/* Thinking / Analyzing indicator while user message is pending AI reply */}
+        {chatMessages.length > 0 && chatMessages[chatMessages.length - 1].sender === 'user' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 14px',
+              borderRadius: '16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.88)',
+              border: '1.2px solid rgba(254, 215, 170, 0.8)',
+              width: 'fit-content',
+              boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
+              marginBottom: '6px'
+            }}
+          >
+            <Sparkles size={14} color="#EA580C" className="animate-spin" />
+            <span style={{ fontSize: '12px', color: '#9A3412', fontWeight: 650 }}>
+              AI is analyzing your message... 🌰
+            </span>
+          </div>
+        )}
+
         <div ref={messagesEndRef} style={{ height: '1px', flexShrink: 0, marginTop: '2px' }} />
       </div>
 
@@ -2540,10 +2562,10 @@ export const AiDumpChatView: React.FC = () => {
             }}
           />
 
-          {/* Warm Orange Mic Button (Image 2 style) */}
+          {/* Warm Orange Mic Button (Image 2 style) - Triggers Nicole's demo text in typing section to send */}
           <button
             type="button"
-            onClick={startRecording}
+            onClick={handleAudioButtonClick}
             style={{
               background: 'radial-gradient(circle, #FED7AA 0%, #FFEDD5 80%)',
               color: '#EA580C',
@@ -2559,7 +2581,7 @@ export const AiDumpChatView: React.FC = () => {
               boxShadow: '0 2px 8px rgba(234, 88, 12, 0.25)',
               transition: 'all 0.15s ease'
             }}
-            title="Record Voice Message (Shout triggers falling leaves animation)"
+            title="Record Voice Message (Sends Nicole's demo narrative)"
           >
             <Mic size={18} />
           </button>

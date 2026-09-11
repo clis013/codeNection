@@ -23,6 +23,56 @@ export const AppContainer: React.FC = () => {
   const { activeTab } = useApp();
   const [isDesktopFrame, setIsDesktopFrame] = useState(true);
 
+  // Per-tab scroll position memory
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const tabScrollPositions = React.useRef<Record<string, number>>({});
+  const prevTabRef = React.useRef<string>(activeTab);
+  const isRestoringScrollRef = React.useRef<boolean>(false);
+
+  // Handle scroll events to remember position for current tab
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (isRestoringScrollRef.current) return;
+    const currentTabKey = activeTab === 'home' ? 'tree' : activeTab;
+    tabScrollPositions.current[currentTabKey] = e.currentTarget.scrollTop;
+  };
+
+  // Restore scroll position when tab changes (or scroll to top if opened for the first time)
+  React.useEffect(() => {
+    const currentTabKey = activeTab === 'home' ? 'tree' : activeTab;
+    const hasVisited = Object.prototype.hasOwnProperty.call(tabScrollPositions.current, currentTabKey);
+
+    prevTabRef.current = activeTab;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const targetScroll = hasVisited ? (tabScrollPositions.current[currentTabKey] || 0) : 0;
+
+    if (!hasVisited) {
+      tabScrollPositions.current[currentTabKey] = 0;
+    }
+
+    isRestoringScrollRef.current = true;
+    container.scrollTop = targetScroll;
+
+    // Double-check with rAF and short delay in case subcomponents lay out asynchronously
+    const frameId = requestAnimationFrame(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = targetScroll;
+      }
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = targetScroll;
+        }
+        isRestoringScrollRef.current = false;
+      }, 50);
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [activeTab]);
+
   const renderActiveView = () => {
     switch (activeTab) {
       case 'home':
@@ -54,59 +104,7 @@ export const AppContainer: React.FC = () => {
       padding: isDesktopFrame ? '20px 10px' : 0,
       fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
-      {/* Frame Mode Toggle for Desktop Previewers */}
-      <div style={{
-        marginBottom: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        backgroundColor: 'rgba(255, 255, 255, 0.88)',
-        backdropFilter: 'blur(16px)',
-        padding: '6px 14px',
-        borderRadius: '20px',
-        boxShadow: '0 4px 16px rgba(255, 138, 80, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.95)',
-        fontSize: '12px',
-        color: Colors.textMedium,
-      }}>
-        <span style={{ fontWeight: 600 }}>App View Frame:</span>
-        <button
-          onClick={() => setIsDesktopFrame(true)}
-          style={{
-            border: isDesktopFrame ? '1px solid rgba(187, 247, 208, 0.9)' : 'none',
-            background: isDesktopFrame ? 'linear-gradient(135deg, #DCFCE7 0%, #FEF9C3 100%)' : 'transparent',
-            color: isDesktopFrame ? '#166534' : Colors.textMuted,
-            padding: '4px 10px',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            boxShadow: isDesktopFrame ? '0 2px 8px rgba(187, 247, 208, 0.35)' : 'none',
-          }}
-        >
-          <Smartphone size={14} /> iPhone 16 (393×852)
-        </button>
-        <button
-          onClick={() => setIsDesktopFrame(false)}
-          style={{
-            border: !isDesktopFrame ? '1px solid rgba(187, 247, 208, 0.9)' : 'none',
-            background: !isDesktopFrame ? 'linear-gradient(135deg, #DCFCE7 0%, #FEF9C3 100%)' : 'transparent',
-            color: !isDesktopFrame ? '#166534' : Colors.textMuted,
-            padding: '4px 10px',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            boxShadow: !isDesktopFrame ? '0 2px 8px rgba(187, 247, 208, 0.35)' : 'none',
-          }}
-        >
-          <Monitor size={14} /> Full Width
-        </button>
-      </div>
+
 
       {/* Main App Container Shell (Fixed identical dimensions across all views) */}
       <div id="app-shell" style={{
@@ -125,15 +123,20 @@ export const AppContainer: React.FC = () => {
         border: isDesktopFrame ? '1.5px solid rgba(255, 255, 255, 0.95)' : 'none',
       }}>
         {activeTab !== 'tree' && activeTab !== 'home' && activeTab !== 'chat' && <AppHeader />}
-        
+
         {/* Scrollable Main View Area with scroll padding for fixed floating navbar */}
-        <div className="hide-scrollbar" style={{
-          flex: 1,
-          overflowY: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? 'hidden' : 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          paddingBottom: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? '0' : '86px',
-        }}>
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="hide-scrollbar"
+          style={{
+            flex: 1,
+            overflowY: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? 'hidden' : 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBottom: (activeTab === 'tree' || activeTab === 'home' || activeTab === 'chat') ? '0' : '86px',
+          }}
+        >
           {renderActiveView()}
         </div>
 

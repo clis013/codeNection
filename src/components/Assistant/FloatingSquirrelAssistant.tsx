@@ -32,6 +32,10 @@ export const FloatingSquirrelAssistant: React.FC = () => {
     sendChatMessage,
     setIsTreeHoleOpen,
     setIsColourReflectionOpen,
+    isFcgExtendedPlan,
+    setIsFcgExtendedPlan,
+    isBalancePlanGenerating,
+    setIsBalancePlanGenerating,
   } = useApp();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -40,6 +44,44 @@ export const FloatingSquirrelAssistant: React.FC = () => {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatBubbleMessage[]>([]);
   const [hasInteracted, setHasInteracted] = useState<boolean>(false);
+  const [isBubbleVisible, setIsBubbleVisible] = useState<boolean>(false);
+
+  // Periodic Floating Speech Bubble:
+  // Appears 2 seconds after user opens/switches to the page,
+  // stays visible for 4.5 seconds to grab attention,
+  // disappears for 7.5 seconds, then repeats periodically!
+  useEffect(() => {
+    if (isOpen) {
+      setIsBubbleVisible(false);
+      return;
+    }
+
+    let isMounted = true;
+    let timeoutId: any = null;
+
+    const cycleBubble = () => {
+      if (!isMounted) return;
+      setIsBubbleVisible(true);
+
+      timeoutId = setTimeout(() => {
+        if (!isMounted) return;
+        setIsBubbleVisible(false);
+
+        timeoutId = setTimeout(() => {
+          cycleBubble();
+        }, 7500);
+      }, 4500);
+    };
+
+    timeoutId = setTimeout(() => {
+      cycleBubble();
+    }, 500);
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [activeTab, isOpen]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +138,7 @@ export const FloatingSquirrelAssistant: React.FC = () => {
       q.includes('assignment')
     ) {
       const activeTasks = workloads.filter(w => w.status === 'Active');
-      
+
       // Look for OOP specific task or nearest urgent task
       const oopTask = activeTasks.find(w => w.title.toLowerCase().includes('oop'));
       const osTask = activeTasks.find(w => w.title.toLowerCase().includes('os') || w.title.toLowerCase().includes('operating'));
@@ -216,9 +258,16 @@ export const FloatingSquirrelAssistant: React.FC = () => {
     };
   };
 
+  // Handler when user taps or focuses typing input on Balance page
+  const handleInputClickOrFocus = () => {
+    if (activeTab === 'balance' && !inputText.trim()) {
+
+    }
+  };
+
   const handleSendMessage = (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
-    if (!text) return;
+    if (!text || isBalancePlanGenerating) return;
 
     setHasInteracted(true);
     setInputText('');
@@ -232,6 +281,35 @@ export const FloatingSquirrelAssistant: React.FC = () => {
 
     setMessages(prev => [...prev, userMsg]);
     setIsThinking(true);
+
+    // If on Balance page: User sent the schedule adjustment request
+    if (activeTab === 'balance') {
+      setIsBalancePlanGenerating(true);
+
+      setTimeout(() => {
+        const squirrelMsg: ChatBubbleMessage = {
+          id: `s-${Date.now()}`,
+          sender: 'squirrel',
+          text: "Alright, let me rebalance your schedule and allocate more focus time for your FCG Test! 🌰",
+          bullets: [
+            "Found open focus window on 2026/9/13 (09:30 - 12:30)",
+            "Added +3.0h practice problem & simulation block (6.0h total scheduled)",
+            "Your balance plan is updated with extra preparation time"
+          ],
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
+        setMessages(prev => [...prev, squirrelMsg]);
+        setIsThinking(false);
+
+        // Complete balance page generation and apply extended FCG plan
+        setTimeout(() => {
+          setIsBalancePlanGenerating(false);
+          setIsFcgExtendedPlan(true);
+        }, 800);
+      }, 900);
+      return;
+    }
 
     // Also connect to app-wide AI Dump Chat so history persists
     try {
@@ -256,7 +334,22 @@ export const FloatingSquirrelAssistant: React.FC = () => {
 
   // Voice recognition or simulated voice dictation
   const handleMicClick = () => {
-    if (isListening) return;
+    if (isListening || isBalancePlanGenerating) return;
+
+    // Demo voice interaction for Balance page:
+    // Demonstrates recording audio, puts text into typing input,
+    // and lets user send the text by themselves!
+    if (activeTab === 'balance') {
+      setIsListening(true);
+      setTimeout(() => {
+        setIsListening(false);
+        setInputText("I think I need more time to prepare my FCG Test");
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 1000);
+      return;
+    }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -375,7 +468,7 @@ export const FloatingSquirrelAssistant: React.FC = () => {
         </button>
 
         {/* Persistent Floating Speech Bubble on Map Page: Asks "To balance the tree?" */}
-        {activeTab === 'map' && !isOpen && (
+        {activeTab === 'map' && !isOpen && isBubbleVisible && (
           <div
             id="map-squirrel-balance-bubble"
             onClick={() => {
@@ -397,7 +490,7 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               gap: '6px',
               whiteSpace: 'nowrap',
               zIndex: 120,
-              animation: 'bounceSlight 2s infinite ease-in-out',
+              animation: 'popBubble 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, bounceSlight 2s infinite ease-in-out',
               transition: 'transform 0.15s ease'
             }}
             title="Go to Balance page to balance your tree"
@@ -422,8 +515,8 @@ export const FloatingSquirrelAssistant: React.FC = () => {
           </div>
         )}
 
-        {/* Floating Speech Bubble on Workload or Balance Page: Asks "Any question?" */}
-        {(activeTab === 'workloads' || activeTab === 'balance') && !isOpen && (
+        {/* Floating Speech Bubble on Workload or Balance Page: Asks "Any question?" or voice prompt */}
+        {(activeTab === 'workloads' || activeTab === 'balance') && !isOpen && isBubbleVisible && (
           <div
             id="squirrel-any-question-bubble"
             onClick={() => setIsOpen(true)}
@@ -432,26 +525,29 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               position: 'absolute',
               bottom: '72px',
               right: '4px',
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%)',
-              border: '1.5px solid #FB923C',
+              background: activeTab === 'balance'
+                ? 'linear-gradient(135deg, #FFFFFF 0%, #EEF2FF 100%)'
+                : 'linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%)',
+              border: activeTab === 'balance' ? '1.5px solid #818CF8' : '1.5px solid #FB923C',
               borderRadius: '16px',
               padding: '6px 14px',
-              boxShadow: '0 6px 20px rgba(251, 146, 60, 0.25)',
+              boxShadow: activeTab === 'balance'
+                ? '0 6px 20px rgba(99, 102, 241, 0.25)'
+                : '0 6px 20px rgba(251, 146, 60, 0.25)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               whiteSpace: 'nowrap',
               zIndex: 120,
-              animation: 'bounceSlight 2s infinite ease-in-out',
+              animation: 'popBubble 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, bounceSlight 2s infinite ease-in-out',
               transition: 'transform 0.15s ease'
             }}
-            title="Any question? Click to ask squirrel assistant!"
+            title={activeTab === 'balance' ? 'Adjust schedule with voice? Click to ask squirrel assistant!' : 'Any question? Click to ask squirrel assistant!'}
           >
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#9A3412' }}>
-              Any question?
+            <span style={{ fontSize: '13px', fontWeight: 800, color: activeTab === 'balance' ? '#4338CA' : '#9A3412' }}>
+              {activeTab === 'balance' ? 'Need schedule adjustment? 🎙️' : 'Any question? 💬'}
             </span>
-            <span style={{ fontSize: '13px' }}>💬</span>
             {/* Bubble Tail pointing down towards squirrel */}
             <div
               style={{
@@ -462,7 +558,7 @@ export const FloatingSquirrelAssistant: React.FC = () => {
                 height: 0,
                 borderLeft: '5px solid transparent',
                 borderRight: '5px solid transparent',
-                borderTop: '6px solid #FB923C'
+                borderTop: activeTab === 'balance' ? '6px solid #818CF8' : '6px solid #FB923C'
               }}
             />
           </div>
@@ -667,6 +763,7 @@ export const FloatingSquirrelAssistant: React.FC = () => {
                   marginBottom: '10px',
                 }}
               >
+
                 <button
                   onClick={() => handleQuickQuestion('What is my main workload?')}
                   style={{
@@ -732,6 +829,70 @@ export const FloatingSquirrelAssistant: React.FC = () => {
               </div>
             )}
 
+            {/* Live Voice Recording Demonstration Card */}
+            {isListening && (
+              <div
+                id="floating-ai-recording-indicator"
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  borderRadius: '14px',
+                  padding: '8px 12px',
+                  border: '1.5px solid #FCA5A5',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  marginBottom: '8px',
+                  boxShadow: '0 2px 10px rgba(239, 68, 68, 0.12)',
+                  animation: 'fadeSlideUp 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#DC2626', fontWeight: 700, fontSize: '11.5px' }}>
+                    <span
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: '#DC2626',
+                        animation: 'pulseGlow 1.2s infinite',
+                      }}
+                    />
+                    <span>{activeTab === 'balance' ? 'Recording Voice Prompt...' : 'Listening to Audio...'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '14px' }}>
+                    {[7, 14, 10, 16, 9, 15, 17, 11, 7].map((h, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: '2px',
+                          height: `${h}px`,
+                          backgroundColor: '#EF4444',
+                          borderRadius: '2px',
+                          animation: `soundWavePulse 0.7s ease-in-out infinite alternate ${i * 0.08}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {activeTab === 'balance' && (
+                  <div
+                    style={{
+                      fontSize: '11.5px',
+                      color: '#1E293B',
+                      fontWeight: 600,
+                      fontStyle: 'italic',
+                      backgroundColor: '#FFFFFF',
+                      padding: '5px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid #FEE2E2',
+                    }}
+                  >
+                    "I think I need more time to prepare my FCG Test"
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Input Bar with Orange Mic & Cyan Send Button (Matching Picture 1) */}
             <div
               style={{
@@ -749,13 +910,21 @@ export const FloatingSquirrelAssistant: React.FC = () => {
                 ref={inputRef}
                 type="text"
                 value={inputText}
+                onClick={handleInputClickOrFocus}
+                onFocus={handleInputClickOrFocus}
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     handleSendMessage();
                   }
                 }}
-                placeholder={isListening ? 'Listening...' : 'Ask a question...'}
+                placeholder={
+                  isListening
+                    ? 'Recording audio... 🎙️'
+                    : activeTab === 'balance'
+                      ? 'Tap to ask for more time...'
+                      : 'Ask a question...'
+                }
                 style={{
                   flex: 1,
                   border: 'none',
@@ -768,31 +937,54 @@ export const FloatingSquirrelAssistant: React.FC = () => {
                 }}
               />
 
-              {/* Orange Microphone Button */}
+              {/* Microphone Button */}
               <button
+                id="btn-floating-squirrel-mic"
                 onClick={handleMicClick}
-                title={isListening ? 'Listening to voice...' : 'Speak question'}
+                title={
+                  isListening
+                    ? 'Recording audio...'
+                    : activeTab === 'balance'
+                      ? 'Tap to speak: "I think I need more time to prepare my FCG Test"'
+                      : 'Speak question'
+                }
                 style={{
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
                   border: 'none',
-                  backgroundColor: isListening ? '#FDBA74' : '#FFF7ED',
-                  color: '#EA580C',
+                  backgroundColor: isListening
+                    ? '#FCA5A5'
+                    : activeTab === 'balance'
+                      ? '#EEF2FF'
+                      : '#FFF7ED',
+                  color: isListening
+                    ? '#DC2626'
+                    : activeTab === 'balance'
+                      ? '#4F46E5'
+                      : '#EA580C',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
+                  cursor: isBalancePlanGenerating ? 'not-allowed' : 'pointer',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
-                  boxShadow: isListening ? '0 0 10px rgba(249, 115, 22, 0.5)' : 'none',
+                  boxShadow: isListening
+                    ? '0 0 10px rgba(239, 68, 68, 0.6)'
+                    : activeTab === 'balance'
+                      ? '0 0 8px rgba(99, 102, 241, 0.35)'
+                      : 'none',
+                  animation: isListening
+                    ? 'pulseGlow 1.2s infinite'
+                    : 'none',
                 }}
               >
                 <Mic size={14} strokeWidth={2.2} />
               </button>
 
-              {/* Cyan / Sky Blue Send Button (Picture 1) */}
+              {/* Cyan / Sky Blue Send Button */}
               <button
+                id="btn-floating-squirrel-send"
                 onClick={() => handleSendMessage()}
                 disabled={!inputText.trim()}
                 title="Send question"
@@ -857,6 +1049,10 @@ export const FloatingSquirrelAssistant: React.FC = () => {
 
       {/* Global CSS for subtle animations */}
       <style>{`
+        @keyframes soundWavePulse {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
         @keyframes pulseGlow {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(1.1); opacity: 0.85; }
@@ -868,6 +1064,10 @@ export const FloatingSquirrelAssistant: React.FC = () => {
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(8px) scale(0.96); }
           to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes popBubble {
+          0% { opacity: 0; transform: translateY(6px) scale(0.88); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
     </>

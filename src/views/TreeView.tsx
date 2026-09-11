@@ -73,6 +73,7 @@ export const TreeView: React.FC = () => {
     sendSquirrelInsightToChat,
     isTreeBent: contextIsTreeBent,
     setIsTreeBent,
+    isBalancePlanApplied,
     todayCheckIn,
     baselineStressAverage,
     capacityProfile,
@@ -98,27 +99,50 @@ export const TreeView: React.FC = () => {
   const [showHarvestBasketModal, setShowHarvestBasketModal] = useState(false);
   const [isHoldingPickedApple, setIsHoldingPickedApple] = useState(false);
 
-  // Trigger celebration & growing apple bloom animation when returning with new workload
+  // Staged Add-Workload Animation:
+  // 1. 'apple-first': Show add apple first. Tree is upright, gardener is normal.
+  // 2. 'tree-tilt': Then only tilt the tree under the weight. Gardener is still normal.
+  // 3. 'gardener-react': Then only gardener changes emotion to confused and asks question.
+  // 4. 'idle': Default state reflecting active workloads & status.
+  const [workloadAnimStage, setWorkloadAnimStage] = useState<'idle' | 'apple-first' | 'tree-tilt' | 'gardener-react'>('idle');
+
+  // Trigger staged animation: show add apple first -> then only tilt the tree -> then only gardener change emotion and ask question
   useEffect(() => {
     if (newAppleWorkloadId) {
       setAnimatingAppleId(newAppleWorkloadId);
       setShowCelebrationBanner(true);
+      setIsGardenerQuestionDismissed(false);
 
-      // Rustle tree branches slightly when the new apple blossoms
-      setTimeout(() => {
+      // Phase 1: Show add apple first
+      setWorkloadAnimStage('apple-first');
+
+      // Phase 2: Then only tilt the tree (after 1.3s)
+      const treeTiltTimer = setTimeout(() => {
+        setWorkloadAnimStage('tree-tilt');
         setIsTreeShaking(true);
         setTimeout(() => setIsTreeShaking(false), 900);
-      }, 350);
+      }, 1300);
 
-      // Keep banner and bloom halo visible for 6 seconds
-      const timer = setTimeout(() => {
+      // Phase 3: Then only gardener changes emotion and asks question (after 2.6s)
+      const gardenerTimer = setTimeout(() => {
+        setWorkloadAnimStage('gardener-react');
+        setGardenerHasQuestion(true);
+      }, 2600);
+
+      // Finish celebration and return to idle after 6.5s
+      const finishTimer = setTimeout(() => {
         setShowCelebrationBanner(false);
         setNewAppleWorkloadId(null);
-      }, 6000);
+        setWorkloadAnimStage('idle');
+      }, 6500);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(treeTiltTimer);
+        clearTimeout(gardenerTimer);
+        clearTimeout(finishTimer);
+      };
     }
-  }, [newAppleWorkloadId, setNewAppleWorkloadId]);
+  }, [newAppleWorkloadId, setNewAppleWorkloadId, setGardenerHasQuestion]);
 
   // Workloads represented as apples on tree: active workloads + completed workloads not yet harvested
   const treeApples = workloads.filter(w => {
@@ -130,9 +154,17 @@ export const TreeView: React.FC = () => {
   const hasDoneApplesToPick = treeApples.some(w => getWorkloadProgress(w) >= 100 || w.status === 'Completed');
 
   // Tree is bent after new workload is added (more than baseline 4 workloads, sponsorship, or explicit flag)
-  const isTreeBent = contextIsTreeBent ||
-    treeApples.length > 4 ||
+  // When balance plan is applied, tree is un-tilted and upright
+  const hasAddedExtraWorkload = treeApples.length > 4 ||
     workloads.some(w => w.id === 'tech-carnival-sponsorship' || w.title.toLowerCase().includes('sponsorship'));
+
+  const isTreeBentCalculated = !isBalancePlanApplied && (
+    contextIsTreeBent ||
+    hasAddedExtraWorkload
+  );
+
+  // During staged animation: apple appears first, tree only tilts in 'tree-tilt', 'gardener-react', or 'idle'
+  const isTreeBent = workloadAnimStage === 'apple-first' ? false : isTreeBentCalculated;
 
   // Reset farmer dismissed question state whenever a new workload/apple is added or tree bends
   useEffect(() => {
@@ -243,15 +275,23 @@ export const TreeView: React.FC = () => {
     };
   })();
 
+  // Gardener reaction: emotion change & question mark appear ONLY after user added workload AND tree has tilted!
+  // After balance plan is applied, gardener returns to normal emotion.
+  const showGardenerReaction = !isBalancePlanApplied && (
+    (workloadAnimStage === 'apple-first' || workloadAnimStage === 'tree-tilt')
+      ? false
+      : ((gardenerHasQuestion || isTreeBentCalculated) && !isGardenerQuestionDismissed)
+  );
+
   // Dynamic Gardener picture selection (evaluated safely after treeInfo & isTreeBent are initialized):
   // 1. After picking up the apple -> gardener_apple.png
   // 2. When an apple is ready to be picked up -> gardener_basket.png
-  // 3. When tree is overloaded / bent / has question -> confuseGardener.png
+  // 3. When tree is overloaded / bent / has question (after tree tilt animation) -> confuseGardener.png
   // 4. Default -> gardener.png
   const gardenerImageSrc = (() => {
     if (isHoldingPickedApple) return '/assets/gardener_apple.png';
     if (hasDoneApplesToPick) return '/assets/gardener_basket.png';
-    if ((gardenerHasQuestion || isTreeBent || treeInfo.status === 'Overloaded') && !isGardenerQuestionDismissed) {
+    if (showGardenerReaction) {
       return '/assets/confuseGardener.png';
     }
     return '/assets/gardener.png';
@@ -358,6 +398,171 @@ export const TreeView: React.FC = () => {
         fontFamily: "'Outfit', -apple-system, sans-serif"
       }}
     >
+      {/* Minimalist Sun for Sunny Weather */}
+      {weatherInfo.type === 'sunny' && (
+        <div
+          id="minimalist-sun"
+          style={{
+            position: 'absolute',
+            top: '36px',
+            left: '32px',
+            pointerEvents: 'none',
+            zIndex: 14,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'sunGentleFloat 4s ease-in-out infinite alternate',
+          }}
+        >
+          {/* Outer Sun Glow */}
+          <div
+            style={{
+              position: 'absolute',
+              width: '82px',
+              height: '82px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(254, 240, 138, 0.5) 0%, rgba(254, 215, 170, 0.22) 45%, rgba(254, 243, 199, 0) 72%)',
+              filter: 'blur(6px)',
+              animation: 'sunPulse 3s ease-in-out infinite alternate',
+            }}
+          />
+
+          {/* Minimalist Sun SVG */}
+          <svg width="54" height="54" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="29" cy="29" r="16" fill="url(#sunGradient)" />
+            <circle cx="25" cy="25" r="6" fill="rgba(255, 255, 255, 0.38)" />
+            
+            {/* 8 Minimalist Slender Ray Accents */}
+            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+              <line
+                key={i}
+                x1="29"
+                y1="5"
+                x2="29"
+                y2="9.5"
+                stroke="#F59E0B"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                transform={`rotate(${angle} 29 29)`}
+                opacity="0.8"
+              />
+            ))}
+
+            <defs>
+              <linearGradient id="sunGradient" x1="15" y1="15" x2="43" y2="43" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#FDE047" />
+                <stop offset="1" stopColor="#F59E0B" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      )}
+
+      {/* Minimalist Clouds for Cloudy Weather */}
+      {weatherInfo.type === 'cloudy' && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
+          {/* Cloud 1: Upper Left */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '44px',
+              left: '26px',
+              animation: 'cloudDriftLeft 6s ease-in-out infinite alternate',
+              opacity: 0.92,
+              filter: 'drop-shadow(0 4px 12px rgba(148, 163, 184, 0.2))'
+            }}
+          >
+            <svg width="84" height="42" viewBox="0 0 86 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22 36H66C74.8366 36 82 28.8366 82 20C82 11.5 75.3 4.5 67 4.1C64.5 1.5 61 0 57 0C49.5 0 43.3 5.1 41.6 12.1C39.8 11.4 37.7 11 35.5 11C26.9 11 20 17.9 20 26.5C20 27.2 20.1 27.8 20.2 28.5C18.9 28.2 17.5 28 16 28C9.4 28 4 33.4 4 40C4 40.7 4.1 41.4 4.2 42H22V36Z"
+                fill="url(#cloudGrad1)"
+              />
+              <defs>
+                <linearGradient id="cloudGrad1" x1="4" y1="0" x2="82" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FFFFFF" />
+                  <stop offset="1" stopColor="#E2E8F0" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          {/* Cloud 2: Upper Right Floating Cloud */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '105px',
+              right: '24px',
+              animation: 'cloudDriftRight 7s ease-in-out infinite alternate',
+              opacity: 0.85,
+              filter: 'drop-shadow(0 3px 10px rgba(148, 163, 184, 0.15))'
+            }}
+          >
+            <svg width="68" height="34" viewBox="0 0 86 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22 36H66C74.8366 36 82 28.8366 82 20C82 11.5 75.3 4.5 67 4.1C64.5 1.5 61 0 57 0C49.5 0 43.3 5.1 41.6 12.1C39.8 11.4 37.7 11 35.5 11C26.9 11 20 17.9 20 26.5C20 27.2 20.1 27.8 20.2 28.5C18.9 28.2 17.5 28 16 28C9.4 28 4 33.4 4 40C4 40.7 4.1 41.4 4.2 42H22V36Z"
+                fill="#FFFFFF"
+                fillOpacity="0.94"
+              />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Minimalist Clouds for Rainy Weather */}
+      {weatherInfo.type === 'rainy' && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
+          {/* Moody Rain Cloud 1 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '40px',
+              left: '22px',
+              animation: 'cloudDriftLeft 5.5s ease-in-out infinite alternate',
+              opacity: 0.94,
+              filter: 'drop-shadow(0 6px 16px rgba(30, 58, 138, 0.25))'
+            }}
+          >
+            <svg width="90" height="45" viewBox="0 0 86 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22 36H66C74.8366 36 82 28.8366 82 20C82 11.5 75.3 4.5 67 4.1C64.5 1.5 61 0 57 0C49.5 0 43.3 5.1 41.6 12.1C39.8 11.4 37.7 11 35.5 11C26.9 11 20 17.9 20 26.5C20 27.2 20.1 27.8 20.2 28.5C18.9 28.2 17.5 28 16 28C9.4 28 4 33.4 4 40C4 40.7 4.1 41.4 4.2 42H22V36Z"
+                fill="url(#rainCloudGrad1)"
+              />
+              <defs>
+                <linearGradient id="rainCloudGrad1" x1="4" y1="0" x2="82" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#94A3B8" />
+                  <stop offset="1" stopColor="#64748B" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          {/* Moody Rain Cloud 2 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '90px',
+              right: '24px',
+              animation: 'cloudDriftRight 6s ease-in-out infinite alternate',
+              opacity: 0.88,
+              filter: 'drop-shadow(0 4px 12px rgba(30, 58, 138, 0.18))'
+            }}
+          >
+            <svg width="74" height="38" viewBox="0 0 86 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22 36H66C74.8366 36 82 28.8366 82 20C82 11.5 75.3 4.5 67 4.1C64.5 1.5 61 0 57 0C49.5 0 43.3 5.1 41.6 12.1C39.8 11.4 37.7 11 35.5 11C26.9 11 20 17.9 20 26.5C20 27.2 20.1 27.8 20.2 28.5C18.9 28.2 17.5 28 16 28C9.4 28 4 33.4 4 40C4 40.7 4.1 41.4 4.2 42H22V36Z"
+                fill="url(#rainCloudGrad2)"
+              />
+              <defs>
+                <linearGradient id="rainCloudGrad2" x1="4" y1="0" x2="82" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#CBD5E1" />
+                  <stop offset="1" stopColor="#94A3B8" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      )}
+
       {/* Atmospheric Rain Drops Effect for Rainy Weather */}
       {weatherInfo.type === 'rainy' && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 15, overflow: 'hidden' }}>
@@ -1333,8 +1538,8 @@ export const TreeView: React.FC = () => {
           </div>
         )}
 
-        {/* Animated Question Mark to Notice & Click (triggered on tree bend or broken branches when not picking) */}
-        {!isHoldingPickedApple && !hasDoneApplesToPick && ((gardenerHasQuestion || isTreeBent || treeInfo.status === 'Overloaded') && !isGardenerQuestionDismissed) && (
+        {/* Animated Question Mark to Notice & Click (triggered only after tree tilts when not picking) */}
+        {!isHoldingPickedApple && !hasDoneApplesToPick && showGardenerReaction && (
           <div
             id="gardener-question-badge"
             style={{
@@ -1352,21 +1557,29 @@ export const TreeView: React.FC = () => {
           >
             <div
               style={{
-                backgroundColor: '#DC2626',
-                color: '#FFFFFF',
+                backgroundColor: '#FFFFFF',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
-                fontWeight: 900,
-                boxShadow: '0 0 16px rgba(220, 38, 38, 0.85), 0 4px 10px rgba(0,0,0,0.25)',
-                border: '2.5px solid #FFFFFF'
+                boxShadow: '0 0 16px rgba(220, 38, 38, 0.65), 0 4px 10px rgba(0,0,0,0.25)',
+                border: '2.5px solid #DC2626'
               }}
             >
-              ❓
+              <span
+                style={{
+                  color: '#DC2626',
+                  fontSize: '21px',
+                  fontWeight: 900,
+                  lineHeight: '1',
+                  fontFamily: "'Outfit', -apple-system, sans-serif",
+                  transform: 'translateY(-1px)'
+                }}
+              >
+                ?
+              </span>
             </div>
             {/* Pointer triangle tail */}
             <div
@@ -1400,7 +1613,7 @@ export const TreeView: React.FC = () => {
         )}
 
         {/* Floating Callout on hover */}
-        {isGardenerHovered && !isHoldingPickedApple && !hasDoneApplesToPick && !((gardenerHasQuestion || isTreeBent || treeInfo.status === 'Overloaded') && !isGardenerQuestionDismissed) && (
+        {isGardenerHovered && !isHoldingPickedApple && !hasDoneApplesToPick && !showGardenerReaction && (
           <div
             style={{
               position: 'absolute',
@@ -2044,6 +2257,27 @@ export const TreeView: React.FC = () => {
           0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
           50% { transform: translate(-50%, -54%) rotate(4deg) scale(1.04); }
           100% { transform: translate(-50%, -50%) rotate(-2deg) scale(1); }
+        }
+        @keyframes sunGentleFloat {
+          0% { transform: translateY(0px); }
+          100% { transform: translateY(-4px); }
+        }
+        @keyframes sunPulse {
+          0% { transform: scale(0.95); opacity: 0.55; }
+          100% { transform: scale(1.08); opacity: 0.85; }
+        }
+        @keyframes cloudDriftLeft {
+          0% { transform: translateX(0px); }
+          100% { transform: translateX(12px); }
+        }
+        @keyframes cloudDriftRight {
+          0% { transform: translateX(0px); }
+          100% { transform: translateX(-10px); }
+        }
+        @keyframes gardenerReact {
+          0% { transform: scale(1); }
+          40% { transform: scale(1.12) translateY(-4px); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>

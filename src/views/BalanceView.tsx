@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../theme/colors';
 import { WorkloadItem } from '../types/workload';
@@ -7,7 +7,7 @@ import {
   Check, Calendar, Clock, Sparkles, Edit3, X, ArrowRight,
   Heart, Feather, Palette, Coffee, ShieldAlert, CheckCircle2,
   AlertTriangle, RotateCcw, Users, CheckSquare, Square, Share2,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Mic, Volume2
 } from 'lucide-react';
 
 interface BalanceItemDecision {
@@ -75,7 +75,13 @@ export const BalanceView: React.FC = () => {
     setFocusBlocks,
     customSchedules,
     setCustomSchedules,
-    chatMessages
+    chatMessages,
+    setIsBalancePlanApplied,
+    setIsTreeBent,
+    isFcgExtendedPlan,
+    setIsFcgExtendedPlan,
+    isBalancePlanGenerating,
+    setIsBalancePlanGenerating,
   } = useApp();
 
   const activeWorkloads = workloads.filter(w => w.status === 'Active');
@@ -117,6 +123,19 @@ export const BalanceView: React.FC = () => {
     }));
   };
 
+  // Automatically expand FCG Test dropdown when voice rebalancing plan is generated
+  useEffect(() => {
+    if (isFcgExtendedPlan) {
+      setOpenScheduleDropdowns(prev => ({ ...prev, 'fcg-test-1': true }));
+      setTimeout(() => {
+        const el = document.getElementById('task-card-fcg-test-1');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [isFcgExtendedPlan]);
+
   // Modal state for editing a task's schedule
   const [editingTask, setEditingTask] = useState<null | {
     id: string;
@@ -140,8 +159,8 @@ export const BalanceView: React.FC = () => {
         action: 'Keep',
         subtitle: 'Keep this priority',
         rationale: isPostStressDump
-          ? 'Closest academic deadline! Keep the full 5h preparation before deadline.'
-          : 'Closest academic deadline! Keep the full 5h preparation before deadline.'
+          ? 'Closest academic deadline! Need full preparation.'
+          : 'Closest academic deadline! Need full preparation.'
       };
     }
 
@@ -150,13 +169,13 @@ export const BalanceView: React.FC = () => {
         return {
           action: 'Reduce',
           subtitle: 'Reduce your personal share',
-          rationale: "Stress Dump showed that you're taking over unfinished group work. Keep the core work you need to own and hand 5h back to the group."
+          rationale: "Keep the core work you need to own and hand 5h back to the group."
         };
       }
       return {
         action: 'Keep',
         subtitle: 'Start this early',
-        rationale: 'This is a large and high priority assignment, start some work before OS Quiz'
+        rationale: 'Large and high priority work, start before OS Quiz'
       };
     }
 
@@ -164,17 +183,18 @@ export const BalanceView: React.FC = () => {
       return {
         action: 'Reconsider',
         subtitle: 'Reconsider your responsibility',
-        rationale: 'This responsibility was not in your original workload list and falls inside an already crowded deadline period. Do you need to handle all of it yourself?'
+        rationale: 'This responsibility was not in your original workload list. Do you need to handle all of it yourself?'
       };
     }
 
     if (item.id === 'fcg-test-1') {
+
       return {
         action: 'Move / Delay',
         subtitle: 'Delay intensive preparation',
         rationale: isPostStressDump
-          ? 'Lower urgency than the OS Quiz, Web Programming and Sponsorship deadlines. Focus on those first, then shift FCG preparation later.'
-          : 'Lower urgency than the OS Quiz, Web Programming and Sponsorship deadlines. Focus on those first, then shift FCG preparation later.'
+          ? 'Lower urgency. Focus on other works, then shift to FCG preparation later.'
+          : 'Lower urgency. Focus on other works, then shift to FCG preparation later.'
       };
     }
 
@@ -184,7 +204,7 @@ export const BalanceView: React.FC = () => {
         subtitle: 'Move this later',
         rationale: isPostStressDump
           ? 'Latest deadline and lower urgency.'
-          : 'This has the latest deadline, Sep 18, and lower urgency. Keep it outside the immediate high-pressure period.'
+          : 'Latest deadline and lower urgency.'
       };
     }
 
@@ -194,6 +214,18 @@ export const BalanceView: React.FC = () => {
       subtitle: 'Maintain priority',
       rationale: 'Monitor deadline and preserve target preparation.'
     };
+  };
+
+  const formatProposedDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const y = parts[0];
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      return `${y}/${m}/${d}`;
+    }
+    return dateStr.replace(/-/g, '/');
   };
 
   /**
@@ -313,17 +345,48 @@ export const BalanceView: React.FC = () => {
 
     if (item.id === 'fcg-test-1') {
       const remaining = 8;
-      const b = override1 || { date: '2026-09-12', startTime: '14:30', endTime: '17:30' };
-      const dur = calculateDurationHours(b.startTime, b.endTime);
+      const b1 = override1 || { date: '2026-09-12', startTime: '14:30', endTime: '17:30' };
+      const dur1 = calculateDurationHours(b1.startTime, b1.endTime);
+
+      if (isFcgExtendedPlan) {
+        const b2 = override2 || { date: '2026-09-13', startTime: '09:30', endTime: '12:30' };
+        const dur2 = calculateDurationHours(b2.startTime, b2.endTime);
+        const blocks: ProposedBlockPlan[] = [
+          {
+            id: `${item.id}-1`,
+            date: b1.date,
+            startTime: b1.startTime,
+            endTime: b1.endTime,
+            durationHours: dur1,
+            label: 'Part 1: Transformations & 3D pipeline review'
+          },
+          {
+            id: `${item.id}-2`,
+            date: b2.date,
+            startTime: b2.startTime,
+            endTime: b2.endTime,
+            durationHours: dur2,
+            label: 'Part 2: Practice problem solving & test simulation (Added by voice)'
+          }
+        ];
+        const planned = dur1 + dur2;
+        return {
+          remainingTimeHours: remaining,
+          plannedHours: planned,
+          unscheduledHours: Math.max(0, remaining - planned),
+          blocks
+        };
+      }
+
       const blocks: ProposedBlockPlan[] = [{
         id: `${item.id}-1`,
-        date: b.date,
-        startTime: b.startTime,
-        endTime: b.endTime,
-        durationHours: dur,
+        date: b1.date,
+        startTime: b1.startTime,
+        endTime: b1.endTime,
+        durationHours: dur1,
         label: 'Post-cluster prep: Transformations & 3D pipeline'
       }];
-      const planned = dur;
+      const planned = dur1;
       return {
         remainingTimeHours: remaining,
         plannedHours: planned,
@@ -517,8 +580,10 @@ export const BalanceView: React.FC = () => {
 
     // Write generated FocusBlocks to AppContext
     setFocusBlocks(newFocusBlocks);
+    setIsBalancePlanApplied(true);
+    setIsTreeBent(false);
 
-    setToastMessage(`✓ Applied balance plan! Tap "Undo" if you wish to revert.`);
+    setToastMessage(`✓ Applied balance plan! Tap "Undo" to revert.`);
 
     setTimeout(() => {
       const topEl = document.getElementById('balance-page-top');
@@ -555,6 +620,8 @@ export const BalanceView: React.FC = () => {
     if (previousSnapshot.selectedPlanIds) {
       setSelectedPlanIds([...previousSnapshot.selectedPlanIds]);
     }
+    setIsBalancePlanApplied(false);
+    setIsTreeBent(true);
 
     setPreviousSnapshot(null);
     setToastMessage('✓ Balance plan reverted to previous state.');
@@ -750,7 +817,7 @@ export const BalanceView: React.FC = () => {
             margin: 0,
             fontWeight: 400
           }}>
-            Your cognitive demand is outstripping energy reserves today. Taking an intentional 20-minute recovery break before tackling analytical work will restore focus.
+            High congnitive demand outstripped your energy today! Take a 20-minute break before work to restore focus.
           </p>
 
           {/* Quicklinks to Recovery Features (HomeView Cover Page style) */}
@@ -807,6 +874,125 @@ export const BalanceView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* AI VOICE REBALANCING FEEDBACK BANNERS                                      */}
+      {/* ========================================================================= */}
+
+      {/* Loading state when user asks Floating AI to rebalance */}
+      {isBalancePlanGenerating && (
+        <div
+          id="balance-plan-generating-indicator"
+          style={{
+            backgroundColor: '#EEF2FF',
+            borderRadius: '20px',
+            padding: '16px 18px',
+            border: '1.5px solid #818CF8',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            boxShadow: '0 8px 24px rgba(99, 102, 241, 0.18)',
+            animation: 'pulseGlow 1.4s infinite ease-in-out',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+            flexShrink: 0
+          }}>
+            <Sparkles size={20} color="#FFFFFF" className="animate-spin" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13.5px', fontWeight: 750, color: '#1E1B4B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>Squirrel AI is generating new balance plan...</span>
+              <span style={{ fontSize: '12px' }}>⏳</span>
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#4338CA', marginTop: '2px', fontWeight: 500 }}>
+              Finding available focus blocks to allocate extra preparation time for FCG Test...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Extended Plan Banner */}
+      {isFcgExtendedPlan && !isBalancePlanGenerating && (
+        <div
+          id="balance-plan-extended-banner"
+          style={{
+            backgroundColor: '#F0FDF4',
+            borderRadius: '20px',
+            padding: '14px 18px',
+            border: '1.5px solid #86EFAC',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            boxShadow: '0 4px 16px rgba(34, 197, 94, 0.12)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: '#DCFCE7',
+              border: '1px solid #BBF7D0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Check size={18} color="#15803D" strokeWidth={2.8} />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 750, color: '#14532D', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>Voice Rebalanced Plan Applied!</span>
+
+              </div>
+
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="btn-reset-voice-plan"
+            onClick={() => {
+              setIsFcgExtendedPlan(false);
+              setToastMessage('✓ Reset to initial balance plan (3.0h scheduled for FCG Test).');
+              setTimeout(() => setToastMessage(null), 3500);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 12px',
+              borderRadius: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              color: '#475569',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+            }}
+            title="Reset to initial 3.0h plan to test voice rebalancing demo again"
+          >
+            <RotateCcw size={11} />
+            <span>Reset Demo</span>
+          </button>
+        </div>
+      )}
+
+
 
       {/* ========================================================================= */}
       {/* 2. FOUR DECISION SECTIONS (Keep, Reduce, Reconsider, Move/Delay)           */}
@@ -953,7 +1139,7 @@ export const BalanceView: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Clock size={12} color="#64748B" />
                     <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#475569' }}>
-                      {isOS ? 'Deadline: Sep 10 • 8:00 AM' : 'Deadline: Sep 11 • 23:59'}
+                      {isOS ? 'Due: Sep 10 • 8:00 AM' : 'Due: Sep 11 • 23:59'}
                     </span>
                   </div>
                   <span style={{
@@ -1029,7 +1215,7 @@ export const BalanceView: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Clock size={12} color="#64748B" />
                             <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
-                              {b.date} • {b.startTime} - {b.endTime}
+                              {formatProposedDate(b.date)} • {b.startTime} - {b.endTime}
                             </span>
                             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
                               ({b.durationHours}h)
@@ -1300,7 +1486,7 @@ export const BalanceView: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Clock size={12} color="#64748B" />
                             <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
-                              {b.date} • {b.startTime} - {b.endTime}
+                              {formatProposedDate(b.date)} • {b.startTime} - {b.endTime}
                             </span>
                             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
                               ({b.durationHours}h)
@@ -1356,7 +1542,7 @@ export const BalanceView: React.FC = () => {
             lineHeight: '1.45',
             fontWeight: 400
           }}>
-            No workload has a clearly reducible scope based on what Restore currently knows.
+            No workload has a clearly reducible scope.
           </div>
         )}
       </div>
@@ -1571,7 +1757,7 @@ export const BalanceView: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Clock size={12} color="#64748B" />
                             <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
-                              {b.date} • {b.startTime} - {b.endTime}
+                              {formatProposedDate(b.date)} • {b.startTime} - {b.endTime}
                             </span>
                             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
                               ({b.durationHours}h)
@@ -1627,7 +1813,7 @@ export const BalanceView: React.FC = () => {
             lineHeight: '1.45',
             fontWeight: 400
           }}>
-            No responsibility currently needs an ownership decision based on the information recorded so far.
+            No responsibility currently needs an ownership decision.
           </div>
         )}
       </div>
@@ -1684,33 +1870,60 @@ export const BalanceView: React.FC = () => {
             const isSelected = selectedPlanIds.includes(item.id);
 
             return (
-              <div key={item.id} style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                padding: '14px 16px',
-                boxShadow: isSelected ? '0 4px 16px rgba(217, 119, 6, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)',
-                border: isSelected ? '1.5px solid rgba(253, 230, 138, 0.95)' : '1px dashed #CBD5E1',
-                opacity: isSelected ? 1 : 0.65,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                transition: 'all 0.2s ease'
-              }}>
+              <div
+                key={item.id}
+                id={item.id === 'fcg-test-1' ? 'task-card-fcg-test-1' : undefined}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '14px 16px',
+                  boxShadow: (isFCG && isFcgExtendedPlan)
+                    ? '0 6px 20px rgba(99, 102, 241, 0.14), 0 1px 3px rgba(0, 0, 0, 0.02)'
+                    : (isSelected ? '0 4px 16px rgba(217, 119, 6, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02)' : '0 1px 3px rgba(0,0,0,0.02)'),
+                  border: (isFCG && isFcgExtendedPlan)
+                    ? '1.5px solid #818CF8'
+                    : (isSelected ? '1.5px solid rgba(253, 230, 138, 0.95)' : '1px dashed #CBD5E1'),
+                  opacity: isSelected ? 1 : 0.65,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <h4 style={{
-                      fontSize: '14.5px',
-                      fontWeight: 600,
-                      color: '#0F172A',
-                      margin: 0,
-                      letterSpacing: '-0.2px'
-                    }}>
-                      {item.title}
-                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <h4 style={{
+                        fontSize: '14.5px',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        margin: 0,
+                        letterSpacing: '-0.2px'
+                      }}>
+                        {item.title}
+                      </h4>
+                      {isFCG && isFcgExtendedPlan && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '2px 7px',
+                          borderRadius: '999px',
+                          backgroundColor: '#EEF2FF',
+                          border: '1px solid #C7D2FE',
+                          color: '#4F46E5',
+                          fontSize: '10.5px',
+                          fontWeight: 700
+                        }}>
+                          <Sparkles size={10} color="#4F46E5" />
+                          Schedule Adjusted (+3.0h)
+                        </span>
+                      )}
+                    </div>
                     <span style={{
                       fontSize: '12px',
                       fontWeight: 500,
-                      color: '#B45309',
+                      color: isFCG && isFcgExtendedPlan ? '#4F46E5' : '#B45309',
                       letterSpacing: '-0.1px'
                     }}>
                       {decision.subtitle}
@@ -1772,11 +1985,11 @@ export const BalanceView: React.FC = () => {
                 }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#B45309' }}>
                     {isFCG
-                      ? (isStressDumpConfirmed ? 'Shifted after immediate Sep 9–11 cluster' : 'Shifted after immediate deadlines')
+                      ? (isStressDumpConfirmed ? 'Shifted after Sep 9/11 cluster' : 'Shifted after immediate deadlines')
                       : 'Prioritized after Sep 14 FCG Test'}
                   </span>
                   <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>
-                    Deadline: {item.deadline ? item.deadline.slice(5, 10).replace('-', '/') : 'Upcoming'}
+                    Due: {item.deadline ? item.deadline.slice(5, 10).replace('-', '/') : 'Upcoming'}
                   </span>
                 </div>
 
@@ -1841,7 +2054,7 @@ export const BalanceView: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Clock size={12} color="#64748B" />
                             <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500 }}>
-                              {b.date} • {b.startTime} - {b.endTime}
+                              {formatProposedDate(b.date)} • {b.startTime} - {b.endTime}
                             </span>
                             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 450 }}>
                               ({b.durationHours}h)

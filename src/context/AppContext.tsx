@@ -131,6 +131,12 @@ interface AppContextType {
   sendSquirrelInsightToChat: () => void;
   isTreeBent: boolean;
   setIsTreeBent: (bent: boolean) => void;
+  isBalancePlanApplied: boolean;
+  setIsBalancePlanApplied: (applied: boolean) => void;
+  isFcgExtendedPlan: boolean;
+  setIsFcgExtendedPlan: (extended: boolean) => void;
+  isBalancePlanGenerating: boolean;
+  setIsBalancePlanGenerating: (generating: boolean) => void;
   hasRemindedCheckInToday: boolean;
   markCheckInRemindedToday: () => void;
   harvestedAppleIds: string[];
@@ -685,6 +691,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [newAppleWorkloadId, setNewAppleWorkloadId] = useState<string | null>(null);
   const [gardenerHasQuestion, setGardenerHasQuestion] = useState(false);
   const [isTreeBent, setIsTreeBent] = useState(false);
+  const [isBalancePlanApplied, setIsBalancePlanApplied] = useState(false);
+  const [isFcgExtendedPlan, setIsFcgExtendedPlan] = useState(false);
+  const [isBalancePlanGenerating, setIsBalancePlanGenerating] = useState(false);
   const [harvestedAppleIds, setHarvestedAppleIds] = useState<string[]>([]);
   const harvestApple = (workloadId: string) => {
     setHarvestedAppleIds(prev => prev.includes(workloadId) ? prev : [...prev, workloadId]);
@@ -807,6 +816,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       nasaTlx: newItem.nasaTlx
     };
     setWorkloads(prev => [item, ...prev]);
+    setIsBalancePlanApplied(false);
     setIsTreeBent(true);
     setGardenerHasQuestion(true);
     setNewAppleWorkloadId(item.id);
@@ -900,6 +910,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const applyRebalancedTasks = (rebalancedWorkloads: WorkloadItem[]) => {
     setWorkloads(rebalancedWorkloads);
+    setIsBalancePlanApplied(true);
+    setIsTreeBent(false);
   };
 
   const markChatWorkloadAdded = (messageId: string) => {
@@ -986,13 +998,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Replace any existing check-in for the same date (one per day)
     setCheckIns(prev => [...prev.filter(c => c.date !== checkIn.date), checkIn]);
     setLastCheckInReminderDate(TODAY);
+    setGardenerHasQuestion(false);
 
-    // Update message text when check-in is completed from chat
+    // Update message text when check-in is completed from chat:
+    // Only update existing daily insight card if already present in chat (from gardener or squirrel), but do not create a new one.
     setChatMessages(prev => {
-      const updated = prev.map(m => {
-        if (m.isGardenerExplanation || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) {
+      // 1. Clean up any gardener's question messages about tree condition
+      const withoutGardenerQuestion = prev.filter(m => !m.isGardenerQuestion);
+
+      // 2. Update existing insight card if one was already present in chat
+      const updated = withoutGardenerQuestion.map(m => {
+        if (m.isGardenerExplanation || m.isSquirrelInsight || (m.isOverloadNotice && m.isNicoleAnalysisPlan)) {
           return {
             ...m,
+            isGardenerExplanation: false,
+            isSquirrelInsight: true,
             text: "Nicole, your tree condition and weather directly mirror your current mental capacity and daily stress level:"
           };
         }
@@ -1039,8 +1059,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isNicoleDemo) {
       setTimeout(() => {
         const aiReply = createNicoleExtractionMessage('');
-        setChatMessages(prev => [...prev, aiReply]);
-      }, 500);
+
+        setChatMessages(prev => {
+          // Remove any gardener question or older insight cards so no gardener question is sent
+          const cleaned = prev.filter(m => !m.isGardenerQuestion && !(m.isOverloadNotice && m.isNicoleAnalysisPlan));
+          return [...cleaned, aiReply];
+        });
+      }, 1400);
       setChatMessages(prev => [...prev, userMsg]);
       return;
     }
@@ -1058,7 +1083,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           suggestedAction: 'none'
         };
         setChatMessages(prev => [...prev, aiReply]);
-      }, 500);
+      }, 1400);
       setChatMessages(prev => [...prev, userMsg]);
       return;
     }
@@ -1109,7 +1134,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         };
         setChatMessages(prev => [...prev, aiReply]);
-      }, 450);
+      }, 1400);
       setChatMessages(prev => [...prev, userMsg]);
       return;
     }
@@ -1182,8 +1207,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         stressDrivers: drivers,
         suggestedAction: isShout ? 'recover' : (hasAssignment ? 'manage' : 'none')
       };
-      setChatMessages(prev => [...prev, aiReply]);
-    }, 700);
+
+      const messagesToAdd: AiDumpChatMessage[] = [aiReply];
+
+      setChatMessages(prev => {
+        const cleaned = prev.filter(m => !m.isGardenerQuestion && !(m.isOverloadNotice && m.isNicoleAnalysisPlan));
+        return [...cleaned, ...messagesToAdd];
+      });
+    }, 1400);
 
     setChatMessages(prev => [...prev, userMsg]);
   };
@@ -1248,6 +1279,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setNewAppleWorkloadId('tech-carnival-sponsorship');
     setGardenerHasQuestion(true);
+    setIsBalancePlanApplied(false);
     setIsTreeBent(true);
 
     setChatMessages(prev => {
@@ -1468,8 +1500,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         !m.isSquirrelInsight &&
         !(m.isOverloadNotice && m.isNicoleAnalysisPlan)
       );
-      return [...cleaned, userQuestionMsg, aiAnalysisReplyMsg];
+      return [...cleaned, userQuestionMsg];
     });
+
+    // Natural delay so user can read what they sent before the reply appears
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, aiAnalysisReplyMsg]);
+    }, 1400);
+
     setLastCheckInReminderDate(TODAY);
   };
 
@@ -1588,6 +1626,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sendSquirrelInsightToChat,
       isTreeBent,
       setIsTreeBent,
+      isBalancePlanApplied,
+      setIsBalancePlanApplied,
+      isFcgExtendedPlan,
+      setIsFcgExtendedPlan,
+      isBalancePlanGenerating,
+      setIsBalancePlanGenerating,
       hasRemindedCheckInToday,
       markCheckInRemindedToday,
       harvestedAppleIds,
