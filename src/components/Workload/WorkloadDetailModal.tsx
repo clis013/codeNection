@@ -88,6 +88,26 @@ export const WorkloadDetailModal: React.FC = () => {
   const flexibilities: FlexibilityLevel[] = ['Strict', 'Moderate', 'Flexible'];
   const activities: ActivityType[] = ['Deep focus', 'Communication', 'Creative', 'Physical', 'Administrative'];
 
+  const deriveActivityType = (titleText: string, areaVal?: string): ActivityType => {
+    const t = (titleText || '').toLowerCase();
+    if (t.includes('quiz') || t.includes('test') || t.includes('exam') || t.includes('study') || t.includes('proof') || t.includes('assignment') || t.includes('code') || t.includes('programming') || t.includes('math') || t.includes('database') || t.includes('os') || t.includes('fcg')) {
+      return 'Deep focus';
+    }
+    if (t.includes('sponsorship') || t.includes('meeting') || t.includes('call') || t.includes('presentation') || t.includes('interview') || t.includes('social') || t.includes('carnival') || t.includes('talk')) {
+      return 'Communication';
+    }
+    if (t.includes('design') || t.includes('draw') || t.includes('art') || t.includes('brainstorm') || t.includes('write') || t.includes('essay') || t.includes('prototype')) {
+      return 'Creative';
+    }
+    if (t.includes('gym') || t.includes('run') || t.includes('sport') || t.includes('clean') || t.includes('walk') || t.includes('workout') || t.includes('exercise')) {
+      return 'Physical';
+    }
+    if (areaVal === 'Academic') return 'Deep focus';
+    if (areaVal === 'Social') return 'Communication';
+    if (areaVal === 'Self-Care') return 'Physical';
+    return 'Deep focus';
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -111,34 +131,82 @@ export const WorkloadDetailModal: React.FC = () => {
         maxWidth: '393px',
         maxHeight: '88vh',
         overflowY: 'auto',
-        padding: '20px',
+        padding: '24px 22px',
         boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
         display: 'flex',
         flexDirection: 'column',
         gap: '15px',
         border: `1px solid ${Colors.skyBlue}`
       }}>
-        {/* Modal Header matching Reference */}
+        {/* Modal Header: Google Calendar Task Modal Style */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           borderBottom: `1px solid ${Colors.borderSoft}`,
-          paddingBottom: '12px'
+          paddingBottom: '12px',
+          gap: '12px'
         }}>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{
               fontSize: '11px',
               fontWeight: 700,
               color: '#059669',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px'
+              letterSpacing: '0.5px',
+              display: 'block'
             }}>
-              Workload Task Fill-In Details
+              Workload Task Details
             </span>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: Colors.textDark, marginTop: '2px' }}>
-              Edit & Rating Details
-            </h2>
+
+            {/* Task Title placed at "Editing & Rating Details" place */}
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                setFormData({
+                  ...formData,
+                  title: newTitle,
+                  activityType: deriveActivityType(newTitle, formData.area)
+                });
+              }}
+              placeholder="Add task title"
+              style={{
+                width: '100%',
+                border: 'none',
+                borderBottom: '2px solid #E2E8F0',
+                outline: 'none',
+                fontSize: '18px',
+                fontWeight: 700,
+                color: Colors.textDark,
+                marginTop: '4px',
+                padding: '4px 0',
+                backgroundColor: 'transparent',
+                fontFamily: "'Outfit', -apple-system, sans-serif"
+              }}
+            />
+
+            {/* System self-defined activity type under task title */}
+            <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#1D4ED8',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '8px',
+                padding: '2px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <span>🏷️</span>
+                <span>{formData.activityType}</span>
+                <span style={{ color: '#60A5FA', fontWeight: 500, fontSize: '10px' }}>(System defined)</span>
+              </span>
+            </div>
           </div>
 
           <button
@@ -154,7 +222,8 @@ export const WorkloadDetailModal: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: Colors.textMuted
+              color: Colors.textMuted,
+              flexShrink: 0
             }}
           >
             <X size={18} />
@@ -162,37 +231,17 @@ export const WorkloadDetailModal: React.FC = () => {
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* Task Title */}
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Task Title</label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '14px',
-                border: `1px solid ${Colors.borderSoft}`,
-                fontSize: '14px',
-                fontWeight: 600,
-                color: Colors.textDark,
-                marginTop: '4px',
-                outline: 'none',
-                backgroundColor: Colors.background
-              }}
-            />
-          </div>
+          {/* MUST FILL IN DETAILS (Google Calendar style) */}
 
-          {/* Due Date & Due Time Side by Side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CalendarIcon size={13} color="#059669" /> Due Date
-              </label>
+          {/* Deadline: Due Date on left, Due Time on right in same row */}
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+              <CalendarIcon size={13} color="#059669" /> Deadline <span style={{ color: '#DC2626' }}>*</span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
               <input
                 type="date"
+                required
                 value={(() => {
                   try {
                     const d = new Date(formData.deadline);
@@ -226,18 +275,12 @@ export const WorkloadDetailModal: React.FC = () => {
                   fontWeight: 600,
                   color: Colors.textDark,
                   backgroundColor: Colors.background,
-                  marginTop: '4px',
                   outline: 'none'
                 }}
               />
-            </div>
-
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={13} color="#C2410C" /> Due Time
-              </label>
               <input
                 type="time"
+                required
                 value={(() => {
                   try {
                     const d = new Date(formData.deadline);
@@ -269,69 +312,49 @@ export const WorkloadDetailModal: React.FC = () => {
                   fontWeight: 600,
                   color: Colors.textDark,
                   backgroundColor: Colors.background,
-                  marginTop: '4px',
                   outline: 'none'
                 }}
               />
             </div>
           </div>
 
-          {/* Workload Area Selector (2x2 grid matching Reference) */}
+          {/* Workload Area Dropdown */}
           <div>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Workload Area</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
-              {areas.map((a) => {
-                const selected = formData.area === a;
-                const style = AreaColors[a];
-                return (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, area: a })}
-                    style={{
-                      padding: '8px',
-                      borderRadius: '12px',
-                      border: selected ? `1.5px solid ${style.border}` : `1px solid ${Colors.borderSoft}`,
-                      backgroundColor: selected ? style.bg : '#FFFFFF',
-                      color: selected ? style.text : Colors.textMedium,
-                      fontWeight: selected ? 700 : 500,
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {a}
-                  </button>
-                );
-              })}
-            </div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, marginBottom: '4px', display: 'block' }}>
+              Workload Area <span style={{ color: '#DC2626' }}>*</span>
+            </label>
+            <select
+              value={formData.area}
+              onChange={(e) => {
+                const newArea = e.target.value as WorkloadArea;
+                setFormData({
+                  ...formData,
+                  area: newArea,
+                  activityType: deriveActivityType(formData.title, newArea)
+                });
+              }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${Colors.borderSoft}`,
+                fontSize: '13px',
+                fontWeight: 600,
+                color: Colors.textDark,
+                backgroundColor: Colors.background,
+                outline: 'none'
+              }}
+            >
+              {areas.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
           </div>
 
-          {/* Urgency Level & Flexibility Side by Side */}
+          {/* Feasibility / Flexibility & Estimated Hours Side by Side (Must fill in details) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Urgency Level</label>
-              <select
-                value={formData.urgency}
-                onChange={(e) => setFormData({ ...formData, urgency: e.target.value as UrgencyLevel })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '12px',
-                  border: `1px solid ${Colors.borderSoft}`,
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: Colors.textDark,
-                  backgroundColor: Colors.background,
-                  marginTop: '4px'
-                }}
-              >
-                {urgencies.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Flexibility</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, marginBottom: '4px', display: 'block' }}>
+                Feasibility / Flexibility <span style={{ color: '#DC2626' }}>*</span>
+              </label>
               <select
                 value={formData.flexibility || formData.timeFlexibility || 'Moderate'}
                 onChange={(e) => {
@@ -345,67 +368,89 @@ export const WorkloadDetailModal: React.FC = () => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '8px 12px',
+                  padding: '9px 12px',
                   borderRadius: '12px',
                   border: `1px solid ${Colors.borderSoft}`,
                   fontSize: '13px',
                   fontWeight: 600,
                   color: Colors.textDark,
                   backgroundColor: Colors.background,
-                  marginTop: '4px'
+                  outline: 'none'
                 }}
               >
                 {flexibilities.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-          </div>
-
-          {/* Activity Type & Estimated Hours Side by Side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Activity Type</label>
-              <select
-                value={formData.activityType}
-                onChange={(e) => setFormData({ ...formData, activityType: e.target.value as ActivityType })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '12px',
-                  border: `1px solid ${Colors.borderSoft}`,
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: Colors.textDark,
-                  backgroundColor: Colors.background,
-                  marginTop: '4px'
-                }}
-              >
-                {activities.map(act => <option key={act} value={act}>{act}</option>)}
-              </select>
-            </div>
 
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Estimated Hours</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, marginBottom: '4px', display: 'block' }}>
+                Estimated Effort (Hours) <span style={{ color: '#DC2626' }}>*</span>
+              </label>
               <input
                 type="number"
                 min={0.5}
                 max={50}
                 step={0.5}
+                required
                 value={formData.estimatedHours}
                 onChange={(e) => setFormData({ ...formData, estimatedHours: parseFloat(e.target.value) || 1 })}
                 style={{
                   width: '100%',
-                  padding: '8px 12px',
+                  padding: '9px 12px',
                   borderRadius: '12px',
                   border: `1px solid ${Colors.borderSoft}`,
                   fontSize: '13px',
                   fontWeight: 600,
                   color: Colors.textDark,
                   backgroundColor: Colors.background,
-                  marginTop: '4px'
+                  outline: 'none'
                 }}
               />
             </div>
           </div>
+
+          {/* Urgency Level */}
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, marginBottom: '4px', display: 'block' }}>
+              Urgency Level
+            </label>
+            <select
+              value={formData.urgency}
+              onChange={(e) => setFormData({ ...formData, urgency: e.target.value as UrgencyLevel })}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${Colors.borderSoft}`,
+                fontSize: '13px',
+                fontWeight: 600,
+                color: Colors.textDark,
+                backgroundColor: Colors.background,
+                outline: 'none'
+              }}
+            >
+              {urgencies.map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+
+          {/* AI-DEFINED DETAILS SECTION HEADER */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: '6px',
+            borderTop: '1px dashed #E2E8F0',
+            marginTop: '2px'
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#4338CA', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>✨</span> AI-Defined Details & Demands
+            </span>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: '#6366F1', backgroundColor: '#EEF2FF', padding: '1px 6px', borderRadius: '6px' }}>
+              Auto-Assisted
+            </span>
+          </div>
+
+
 
           {/* Notes & Description Textarea */}
           <div>
@@ -429,86 +474,6 @@ export const WorkloadDetailModal: React.FC = () => {
                 fontFamily: 'inherit'
               }}
             />
-          </div>
-
-          {/* DEMAND INTENSITY RATING (1-5) matching Reference */}
-          <div style={{
-            backgroundColor: Colors.background,
-            padding: '14px',
-            borderRadius: '18px',
-            border: `1px solid ${Colors.borderSoft}`,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#047857', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sliders size={16} color="#059669" /> Demand Intensity Rating (1-5)
-              </span>
-            </div>
-
-            {/* Cognitive */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#2563EB', fontWeight: 600 }}>
-                  <Brain size={13} /> Cognitive Load (Thinking)
-                </span>
-                <span style={{ fontWeight: 700, color: Colors.textDark }}>Level {formData.demandProfile.cognitive}/5</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={formData.demandProfile.cognitive}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  demandProfile: { ...formData.demandProfile, cognitive: parseInt(e.target.value) }
-                })}
-                style={{ width: '100%', accentColor: '#2563EB' }}
-              />
-            </div>
-
-            {/* Emotional */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#E11D48', fontWeight: 600 }}>
-                  <Heart size={13} /> Emotional Load (Feeling effort)
-                </span>
-                <span style={{ fontWeight: 700, color: Colors.textDark }}>Level {formData.demandProfile.emotional}/5</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={formData.demandProfile.emotional}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  demandProfile: { ...formData.demandProfile, emotional: parseInt(e.target.value) }
-                })}
-                style={{ width: '100%', accentColor: '#E11D48' }}
-              />
-            </div>
-
-            {/* Physical */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#059669', fontWeight: 600 }}>
-                  <Activity size={13} /> Physical / Time Crunch
-                </span>
-                <span style={{ fontWeight: 700, color: Colors.textDark }}>Level {formData.demandProfile.physical}/5</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={formData.demandProfile.physical}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  demandProfile: { ...formData.demandProfile, physical: parseInt(e.target.value) }
-                })}
-                style={{ width: '100%', accentColor: '#059669' }}
-              />
-            </div>
           </div>
 
           {/* SUBTASKS BREAKDOWN SECTION (Matching Reference) */}
@@ -624,98 +589,178 @@ export const WorkloadDetailModal: React.FC = () => {
             </div>
           </div>
 
-          {/* NASA-TLX ASSESSMENT EXPANDABLE SECTION (Matching Reference) */}
-          <div style={{ borderTop: `1px solid ${Colors.borderSoft}`, paddingTop: '12px' }}>
-            <button
-              type="button"
-              onClick={() => setShowNasaTlx(!showNasaTlx)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                backgroundColor: '#F7EDFF',
-                color: '#7B1FA2',
-                border: '1.5px dashed #E7C6FF',
-                borderRadius: '14px',
-                fontWeight: 600,
-                fontSize: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Calculator size={15} />
-              {showNasaTlx ? 'Hide NASA-TLX Assessment' : 'Detailed NASA-TLX Workload Assessment'}
-            </button>
+          {/* DEMAND INTENSITY RATING (1-5) matching Reference */}
+          <div style={{
+            backgroundColor: Colors.background,
+            padding: '14px',
+            borderRadius: '18px',
+            border: `1px solid ${Colors.borderSoft}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#047857', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sliders size={16} color="#059669" /> Demand Intensity Rating (1-5)
+              </span>
+            </div>
 
-            {showNasaTlx && (
-              <div style={{
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: '#FAF5FF',
-                borderRadius: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}>
-                <span style={{ fontSize: '11px', color: '#7B1FA2', fontWeight: 600 }}>
-                  Rate 6 TLX Dimensions (0-100% scale):
+            {/* Cognitive */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#2563EB', fontWeight: 600 }}>
+                  <Brain size={13} /> Cognitive Load (Thinking)
                 </span>
+                <span style={{ fontWeight: 700, color: Colors.textDark }}> {formData.demandProfile.cognitive}/5</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                value={formData.demandProfile.cognitive}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  demandProfile: { ...formData.demandProfile, cognitive: parseInt(e.target.value) }
+                })}
+                style={{ width: '100%', accentColor: '#2563EB' }}
+              />
+            </div>
 
-                {(['mentalDemand', 'physicalDemand', 'temporalDemand', 'performance', 'effort', 'frustration'] as const).map(dim => (
-                  <div key={dim}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', textTransform: 'capitalize' }}>
-                      <span style={{ fontWeight: 600, color: Colors.textMedium }}>{dim.replace(/([A-Z])/g, ' $1')}</span>
-                      <span style={{ fontWeight: 700, color: '#7B1FA2' }}>{nasaScores[dim]}%</span>
+            {/* Emotional */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#E11D48', fontWeight: 600 }}>
+                  <Heart size={13} /> Emotional Load (Feeling effort)
+                </span>
+                <span style={{ fontWeight: 700, color: Colors.textDark }}> {formData.demandProfile.emotional}/5</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                value={formData.demandProfile.emotional}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  demandProfile: { ...formData.demandProfile, emotional: parseInt(e.target.value) }
+                })}
+                style={{ width: '100%', accentColor: '#E11D48' }}
+              />
+            </div>
+
+            {/* Physical */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#059669', fontWeight: 600 }}>
+                  <Activity size={13} /> Physical / Time Crunch
+                </span>
+                <span style={{ fontWeight: 700, color: Colors.textDark }}> {formData.demandProfile.physical}/5</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                value={formData.demandProfile.physical}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  demandProfile: { ...formData.demandProfile, physical: parseInt(e.target.value) }
+                })}
+                style={{ width: '100%', accentColor: '#059669' }}
+              />
+            </div>
+
+            {/* NASA-TLX ASSESSMENT EXPANDABLE SECTION (Matching Reference) */}
+            <div >
+              <button
+                type="button"
+                onClick={() => setShowNasaTlx(!showNasaTlx)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  backgroundColor: '#F7EDFF',
+                  color: '#7B1FA2',
+                  border: '1.5px dashed #E7C6FF',
+                  borderRadius: '14px',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Calculator size={15} />
+                {showNasaTlx ? 'Hide NASA-TLX Assessment' : 'Detailed NASA-TLX Workload Assessment'}
+              </button>
+
+              {showNasaTlx && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  backgroundColor: '#FAF5FF',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  <span style={{ fontSize: '11px', color: '#7B1FA2', fontWeight: 600 }}>
+                    Rate 6 TLX Dimensions (0-100% scale):
+                  </span>
+
+                  {(['mentalDemand', 'physicalDemand', 'temporalDemand', 'performance', 'effort', 'frustration'] as const).map(dim => (
+                    <div key={dim}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', textTransform: 'capitalize' }}>
+                        <span style={{ fontWeight: 600, color: Colors.textMedium }}>{dim.replace(/([A-Z])/g, ' $1')}</span>
+                        <span style={{ fontWeight: 700, color: '#7B1FA2' }}>{nasaScores[dim]}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={nasaScores[dim]}
+                        onChange={(e) => setNasaScores({ ...nasaScores, [dim]: parseInt(e.target.value) })}
+                        style={{ width: '100%', accentColor: '#7B1FA2' }}
+                      />
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={nasaScores[dim]}
-                      onChange={(e) => setNasaScores({ ...nasaScores, [dim]: parseInt(e.target.value) })}
-                      style={{ width: '100%', accentColor: '#7B1FA2' }}
-                    />
-                  </div>
-                ))}
+                  ))}
 
-                <button
-                  type="button"
-                  onClick={handleCalculateNasaTlx}
-                  style={{
-                    backgroundColor: '#7B1FA2',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '8px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    marginTop: '4px'
-                  }}
-                >
-                  Save NASA-TLX Score
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleCalculateNasaTlx}
+                    style={{
+                      backgroundColor: '#7B1FA2',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '8px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      marginTop: '4px'
+                    }}
+                  >
+                    Save NASA-TLX Score
+                  </button>
+                </div>
+              )}
 
-            {formData.nasaTlx && !showNasaTlx && (
-              <div style={{
-                marginTop: '8px',
-                fontSize: '11px',
-                color: '#7B1FA2',
-                backgroundColor: '#F7EDFF',
-                padding: '8px 12px',
-                borderRadius: '12px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontWeight: 600
-              }}>
-                <span>Calculated NASA-TLX Score:</span>
-                <span style={{ fontWeight: 800 }}>{formData.nasaTlx.overallScore} / 100</span>
-              </div>
-            )}
+              {formData.nasaTlx && !showNasaTlx && (
+                <div style={{
+                  marginTop: '8px',
+                  fontSize: '11px',
+                  color: '#7B1FA2',
+                  backgroundColor: '#F7EDFF',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontWeight: 600
+                }}>
+                  <span>Calculated NASA-TLX Score:</span>
+                  <span style={{ fontWeight: 800 }}>{formData.nasaTlx.overallScore} / 100</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons: Delete (pink) & Save Changes (dark green) */}

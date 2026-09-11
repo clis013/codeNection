@@ -421,15 +421,16 @@ export const AddWorkloadModal: React.FC = () => {
         gap: '15px',
         border: `1px solid ${Colors.skyBlue}`
       }}>
-        {/* Modal Header */}
+        {/* Modal Header: Google Calendar Task Modal Style */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           borderBottom: `1px solid ${Colors.borderSoft}`,
-          paddingBottom: '12px'
+          paddingBottom: '12px',
+          gap: '12px'
         }}>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{
               fontSize: '11px',
               fontWeight: 800,
@@ -442,9 +443,51 @@ export const AddWorkloadModal: React.FC = () => {
             }}>
               <Bot size={14} color="#059669" /> AI-Assisted Workload Setup
             </span>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: Colors.textDark, marginTop: '2px' }}>
-              Add New Workload
-            </h2>
+
+            {/* Task Title placed prominently in header */}
+            <input
+              type="text"
+              required
+              placeholder="Add task title"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              style={{
+                width: '100%',
+                border: 'none',
+                borderBottom: !title.trim() && formError ? '2px solid #EF4444' : '2px solid #E2E8F0',
+                outline: 'none',
+                fontSize: '18px',
+                fontWeight: 700,
+                color: Colors.textDark,
+                marginTop: '4px',
+                padding: '4px 0',
+                backgroundColor: 'transparent',
+                fontFamily: "'Outfit', -apple-system, sans-serif"
+              }}
+            />
+
+            {/* System self-defined activity type under task title */}
+            <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#1D4ED8',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '8px',
+                padding: '2px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <span>🏷️</span>
+                <span>Activity Type: {aiPrediction.activityType}</span>
+                <span style={{ color: '#60A5FA', fontWeight: 500, fontSize: '10px' }}>(System defined)</span>
+              </span>
+            </div>
           </div>
 
           <button
@@ -491,7 +534,7 @@ export const AddWorkloadModal: React.FC = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* ═══════════════════════════════════════════════════════════════════════════ */}
-          {/* SECTION 1: MANDATORY DETAILS (User MUST fill in Task Name, Deadline, Flexibility) */}
+          {/* SECTION 1: MANDATORY DETAILS (Deadline, Area, Feasibility)                */}
           {/* ═══════════════════════════════════════════════════════════════════════════ */}
           <div style={{
             backgroundColor: '#F8FAFC',
@@ -504,7 +547,7 @@ export const AddWorkloadModal: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '11px', fontWeight: 800, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Required Fields (Must Fill In)
+                Required Details (Must Fill In)
               </span>
               <span style={{
                 fontSize: '10px',
@@ -514,51 +557,19 @@ export const AddWorkloadModal: React.FC = () => {
                 padding: '2px 6px',
                 borderRadius: '6px'
               }}>
-                * 3 Required
+                * Required
               </span>
             </div>
 
-            {/* 1. Task Title (Required) */}
+            {/* 1. Deadline Date & Time in Same Row (Required) */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <label style={{ fontSize: '12.5px', fontWeight: 700, color: Colors.textDark }}>
-                  1. Task Name <span style={{ color: '#DC2626' }}>*</span>
+                  Deadline <span style={{ color: '#DC2626' }}>*</span>
                 </label>
                 <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>Required</span>
               </div>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Operating Systems Quiz Revision, Web Project, Gym..."
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (formError) setFormError(null);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '12px',
-                  border: !title.trim() && formError ? '1.5px solid #EF4444' : `1px solid ${Colors.borderSoft}`,
-                  fontSize: '13.5px',
-                  fontWeight: 600,
-                  color: Colors.textDark,
-                  outline: 'none',
-                  backgroundColor: '#FFFFFF',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                }}
-              />
-            </div>
-
-            {/* 2. Deadline Date & Time (Required) */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontSize: '12.5px', fontWeight: 700, color: Colors.textDark }}>
-                  2. Deadline <span style={{ color: '#DC2626' }}>*</span>
-                </label>
-                <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>Required</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#059669', fontWeight: 600, marginBottom: '2px' }}>
                     <CalendarIcon size={12} /> Due Date
@@ -612,48 +623,68 @@ export const AddWorkloadModal: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Flexibility (Required) */}
+            {/* 2. Workload Area Dropdown (Required) */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <label style={{ fontSize: '12.5px', fontWeight: 700, color: Colors.textDark }}>
-                  3. Flexibility <span style={{ color: '#DC2626' }}>*</span>
+                  Workload Area <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <span style={{ fontSize: '10.5px', color: touchedFields.area ? '#2563EB' : '#059669', fontWeight: 600 }}>
+                  {touchedFields.area ? 'Selected' : '🤖 AI Suggested'}
+                </span>
+              </div>
+              <select
+                value={touchedFields.area ? area : aiPrediction.area}
+                onChange={(e) => {
+                  setArea(e.target.value as WorkloadArea);
+                  setTouchedFields(prev => ({ ...prev, area: true }));
+                }}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: '12px',
+                  border: `1px solid ${Colors.borderSoft}`,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: Colors.textDark,
+                  backgroundColor: '#FFFFFF',
+                  outline: 'none'
+                }}
+              >
+                {areas.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            {/* 3. Feasibility / Flexibility Dropdown (Required) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 700, color: Colors.textDark }}>
+                  Feasibility / Flexibility <span style={{ color: '#DC2626' }}>*</span>
                 </label>
                 <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>Required</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-                {flexibilities.map(f => {
-                  const selected = flexibility === f.level;
-                  return (
-                    <button
-                      key={f.level}
-                      type="button"
-                      onClick={() => {
-                        setFlexibility(f.level);
-                        if (formError) setFormError(null);
-                      }}
-                      style={{
-                        padding: '8px 4px',
-                        borderRadius: '12px',
-                        border: selected ? `2px solid ${f.color}` : `1px solid ${Colors.borderSoft}`,
-                        backgroundColor: selected ? f.bg : '#FFFFFF',
-                        color: selected ? f.color : Colors.textMedium,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2px',
-                        transition: 'all 0.15s ease',
-                        boxShadow: selected ? `0 2px 8px ${f.color}25` : 'none'
-                      }}
-                    >
-                      <span style={{ fontSize: '12px', fontWeight: 800 }}>{f.label}</span>
-                      <span style={{ fontSize: '8.5px', color: selected ? f.color : '#94A3B8', fontWeight: 600, textAlign: 'center', lineHeight: 1.1 }}>
-                        {f.level === 'Strict' ? 'Non-flexible' : f.level === 'Moderate' ? '±1–2 days' : 'Easy move'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <select
+                value={flexibility}
+                onChange={(e) => {
+                  setFlexibility(e.target.value as FlexibilityLevel);
+                  if (formError) setFormError(null);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: '12px',
+                  border: `1px solid ${Colors.borderSoft}`,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: Colors.textDark,
+                  backgroundColor: '#FFFFFF',
+                  outline: 'none'
+                }}
+              >
+                <option value="Strict">Strict (Fixed deadline, cannot delay)</option>
+                <option value="Moderate">Moderate (±1–2 days flexibility)</option>
+                <option value="Flexible">Flexible (High flexibility, easy to move)</option>
+              </select>
             </div>
           </div>
 
@@ -739,47 +770,39 @@ export const AddWorkloadModal: React.FC = () => {
           {/* SECTION 3: OPTIONAL / AI-ESTIMATED DETAILS                                */}
           {/* ═══════════════════════════════════════════════════════════════════════════ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Workload Area Selector */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Workload Area</label>
-                <span style={{ fontSize: '10px', color: touchedFields.area ? '#2563EB' : '#059669', fontWeight: 600 }}>
-                  {touchedFields.area ? 'Customized' : '🤖 AI Estimated'}
-                </span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {areas.map((a) => {
-                  const selected = (touchedFields.area ? area : aiPrediction.area) === a;
-                  const style = AreaColors[a];
-                  return (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={() => {
-                        setArea(a);
-                        setTouchedFields(prev => ({ ...prev, area: true }));
-                      }}
-                      style={{
-                        padding: '8px',
-                        borderRadius: '12px',
-                        border: selected ? `1.5px solid ${style.border}` : `1px solid ${Colors.borderSoft}`,
-                        backgroundColor: selected ? style.bg : '#FFFFFF',
-                        color: selected ? style.text : Colors.textMedium,
-                        fontWeight: selected ? 700 : 500,
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {a}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Urgency Level & Activity Type Side by Side */}
+            {/* Estimated Hours & Urgency Level Side by Side (Optional / AI-Assisted) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Estimated Hours</label>
+                  <span style={{ fontSize: '9.5px', color: touchedFields.estimatedHours ? '#2563EB' : '#059669', fontWeight: 600 }}>
+                    {touchedFields.estimatedHours ? 'Manual' : '🤖 AI'}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={50}
+                  step={0.5}
+                  value={touchedFields.estimatedHours ? estimatedHours : aiPrediction.estimatedHours}
+                  onChange={(e) => {
+                    setEstimatedHours(parseFloat(e.target.value) || 1);
+                    setTouchedFields(prev => ({ ...prev, estimatedHours: true }));
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '12px',
+                    border: `1px solid ${Colors.borderSoft}`,
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    color: Colors.textDark,
+                    backgroundColor: Colors.background,
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Urgency Level</label>
@@ -806,35 +829,6 @@ export const AddWorkloadModal: React.FC = () => {
                   }}
                 >
                   {urgencies.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium }}>Activity Type</label>
-                  <span style={{ fontSize: '9.5px', color: touchedFields.activityType ? '#2563EB' : '#059669', fontWeight: 600 }}>
-                    {touchedFields.activityType ? 'Manual' : '🤖 AI'}
-                  </span>
-                </div>
-                <select
-                  value={touchedFields.activityType ? activityType : aiPrediction.activityType}
-                  onChange={(e) => {
-                    setActivityType(e.target.value as ActivityType);
-                    setTouchedFields(prev => ({ ...prev, activityType: true }));
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '12px',
-                    border: `1px solid ${Colors.borderSoft}`,
-                    fontSize: '12.5px',
-                    fontWeight: 600,
-                    color: Colors.textDark,
-                    backgroundColor: Colors.background,
-                    outline: 'none'
-                  }}
-                >
-                  {activities.map(act => <option key={act} value={act}>{act}</option>)}
                 </select>
               </div>
             </div>

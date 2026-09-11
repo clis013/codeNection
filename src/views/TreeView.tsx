@@ -55,7 +55,7 @@ const APPLE_COORDINATES = [
 // Decorative canopy flowers matching reference photo (shifted upper by 40px)
 const CANOPY_FLOWERS = [
   { id: 1, x: 255, y: 300, size: 24, rotate: 12 }, // Top flower in upper right cluster
-  { id: 2, x: 147, y: 500, size: 22, rotate: -8 }, // Lower flower beside green apple & trunk
+  { id: 2, x: 138, y: 382, size: 22, rotate: -8 }, // Moved up above Web programming & right of Operating System apple
 ];
 
 export const TreeView: React.FC = () => {
@@ -98,6 +98,15 @@ export const TreeView: React.FC = () => {
   const [harvestSuccessWorkload, setHarvestSuccessWorkload] = useState<WorkloadItem | null>(null);
   const [showHarvestBasketModal, setShowHarvestBasketModal] = useState(false);
   const [isHoldingPickedApple, setIsHoldingPickedApple] = useState(false);
+  const [isInitialHoleNotice, setIsInitialHoleNotice] = useState(true);
+
+  // When user first enters the app, show tree hole hover for 2s to let user notice it
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialHoleNotice(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Staged Add-Workload Animation:
   // 1. 'apple-first': Show add apple first. Tree is upright, gardener is normal.
@@ -275,12 +284,15 @@ export const TreeView: React.FC = () => {
     };
   })();
 
-  // Gardener reaction: emotion change & question mark appear ONLY after user added workload AND tree has tilted!
-  // After balance plan is applied, gardener returns to normal emotion.
+  // Gardener emotion change rules:
+  // When tree tilted / tree condition changed / weather changed, either one or multiple of them happen together.
+  // Emotion returns to normal when user clicks apply balance (isBalancePlanApplied = true).
+  const isTreeOrWeatherChanged = isTreeBentCalculated || treeInfo.status !== 'Manageable' || weatherInfo.type !== 'sunny';
+
   const showGardenerReaction = !isBalancePlanApplied && (
     (workloadAnimStage === 'apple-first' || workloadAnimStage === 'tree-tilt')
       ? false
-      : ((gardenerHasQuestion || isTreeBentCalculated) && !isGardenerQuestionDismissed)
+      : ((isTreeOrWeatherChanged || gardenerHasQuestion) && !isGardenerQuestionDismissed)
   );
 
   // Dynamic Gardener picture selection (evaluated safely after treeInfo & isTreeBent are initialized):
@@ -1105,7 +1117,7 @@ export const TreeView: React.FC = () => {
             position: 'absolute',
             top: '543px',
             left: '197.5px',
-            transform: `translate(-50%, -50%) rotate(2deg) scale(${isHoleHovered ? 1.08 : 1})`,
+            transform: `translate(-50%, -50%) rotate(2deg) scale(${isHoleHovered || isInitialHoleNotice ? 1.08 : 1})`,
             width: '54px',
             height: '72px',
             cursor: 'pointer',
@@ -1123,14 +1135,14 @@ export const TreeView: React.FC = () => {
               width: '38px',
               height: '56px',
               borderRadius: '48% 52% 48% 52% / 54% 54% 46% 46%',
-              border: isHoleHovered ? '2.5px solid rgba(253, 224, 71, 0.95)' : '2px solid transparent',
-              boxShadow: isHoleHovered ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 10px rgba(253, 224, 71, 0.4)' : 'none',
+              border: (isHoleHovered || isInitialHoleNotice) ? '2.5px solid rgba(253, 224, 71, 0.95)' : '2px solid transparent',
+              boxShadow: (isHoleHovered || isInitialHoleNotice) ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 10px rgba(253, 224, 71, 0.4)' : 'none',
               transition: 'all 0.18s ease',
               pointerEvents: 'none'
             }}
           />
           {/* Tree Hole Hover Tooltip Callout */}
-          {isHoleHovered && (
+          {(isHoleHovered || isInitialHoleNotice) && (
             <div
               style={{
                 position: 'absolute',

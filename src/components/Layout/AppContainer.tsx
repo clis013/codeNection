@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navbar } from '../Navigation/Navbar';
 import { AppHeader } from './AppHeader';
@@ -92,35 +92,59 @@ export const AppContainer: React.FC = () => {
     }
   };
 
+  const [viewportScale, setViewportScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const targetW = 393;
+      const targetH = 852;
+      const scaleX = (vw - 8) / targetW;
+      const scaleY = (vh - 12) / targetH;
+      const calculatedScale = Math.min(1, scaleX, scaleY);
+      setViewportScale(Math.max(0.6, calculatedScale));
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
   return (
     <div style={{
-      minHeight: '100vh',
+      width: '100vw',
+      height: '100vh',
+      maxHeight: '100dvh',
       backgroundColor: '#F5F6FD',
       backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(221, 214, 254, 0.5) 0%, transparent 50%), radial-gradient(circle at 85% 15%, rgba(186, 230, 253, 0.45) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(254, 215, 170, 0.35) 0%, transparent 50%), radial-gradient(circle at 20% 85%, rgba(252, 231, 243, 0.4) 0%, transparent 50%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: isDesktopFrame ? '20px 10px' : 0,
+      overflow: 'hidden',
       fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
 
 
-      {/* Main App Container Shell (Fixed identical dimensions across all views) */}
+      {/* Main App Container Shell (Fixed identical dimensions across all views with auto-fit scale) */}
       <div id="app-shell" style={{
-        width: '100%',
-        maxWidth: isDesktopFrame ? '393px' : '100%',
-        height: isDesktopFrame ? '852px' : '100vh',
-        maxHeight: isDesktopFrame ? '852px' : '100vh',
+        width: '393px',
+        maxWidth: '393px',
+        height: '852px',
+        maxHeight: '852px',
+        transform: `scale(${viewportScale})`,
+        transformOrigin: 'center center',
         backgroundColor: '#F7F8FE',
         backgroundImage: 'radial-gradient(circle at 10% 12%, rgba(221, 214, 254, 0.45) 0%, transparent 45%), radial-gradient(circle at 90% 18%, rgba(186, 230, 253, 0.42) 0%, transparent 45%), radial-gradient(circle at 80% 75%, rgba(254, 215, 170, 0.3) 0%, transparent 45%), radial-gradient(circle at 15% 85%, rgba(252, 231, 243, 0.35) 0%, transparent 48%)',
-        borderRadius: isDesktopFrame ? '44px' : '0px',
+        borderRadius: '44px',
         overflow: 'hidden',
-        boxShadow: isDesktopFrame ? '0 24px 70px rgba(139, 92, 246, 0.15), 0 0 0 10px rgba(255, 255, 255, 0.85)' : 'none',
+        boxShadow: '0 24px 70px rgba(139, 92, 246, 0.15), 0 0 0 10px rgba(255, 255, 255, 0.85)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        border: isDesktopFrame ? '1.5px solid rgba(255, 255, 255, 0.95)' : 'none',
+        border: '1.5px solid rgba(255, 255, 255, 0.95)',
+        flexShrink: 0
       }}>
         {activeTab !== 'tree' && activeTab !== 'home' && activeTab !== 'chat' && <AppHeader />}
 
