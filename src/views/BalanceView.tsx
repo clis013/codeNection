@@ -65,6 +65,7 @@ export const BalanceView: React.FC = () => {
     setIsTreeHoleOpen,
     setIsColourReflectionOpen,
     setActiveTab,
+    setActiveWorkloadSubTab,
     todayCheckIn,
     capacityProfile,
     busyEvents,
@@ -169,7 +170,7 @@ export const BalanceView: React.FC = () => {
         return {
           action: 'Reduce',
           subtitle: 'Reduce your personal share',
-          rationale: "Keep the core work you need to own and hand 5h back to the group."
+          rationale: "Keep the core work and hand 5h back to the group."
         };
       }
       return {
@@ -193,8 +194,8 @@ export const BalanceView: React.FC = () => {
         action: 'Move / Delay',
         subtitle: 'Delay intensive preparation',
         rationale: isPostStressDump
-          ? 'Lower urgency. Focus on other works, then shift to FCG preparation later.'
-          : 'Lower urgency. Focus on other works, then shift to FCG preparation later.'
+          ? 'Lower urgency. Shift your focus to FCG preparation later.'
+          : 'Lower urgency. Shift your focus to FCG preparation later.'
       };
     }
 
@@ -737,7 +738,10 @@ export const BalanceView: React.FC = () => {
             )}
             <button
               type="button"
-              onClick={() => setActiveTab('workloads')}
+              onClick={() => {
+                setActiveWorkloadSubTab('calendar');
+                setActiveTab('workloads');
+              }}
               style={{
                 backgroundColor: '#166534',
                 color: '#FFFFFF',
@@ -751,125 +755,6 @@ export const BalanceView: React.FC = () => {
               }}
             >
               View Calendar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 1. RECOVERY SECTION (MATCHING HOMEVIEW OVERLOADED CARD PATTERN)           */}
-      {/* ========================================================================= */}
-      {capacityProfile.dailyStatus === 'Overloaded' && (
-        <div style={{
-          background: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
-          borderRadius: '26px',
-          padding: '16px 18px',
-          border: '1.5px solid #FECDD3',
-          boxShadow: '0 8px 30px rgba(220, 38, 38, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '10px',
-                backgroundColor: '#FEE2E2',
-                border: '1px solid #FECDD3',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.2} />
-              </div>
-              <span style={{
-                fontSize: '12.5px',
-                fontWeight: 650,
-                color: '#B91C1C',
-                textTransform: 'uppercase',
-                letterSpacing: '0.4px'
-              }}>
-                Recovery Action Needed
-              </span>
-            </div>
-
-            <span style={{
-              padding: '2px 10px',
-              borderRadius: '999px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #FECDD3',
-              color: '#B91C1C',
-              fontSize: '11px',
-              fontWeight: 600,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-            }}>
-              Priority Rest
-            </span>
-          </div>
-
-          <p style={{
-            fontSize: '12.5px',
-            color: '#475569',
-            lineHeight: '1.5',
-            margin: 0,
-            fontWeight: 400
-          }}>
-            High congnitive demand outstripped your energy today! Take a 20-minute break before work to restore focus.
-          </p>
-
-          {/* Quicklinks to Recovery Features (HomeView Cover Page style) */}
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={() => setIsTreeHoleOpen(true)}
-              style={{
-                flex: 1,
-                height: '38px',
-                borderRadius: '14px',
-                border: '1px solid rgba(187, 247, 208, 0.9)',
-                backgroundColor: '#FFFFFF',
-                color: '#166534',
-                fontWeight: 550,
-                fontSize: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Feather size={14} color="#16A34A" />
-              <span>Tree Hole Release</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsColourReflectionOpen(true)}
-              style={{
-                flex: 1,
-                height: '38px',
-                borderRadius: '14px',
-                border: '1px solid rgba(221, 214, 254, 0.9)',
-                backgroundColor: '#FFFFFF',
-                color: '#6B21A8',
-                fontWeight: 550,
-                fontSize: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Palette size={14} color="#7C3AED" />
-              <span>Colour Reflection</span>
             </button>
           </div>
         </div>
@@ -991,6 +876,128 @@ export const BalanceView: React.FC = () => {
           </button>
         </div>
       )}
+
+
+      {/* ========================================================================= */}
+      {/* 1. RECOVERY SECTION (MATCHING HOMEVIEW OVERLOADED CARD PATTERN)           */}
+      {/* ========================================================================= */}
+      {capacityProfile.dailyStatus === 'Overloaded' && (
+        <div style={{
+          background: 'linear-gradient(180deg, #ffced2ff 0%, #ffededff 60%, #F8FAFC 100%)',
+          borderRadius: '26px',
+          padding: '16px 18px',
+          border: '1.5px solid #FECDD3',
+          boxShadow: '0 8px 30px rgba(220, 38, 38, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '10px',
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #FECDD3',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.2} />
+              </div>
+              <span style={{
+                fontSize: '12.5px',
+                fontWeight: 650,
+                color: '#B91C1C',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px'
+              }}>
+                Recovery Action Needed
+              </span>
+            </div>
+
+            <span style={{
+              padding: '2px 10px',
+              borderRadius: '999px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #FECDD3',
+              color: '#B91C1C',
+              fontSize: '11px',
+              fontWeight: 600,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            }}>
+              Priority Rest
+            </span>
+          </div>
+
+          <p style={{
+            fontSize: '12.5px',
+            color: '#475569',
+            lineHeight: '1.5',
+            margin: 0,
+            fontWeight: 400
+          }}>
+            High congnitive demand outstripped your energy today! Take a 20-minute break to restore focus.
+          </p>
+
+          {/* Quicklinks to Recovery Features (HomeView Cover Page style) */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setIsTreeHoleOpen(true)}
+              style={{
+                flex: 1,
+                height: '38px',
+                borderRadius: '14px',
+                border: '1px solid rgba(187, 247, 208, 0.9)',
+                backgroundColor: '#FFFFFF',
+                color: '#166534',
+                fontWeight: 550,
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Feather size={14} color="#16A34A" />
+              <span>Tree Hole Release</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsColourReflectionOpen(true)}
+              style={{
+                flex: 1,
+                height: '38px',
+                borderRadius: '14px',
+                border: '1px solid rgba(221, 214, 254, 0.9)',
+                backgroundColor: '#FFFFFF',
+                color: '#6B21A8',
+                fontWeight: 550,
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Palette size={14} color="#7C3AED" />
+              <span>Colour Reflection</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+
 
 
 
@@ -1186,7 +1193,7 @@ export const BalanceView: React.FC = () => {
                         borderRadius: '999px',
                         border: '1px solid rgba(187, 247, 208, 0.8)'
                       }}>
-                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                        {plan.blocks.length}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
@@ -1457,7 +1464,7 @@ export const BalanceView: React.FC = () => {
                         borderRadius: '999px',
                         border: '1px solid rgba(191, 219, 254, 0.8)'
                       }}>
-                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                        {plan.blocks.length}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
@@ -1728,7 +1735,7 @@ export const BalanceView: React.FC = () => {
                         borderRadius: '999px',
                         border: '1px solid rgba(221, 214, 254, 0.8)'
                       }}>
-                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                        {plan.blocks.length}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>
@@ -2025,7 +2032,7 @@ export const BalanceView: React.FC = () => {
                         borderRadius: '999px',
                         border: '1px solid rgba(253, 230, 138, 0.8)'
                       }}>
-                        {plan.blocks.length} {plan.blocks.length === 1 ? 'block' : 'blocks'}
+                        {plan.blocks.length}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', color: '#94A3B8' }}>

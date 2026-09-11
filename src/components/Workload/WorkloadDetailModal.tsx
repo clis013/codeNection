@@ -148,16 +148,6 @@ export const WorkloadDetailModal: React.FC = () => {
           gap: '12px'
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: '#059669',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              display: 'block'
-            }}>
-              Workload Task Details
-            </span>
 
             {/* Task Title placed at "Editing & Rating Details" place */}
             <input
@@ -176,13 +166,13 @@ export const WorkloadDetailModal: React.FC = () => {
               style={{
                 width: '100%',
                 border: 'none',
-                borderBottom: '2px solid #E2E8F0',
+                borderBottom: '0px solid #ffffffff',
                 outline: 'none',
-                fontSize: '18px',
+                fontSize: '22px',
                 fontWeight: 700,
                 color: Colors.textDark,
                 marginTop: '4px',
-                padding: '4px 0',
+                padding: '8px 0px',
                 backgroundColor: 'transparent',
                 fontFamily: "'Outfit', -apple-system, sans-serif"
               }}
@@ -353,7 +343,7 @@ export const WorkloadDetailModal: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '12px', fontWeight: 600, color: Colors.textMedium, marginBottom: '4px', display: 'block' }}>
-                Feasibility / Flexibility <span style={{ color: '#DC2626' }}>*</span>
+                Flexibility <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <select
                 value={formData.flexibility || formData.timeFlexibility || 'Moderate'}
@@ -443,7 +433,7 @@ export const WorkloadDetailModal: React.FC = () => {
             marginTop: '2px'
           }}>
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#4338CA', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span>✨</span> AI-Defined Details & Demands
+              <span>✨</span> AI-Defined Details
             </span>
             <span style={{ fontSize: '10px', fontWeight: 600, color: '#6366F1', backgroundColor: '#EEF2FF', padding: '1px 6px', borderRadius: '6px' }}>
               Auto-Assisted
@@ -601,7 +591,7 @@ export const WorkloadDetailModal: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: '#047857', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sliders size={16} color="#059669" /> Demand Intensity Rating (1-5)
+                <Sliders size={16} color="#059669" /> Demand Intensity Rating
               </span>
             </div>
 
@@ -690,7 +680,7 @@ export const WorkloadDetailModal: React.FC = () => {
                 }}
               >
                 <Calculator size={15} />
-                {showNasaTlx ? 'Hide NASA-TLX Assessment' : 'Detailed NASA-TLX Workload Assessment'}
+                {showNasaTlx ? 'Hide NASA-TLX Assessment' : 'NASA-TLX Workload Assessment'}
               </button>
 
               {showNasaTlx && (

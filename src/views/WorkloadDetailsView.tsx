@@ -27,11 +27,14 @@ export const WorkloadDetailsView: React.FC = () => {
     setSortBy,
     searchQuery,
     checkIns,
-    todayCheckIn
+    todayCheckIn,
+    activeWorkloadSubTab,
+    setActiveWorkloadSubTab
   } = useApp();
 
   // WORKLOAD TWO TABS: 'calendar' (Tab A) vs 'records' (Tab B)
-  const [activeWorkloadTab, setActiveWorkloadTab] = useState<'calendar' | 'records'>('calendar');
+  const activeWorkloadTab = activeWorkloadSubTab;
+  const setActiveWorkloadTab = setActiveWorkloadSubTab;
 
   // Calendar Drill-Down Views: 'month' | 'week' | 'day' | 'mood'
   const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'day' | 'mood'>('month');
@@ -282,39 +285,39 @@ export const WorkloadDetailsView: React.FC = () => {
     color: string;
     shadow: string;
   }> = [
-    {
-      area: 'Self-Care',
-      label: 'Self-Care',
-      bg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
-      border: '1.5px solid #BAE6FD',
-      color: '#0369A1',
-      shadow: '0 4px 14px rgba(2, 132, 199, 0.28)',
-    },
-    {
-      area: 'Social',
-      label: 'Social',
-      bg: 'linear-gradient(135deg, #FFF1F2 0%, #FECDD3 100%)',
-      border: '1.5px solid #FECDD3',
-      color: '#E11D48',
-      shadow: '0 4px 14px rgba(225, 29, 72, 0.28)',
-    },
-    {
-      area: 'Personal',
-      label: 'Personal',
-      bg: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
-      border: '1.5px solid #FDBA74',
-      color: '#9A3412',
-      shadow: '0 4px 14px rgba(234, 88, 12, 0.28)',
-    },
-    {
-      area: 'Academic',
-      label: 'Academic',
-      bg: 'linear-gradient(135deg, #F3EEFD 0%, #E9D5FF 100%)',
-      border: '1.5px solid #DDD6FE',
-      color: '#7C3AED',
-      shadow: '0 4px 14px rgba(124, 58, 237, 0.28)',
-    }
-  ];
+      {
+        area: 'Self-Care',
+        label: 'Self-Care',
+        bg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+        border: '1.5px solid #BAE6FD',
+        color: '#0369A1',
+        shadow: '0 4px 14px rgba(2, 132, 199, 0.28)',
+      },
+      {
+        area: 'Social',
+        label: 'Social',
+        bg: 'linear-gradient(135deg, #FFF1F2 0%, #FECDD3 100%)',
+        border: '1.5px solid #FECDD3',
+        color: '#E11D48',
+        shadow: '0 4px 14px rgba(225, 29, 72, 0.28)',
+      },
+      {
+        area: 'Personal',
+        label: 'Personal',
+        bg: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
+        border: '1.5px solid #FDBA74',
+        color: '#9A3412',
+        shadow: '0 4px 14px rgba(234, 88, 12, 0.28)',
+      },
+      {
+        area: 'Academic',
+        label: 'Academic',
+        bg: 'linear-gradient(135deg, #F3EEFD 0%, #E9D5FF 100%)',
+        border: '1.5px solid #DDD6FE',
+        color: '#7C3AED',
+        shadow: '0 4px 14px rgba(124, 58, 237, 0.28)',
+      }
+    ];
 
   // Real 2026 Calendar Month Generator (Monday to Sunday)
   const getMonthWeeks = (mIdx: number) => {
@@ -859,8 +862,8 @@ export const WorkloadDetailsView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 {/* White rounded badge with blue Google Calendar Icon */}
                 <div style={{
-                  width: '42px',
-                  height: '42px',
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '14px',
                   backgroundColor: '#FFFFFF',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
@@ -871,8 +874,8 @@ export const WorkloadDetailsView: React.FC = () => {
                   flexShrink: 0
                 }}>
                   <div style={{
-                    width: '26px',
-                    height: '26px',
+                    width: '25px',
+                    height: '25px',
                     borderRadius: '6px',
                     backgroundColor: '#3B82F6',
                     display: 'flex',
@@ -894,10 +897,10 @@ export const WorkloadDetailsView: React.FC = () => {
 
                 {/* Title & Subtitle */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
                     Sync with Google Calendar?
                   </span>
-                  <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 500, color: '#64748B' }}>
                     Import your courses, schedules & deadlines
                   </span>
                 </div>
@@ -912,7 +915,7 @@ export const WorkloadDetailsView: React.FC = () => {
                   backgroundColor: '#FFEDD5',
                   border: '1.5px solid #FDBA74',
                   borderRadius: '18px',
-                  padding: '7px 18px',
+                  padding: '7px 12px',
                   fontSize: '12.5px',
                   fontWeight: 800,
                   color: '#9A3412',

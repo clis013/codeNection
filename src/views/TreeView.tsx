@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { WorkloadItem } from '../types/workload';
-import { ArrowLeft, Wind, MessageSquare, CheckSquare, Sparkles, ClipboardCheck, X } from 'lucide-react';
+import { ArrowLeft, Wind, Calendar, CheckSquare, Sparkles, ClipboardCheck, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 function getWorkloadProgress(workload: WorkloadItem): number {
@@ -43,13 +43,23 @@ const APPLE_COORDINATES = [
   // Apple 6: Mid-Left canopy cluster
   { x: 145, y: 345, rotate: -6 },
   // Apple 7: Upper-Right canopy cluster
-  { x: 235, y: 340, rotate: 10 },
+  { x: 288, y: 345, rotate: 6 },
   // Apple 8: Lower-Right canopy cluster
-  { x: 298, y: 468, rotate: -5 },
-  // Apple 9: Center canopy
-  { x: 165, y: 405, rotate: 5 },
-  // Apple 10: Outer-Left
-  { x: 60, y: 420, rotate: -12 }
+  { x: 220, y: 434, rotate: -4 },
+  // Apple 9: Deep Upper-Center canopy cluster
+  { x: 135, y: 275, rotate: -4 },
+  // Apple 10: Deep Upper-Right canopy cluster
+  { x: 250, y: 260, rotate: 5 },
+  // Apple 11: Far Left-Edge canopy cluster
+  { x: 42, y: 420, rotate: -10 },
+  // Apple 12: High-Center Apex canopy cluster
+  { x: 190, y: 232, rotate: 2 },
+  // Apple 13: Mid-Low Center-Right cluster
+  { x: 182, y: 450, rotate: -3 },
+  // Apple 14: Outer Right canopy cluster
+  { x: 348, y: 380, rotate: 10 },
+  // Apple 15: Deep Top-Left apex cluster
+  { x: 105, y: 310, rotate: -6 }
 ];
 
 // Decorative canopy flowers matching reference photo (shifted upper by 40px)
@@ -80,7 +90,11 @@ export const TreeView: React.FC = () => {
     setIsCheckInOpen,
     setCheckInSource,
     harvestedAppleIds,
-    harvestApple
+    harvestApple,
+    activeWorkloadSubTab,
+    setActiveWorkloadSubTab,
+    hasShownInitialTreeHoleNotice,
+    setHasShownInitialTreeHoleNotice
   } = useApp();
 
   const [isGardenerQuestionDismissed, setIsGardenerQuestionDismissed] = useState(false);
@@ -98,14 +112,56 @@ export const TreeView: React.FC = () => {
   const [harvestSuccessWorkload, setHarvestSuccessWorkload] = useState<WorkloadItem | null>(null);
   const [showHarvestBasketModal, setShowHarvestBasketModal] = useState(false);
   const [isHoldingPickedApple, setIsHoldingPickedApple] = useState(false);
-  const [isInitialHoleNotice, setIsInitialHoleNotice] = useState(true);
+  const [isInitialHoleNotice, setIsInitialHoleNotice] = useState(false);
+  const [isLongStayHoleNotice, setIsLongStayHoleNotice] = useState(false);
 
-  // When user first enters the app, show tree hole hover for 2s to let user notice it
+  // When user first enters the app, show tree hole hover once.
   useEffect(() => {
+    if (!hasShownInitialTreeHoleNotice) {
+      setIsInitialHoleNotice(true);
+      setHasShownInitialTreeHoleNotice(true);
+    }
+  }, [hasShownInitialTreeHoleNotice, setHasShownInitialTreeHoleNotice]);
+
+  // Hide the initial tree hole notice after 2 seconds.
+  useEffect(() => {
+    if (!isInitialHoleNotice) return;
+
     const timer = setTimeout(() => {
       setIsInitialHoleNotice(false);
     }, 2000);
+
     return () => clearTimeout(timer);
+  }, [isInitialHoleNotice]);
+
+  // When user stays on the homepage for a very long time (15s), show the tree hole hover for 2.5s
+  useEffect(() => {
+    let longStayTimer: ReturnType<typeof setTimeout>;
+    let longStayHideTimer: ReturnType<typeof setTimeout>;
+
+    const scheduleNotice = () => {
+      clearTimeout(longStayTimer);
+      longStayTimer = setTimeout(() => {
+        setIsLongStayHoleNotice(true);
+        longStayHideTimer = setTimeout(() => {
+          setIsLongStayHoleNotice(false);
+        }, 2500);
+      }, 10000); // 10s threshold
+    };
+
+    scheduleNotice();
+
+    const handleUserActivity = () => {
+      clearTimeout(longStayTimer);
+      scheduleNotice();
+    };
+
+    window.addEventListener('pointerdown', handleUserActivity);
+    return () => {
+      clearTimeout(longStayTimer);
+      clearTimeout(longStayHideTimer);
+      window.removeEventListener('pointerdown', handleUserActivity);
+    };
   }, []);
 
   // Staged Add-Workload Animation:
@@ -359,6 +415,7 @@ export const TreeView: React.FC = () => {
     }
 
     setSelectedWorkload(workload);
+    setActiveWorkloadSubTab('records');
 
     setTimeout(() => {
       setIsWorkloadDetailOpen(true);
@@ -393,6 +450,8 @@ export const TreeView: React.FC = () => {
       setActiveTab('chat');
     }, 280);
   };
+
+  const showTreeHoleNotice = isHoleHovered || isInitialHoleNotice || isLongStayHoleNotice;
 
   return (
     <div
@@ -443,7 +502,7 @@ export const TreeView: React.FC = () => {
           <svg width="54" height="54" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="29" cy="29" r="16" fill="url(#sunGradient)" />
             <circle cx="25" cy="25" r="6" fill="rgba(255, 255, 255, 0.38)" />
-            
+
             {/* 8 Minimalist Slender Ray Accents */}
             {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
               <line
@@ -676,14 +735,14 @@ export const TreeView: React.FC = () => {
           <Wind size={18} color="#166534" strokeWidth={2.4} />
         </button>
 
-        {/* Button 2: AI Dump Chat shortcut */}
+        {/* Button 2: Calendar shortcut (links to Calendar in Workload page) */}
         <button
           type="button"
           onClick={() => {
-            setChatSource('treehole');
-            setActiveTab('chat');
+            setActiveWorkloadSubTab('calendar');
+            setActiveTab('workloads');
           }}
-          title="AI Dump Stress Chat"
+          title="Calendar Schedule"
           style={{
             width: '38px',
             height: '38px',
@@ -702,13 +761,16 @@ export const TreeView: React.FC = () => {
             transition: 'transform 0.15s ease'
           }}
         >
-          <MessageSquare size={17} color="#166534" strokeWidth={2.4} />
+          <Calendar size={17} color="#166534" strokeWidth={2.4} />
         </button>
 
-        {/* Button 3: Workloads shortcut */}
+        {/* Button 3: Workloads shortcut (links to Workload Records tab in Workload page) */}
         <button
           type="button"
-          onClick={() => setActiveTab('workloads')}
+          onClick={() => {
+            setActiveWorkloadSubTab('records');
+            setActiveTab('workloads');
+          }}
           title="View Workloads"
           style={{
             width: '38px',
@@ -741,21 +803,21 @@ export const TreeView: React.FC = () => {
             gap: '8px',
           }}
         >
-          {/* Obvious glowing callout pill if daily check-in is pending */}
+          {/* Obvious glowing callout pill if daily check-in is pending (Soft edge, clean style) */}
           {!todayCheckIn && (
             <div
               style={{
                 backgroundColor: 'rgba(254, 243, 199, 0.96)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                border: '1.2px solid #F59E0B',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: '1px solid rgba(245, 158, 11, 0.45)',
                 color: '#92400E',
                 padding: '4px 10px',
-                borderRadius: '12px',
+                borderRadius: '16px',
                 fontSize: '11px',
                 fontWeight: 800,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 10px rgba(245, 158, 11, 0.35)',
+                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.25)',
                 pointerEvents: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -1117,7 +1179,7 @@ export const TreeView: React.FC = () => {
             position: 'absolute',
             top: '543px',
             left: '197.5px',
-            transform: `translate(-50%, -50%) rotate(2deg) scale(${isHoleHovered || isInitialHoleNotice ? 1.08 : 1})`,
+            transform: `translate(-50%, -50%) rotate(2deg) scale(${showTreeHoleNotice ? 1.08 : 1})`,
             width: '54px',
             height: '72px',
             cursor: 'pointer',
@@ -1135,14 +1197,14 @@ export const TreeView: React.FC = () => {
               width: '38px',
               height: '56px',
               borderRadius: '48% 52% 48% 52% / 54% 54% 46% 46%',
-              border: (isHoleHovered || isInitialHoleNotice) ? '2.5px solid rgba(253, 224, 71, 0.95)' : '2px solid transparent',
-              boxShadow: (isHoleHovered || isInitialHoleNotice) ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 10px rgba(253, 224, 71, 0.4)' : 'none',
+              border: showTreeHoleNotice ? '2.5px solid rgba(253, 224, 71, 0.95)' : '2px solid transparent',
+              boxShadow: showTreeHoleNotice ? '0 0 16px rgba(253, 224, 71, 0.85), inset 0 0 10px rgba(253, 224, 71, 0.4)' : 'none',
               transition: 'all 0.18s ease',
               pointerEvents: 'none'
             }}
           />
           {/* Tree Hole Hover Tooltip Callout */}
-          {(isHoleHovered || isInitialHoleNotice) && (
+          {showTreeHoleNotice && (
             <div
               style={{
                 position: 'absolute',
@@ -1160,7 +1222,7 @@ export const TreeView: React.FC = () => {
                 animation: 'fadeInUp 0.15s ease'
               }}
             >
-              🕳️ Tap to dump stress in AI Chat
+              🕳️ Dump your stress
             </div>
           )}
         </div>
@@ -1645,7 +1707,7 @@ export const TreeView: React.FC = () => {
               animation: 'fadeInUp 0.15s ease'
             }}
           >
-            👨‍🌾 Tap to chat with AI
+            👨‍🌾 What's going on?
           </div>
         )}
       </div>
@@ -1699,7 +1761,7 @@ export const TreeView: React.FC = () => {
               whiteSpace: 'nowrap',
               backgroundColor: '#C2410C',
               color: '#FFFFFF',
-              border: '1px solid #FDBA74',
+              border: '0px solid #FDBA74',
               borderRadius: '12px',
               padding: '3px 8px',
               fontSize: '10.5px',
@@ -1709,7 +1771,7 @@ export const TreeView: React.FC = () => {
               animation: 'fadeInUp 0.15s ease'
             }}
           >
-            🐿️ Tap to chat!
+            🐿️ Daily Insight!
           </div>
         )}
       </div>
@@ -1922,6 +1984,7 @@ export const TreeView: React.FC = () => {
                 onClick={() => {
                   setSelectedWorkload(harvestSuccessWorkload);
                   setHarvestSuccessWorkload(null);
+                  setActiveWorkloadSubTab('records');
                   setIsWorkloadDetailOpen(true);
                   setActiveTab('workloads');
                 }}
@@ -2023,6 +2086,7 @@ export const TreeView: React.FC = () => {
                     onClick={() => {
                       setSelectedWorkload(w);
                       setShowHarvestBasketModal(false);
+                      setActiveWorkloadSubTab('records');
                       setIsWorkloadDetailOpen(true);
                       setActiveTab('workloads');
                     }}

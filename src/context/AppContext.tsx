@@ -78,6 +78,10 @@ interface AppContextType {
   setSortBy: (sort: 'deadline' | 'urgency' | 'demand' | 'stress') => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  activeWorkloadSubTab: 'calendar' | 'records';
+  setActiveWorkloadSubTab: (tab: 'calendar' | 'records') => void;
+  hasShownInitialTreeHoleNotice: boolean;
+  setHasShownInitialTreeHoleNotice: (shown: boolean) => void;
 
   // Check-In & Stress State
   checkIns: DailyCheckIn[];
@@ -678,6 +682,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [areaFilter, setAreaFilter] = useState<'All' | WorkloadArea>('All');
   const [sortBy, setSortBy] = useState<'deadline' | 'urgency' | 'demand' | 'stress'>('urgency');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeWorkloadSubTab, setActiveWorkloadSubTab] = useState<'calendar' | 'records'>('records');
+  const [hasShownInitialTreeHoleNotice, setHasShownInitialTreeHoleNotice] = useState(false);
 
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(initialCheckIns);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -1635,7 +1641,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hasRemindedCheckInToday,
       markCheckInRemindedToday,
       harvestedAppleIds,
-      harvestApple
+      harvestApple,
+      activeWorkloadSubTab,
+      setActiveWorkloadSubTab,
+      hasShownInitialTreeHoleNotice,
+      setHasShownInitialTreeHoleNotice
     }}>
       {children}
     </AppContext.Provider>
